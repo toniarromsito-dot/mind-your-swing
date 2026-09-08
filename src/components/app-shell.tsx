@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Home, History, User, Flag, BookOpen, Users } from "lucide-react";
+import { Home, History, User, BookOpen, Users } from "lucide-react";
 import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -27,8 +27,14 @@ export function AppShell({
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Flag className="size-5 text-primary" />
-            <span className="font-heading text-lg">Mind Your Swing</span>
+            <Image
+              src="/icons/icon-192.png"
+              alt="Mind Your Swing"
+              width={32}
+              height={32}
+              className="rounded-[9px]"
+            />
+            <span className="font-heading text-lg tracking-wide">MYS</span>
           </Link>
 
           <nav className="hidden items-center gap-1 sm:flex">

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { signInWithGoogle } from "@/actions/auth";
@@ -33,6 +34,13 @@ export default async function LandingPage() {
           }}
         />
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-6 pt-10 pb-16 text-center sm:pt-20">
+          <Image
+            src="/icons/icon-192.png"
+            alt="Mind Your Swing"
+            width={56}
+            height={56}
+            className="rounded-2xl shadow-sm"
+          />
           <span className="rounded-full border border-border bg-card px-4 py-1.5 text-sm text-muted-foreground">
             {t.landing.badge}
           </span>

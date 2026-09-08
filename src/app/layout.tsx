@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { PwaRegister } from "@/components/pwa-register";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import "./globals.css";
 
@@ -25,8 +26,24 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t.meta.title,
     description: t.meta.description,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: "Mind Your Swing",
+    },
+    icons: {
+      icon: [
+        { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: "#1F3D2B",
+};
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const { locale } = await getDictionary();
@@ -39,6 +56,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
         <Toaster />
+        <PwaRegister />
       </body>
     </html>
   );
