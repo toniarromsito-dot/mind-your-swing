@@ -69,10 +69,13 @@ export default async function ProfilePage({
                 </Button>
               </form>
             ) : (
-              <form action={createCheckoutSession}>
+              <form action={createCheckoutSession} className="flex flex-col items-start gap-1.5">
                 <Button type="submit" size="sm">
                   {t.perfil.upgrade}
                 </Button>
+                <span className="text-xs text-muted-foreground">
+                  {user.stripeSubscriptionId ? t.perfil.proPrice : t.perfil.welcomeOffer}
+                </span>
               </form>
             )
           ) : (
