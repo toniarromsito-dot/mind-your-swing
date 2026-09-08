@@ -1,11 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { VideoCard } from "@/components/video-card";
+import { requireUserId } from "@/lib/require-user";
+import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
 export default async function LearnPage() {
+  const userId = await requireUserId();
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true } });
   const { t } = await getDictionary();
+  const isPro = user.plan === "PRO";
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <div>
         <h1 className="font-heading text-2xl">{t.learn.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.learn.subtitle}</p>
@@ -22,6 +28,46 @@ export default async function LearnPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="flex flex-col gap-6">
+        <div>
+          <h2 className="font-heading text-xl">{t.learn.videosTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.learn.videosSubtitle}</p>
+        </div>
+
+        <div>
+          <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t.learn.freeVideosTitle}</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {t.learn.freeVideos.map((video) => (
+              <VideoCard
+                key={video.title}
+                title={video.title}
+                description={video.description}
+                url={video.url}
+                comingSoonLabel={t.learn.comingSoon}
+                lockedMessage={t.learn.proLockedMessage}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t.learn.proVideosTitle}</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {t.learn.proVideos.map((video) => (
+              <VideoCard
+                key={video.title}
+                title={video.title}
+                description={video.description}
+                url={video.url}
+                locked={!isPro}
+                comingSoonLabel={t.learn.comingSoon}
+                lockedMessage={t.learn.proLockedMessage}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       <p className="rounded-xl border border-border bg-secondary/30 p-4 text-xs text-muted-foreground">
