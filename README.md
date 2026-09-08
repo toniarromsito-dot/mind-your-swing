@@ -12,13 +12,17 @@ Implementado y funcionando de extremo a extremo en local (build, tests unitarios
 
 - Login con Google (Auth.js / NextAuth v5).
 - Crear ronda, navegar hoyo a hoyo, registrar par/distancia/golpes/putts.
-- Chat con el coach IA (Claude, streaming), con contexto real de la ronda/hoyo actual, tono e historial reciente del jugador.
+- Chat con el coach IA (Claude, streaming), con contexto real de la ronda/hoyo actual, tono e historial reciente del jugador. Tono motivador, no solo calmado.
+- Voz del coach (opcional, ElevenLabs): las respuestas se pueden escuchar además de leer, con un interruptor para silenciarlas.
 - Check-in de estado de ánimo por hoyo y pre-ronda.
 - Resumen post-ronda con evolución del ánimo (gráfico) y cierre generado por el coach.
 - Historial de rondas y perfil de usuario con preferencias del coach.
+- **Aprende** (`/aprender`): fundamentos de swing para principiantes, contenido estático y genérico, separado a propósito del coach mental (que no da indicaciones técnicas).
+- **Comunidad** (`/historias`): los propios jugadores comparten sus historias y consejos reales — nada generado por IA ni atribuido a golfistas reales externos.
+- Interfaz completa en español e inglés (selector en el login y en el perfil), incluyendo las respuestas del coach.
 - UI premium, mobile-first, con modo claro/oscuro.
 
-Dos cosas **solo tú puedes completar** porque requieren tus propias credenciales (ver sección 4): crear las credenciales OAuth de Google y obtener una API key de Anthropic. Sin ellas, la app funciona pero el login real y el chat con el coach no estarán disponibles (el chat se degrada con gracia y avisa que falta configurar la clave).
+Dos cosas **solo tú puedes completar** porque requieren tus propias credenciales (ver sección 4): crear las credenciales OAuth de Google y obtener una API key de Anthropic. Sin ellas, la app funciona pero el login real y el chat con el coach no estarán disponibles (el chat se degrada con gracia y avisa que falta configurar la clave). La voz del coach (ElevenLabs) es opcional: sin su API key, el chat funciona igual, solo sin audio.
 
 ---
 
@@ -40,10 +44,13 @@ Dos cosas **solo tú puedes completar** porque requieren tus propias credenciale
 - **`system prompt` centralizado**: toda la identidad y reglas del coach viven en `src/lib/coach/prompt.ts`. El contexto (campo, hoyo, resultado, ánimo reciente, patrones históricos) se construye en `src/lib/coach/context.ts` a partir de datos reales de la base de datos — nunca lo escribe el usuario.
 - **Ruta de login de desarrollo** (`src/app/api/dev-login`): permite iniciar sesión sin pasar por Google OAuth real, solo para pruebas manuales y end-to-end locales. Devuelve `404` fuera de `NODE_ENV=production`, así que nunca existe en producción. Es lo que usa el test end-to-end de Playwright para no depender de credenciales reales de Google en CI.
 - **Rate limiting en memoria**: `src/lib/rate-limit.ts` limita el chat a 12 mensajes/minuto por usuario. Es "básico" a propósito (spec): válido para una sola instancia; si el tráfico lo justifica, sustituir por un store compartido (p. ej. Upstash Redis).
+- **i18n sin librería externa**: `src/lib/i18n/dictionaries.ts` centraliza todos los textos (es/en). El idioma se resuelve en `src/lib/i18n/current-locale.ts`: si hay sesión, manda `User.language` (persistido en el perfil); si no, una cookie que cambia el toggle de la landing. Los diccionarios que cruzan a un Client Component se mantienen como strings/arrays planos (las funciones no pueden pasar la frontera Server→Client Component de Next.js); para los pocos textos con interpolación se usa una plantilla `"Hoyo {n}"` + el helper `fmt()` (`src/lib/i18n/format.ts`).
+- **Voz vía ElevenLabs, no navegador**: se eligió una API de voz realista sobre la Web Speech API nativa (gratis pero con voces muy robóticas) porque el objetivo es que suene bien mientras se juega, no solo que funcione. La llamada vive en `/api/tts` (backend), y el modelo `eleven_multilingual_v2` cubre es/en sin cambiar de modelo según el idioma. Es "best-effort": si falla o no hay clave, el chat de texto sigue funcionando exactamente igual.
+- **Contenido de swing separado del coach mental**: `/aprender` es contenido estático (estructurado en el diccionario de i18n, no generado por IA en tiempo real) para no mezclar el rol del coach — que evita a propósito la mecánica de swing — con instrucción técnica.
 
 ### Modelo de datos (resumen)
 
-`User` (con preferencias de coach: tono, idioma) → `Round` (ronda de golf) → `Hole` (hoyos de esa ronda, par/distancia/golpes/putts) y `MoodEntry` (check-in de ánimo, ligado a una ronda y opcionalmente a un hoyo) → `Message` (mensajes de la conversación con el coach, rol usuario/asistente). Esquema completo en [`prisma/schema.prisma`](prisma/schema.prisma).
+`User` (con preferencias de coach: tono, idioma) → `Round` (ronda de golf) → `Hole` (hoyos de esa ronda, par/distancia/golpes/putts) y `MoodEntry` (check-in de ánimo, ligado a una ronda y opcionalmente a un hoyo) → `Message` (mensajes de la conversación con el coach, rol usuario/asistente). `Story` (historias de la comunidad) cuelga solo de `User`, independiente de las rondas. Esquema completo en [`prisma/schema.prisma`](prisma/schema.prisma).
 
 ---
 
@@ -134,7 +141,15 @@ npx auth secret
 
 o manualmente con `openssl rand -base64 32`, y pégalo en `.env`.
 
-### 4.4. Resumen de variables (`.env.example`)
+### 4.4. Voz del coach (ElevenLabs) — opcional
+
+1. Crea una cuenta en [elevenlabs.io](https://elevenlabs.io/) (tiene plan gratuito limitado; la voz es de pago a partir de cierto uso).
+2. **Settings → API Keys** y copia tu clave a `.env` como `ELEVENLABS_API_KEY=`.
+3. Opcional: elige una voz en la [librería de voces](https://elevenlabs.io/app/voice-library), copia su ID y añádelo como `ELEVENLABS_VOICE_ID=`. Sin esto, se usa una voz pública por defecto.
+
+Si no configuras esto, el chat funciona exactamente igual, solo sin audio (el botón de voz simplemente no reproduce nada).
+
+### 4.5. Resumen de variables (`.env.example`)
 
 ```
 DATABASE_URL=
@@ -144,6 +159,9 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ANTHROPIC_API_KEY=
 ANTHROPIC_MODEL=
+ANTHROPIC_WORKSPACE_ID=
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID=
 ```
 
 ---
@@ -182,7 +200,8 @@ Crea una base de datos Postgres en [Neon](https://neon.tech) o [Supabase](https:
    - `NEXTAUTH_URL`: `https://tu-dominio.vercel.app`.
    - `NEXTAUTH_SECRET`: genera uno **distinto** al de desarrollo.
    - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: los mismos del paso 4.1 (o crea un OAuth client separado para producción si prefieres aislar entornos).
-   - `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`.
+   - `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (y `ANTHROPIC_WORKSPACE_ID` si tu key lo pide).
+   - `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` (opcionales, solo si quieres voz en producción).
 3. Despliega.
 
 ### 6.3. Migraciones en producción
@@ -215,7 +234,9 @@ https://tu-dominio.vercel.app/api/auth/callback/google
 | `/rondas/[id]` | Ronda en curso: navegación hoyo a hoyo, chat del coach integrado (drawer, 1-2 toques desde cualquier hoyo). |
 | `/rondas/[id]/resumen` | Resumen post-ronda: resultado, evolución del ánimo, cierre del coach. |
 | `/historial` | Rondas pasadas. |
-| `/perfil` | Datos de usuario, preferencias del coach, cerrar sesión. |
+| `/aprender` | Fundamentos de swing para principiantes (contenido estático, no del coach mental). |
+| `/historias` | Historias y consejos reales compartidos por la comunidad de jugadores. |
+| `/perfil` | Datos de usuario, preferencias del coach (tono, idioma), cerrar sesión. |
 
 ---
 
@@ -232,4 +253,4 @@ https://tu-dominio.vercel.app/api/auth/callback/google
 
 ## 9. Posibles siguientes pasos (fuera del MVP)
 
-Explícitamente fuera de alcance por ahora (ver spec): análisis de vídeo/sensores de swing, motor oficial de hándicap, multijugador/social. Ideas razonables para una v2: notificaciones push antes de una ronda agendada, analítica más rica de patrones de ánimo a largo plazo, multi-idioma más allá de es/en, exportar el historial a PDF.
+Explícitamente fuera de alcance por ahora (ver spec): análisis de vídeo/sensores de swing, motor oficial de hándicap. Ideas razonables para una v2: notificaciones push antes de una ronda agendada, analítica más rica de patrones de ánimo a largo plazo, más idiomas además de es/en, exportar el historial a PDF, moderación/reportar en las historias de la comunidad si crece el volumen de usuarios.

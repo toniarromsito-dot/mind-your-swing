@@ -45,8 +45,14 @@ export const profileSchema = z.object({
   language: z.enum(["es", "en"]).optional(),
 });
 
+export const storySchema = z.object({
+  title: z.string().trim().min(3, "El título es demasiado corto").max(120),
+  content: z.string().trim().min(20, "Cuenta un poco más").max(4000),
+});
+
 export type CreateRoundInput = z.infer<typeof createRoundSchema>;
 export type UpdateHoleInput = z.infer<typeof updateHoleSchema>;
 export type MoodEntryInput = z.infer<typeof moodEntrySchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type ProfileInput = z.infer<typeof profileSchema>;
+export type StoryInput = z.infer<typeof storySchema>;

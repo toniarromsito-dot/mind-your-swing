@@ -93,6 +93,7 @@ model User {
   rounds     Round[]
   moodEntries MoodEntry[]
   messages   Message[]
+  stories    Story[]
 }
 
 model Round {
@@ -166,4 +167,19 @@ model Message {
   round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
 
   @@index([roundId, createdAt])
+}
+
+// Historias reales compartidas por jugadores de la app (no contenido
+// generado ni atribuido a golfistas reales externos — ver README).
+model Story {
+  id      String @id @default(cuid())
+  userId  String
+  title   String
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
 }

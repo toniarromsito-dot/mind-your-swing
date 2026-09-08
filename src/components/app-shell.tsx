@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Home, History, User, Flag } from "lucide-react";
+import { Home, History, User, Flag, BookOpen, Users } from "lucide-react";
 import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -17,6 +17,8 @@ export function AppShell({
   const navLinks = [
     { href: "/dashboard", label: t.inicio, icon: Home },
     { href: "/historial", label: t.historial, icon: History },
+    { href: "/aprender", label: t.aprender, icon: BookOpen },
+    { href: "/historias", label: t.comunidad, icon: Users },
     { href: "/perfil", label: t.perfil, icon: User },
   ];
 
@@ -70,12 +72,12 @@ export function AppShell({
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur sm:hidden">
-        <div className="mx-auto flex max-w-5xl items-center justify-around px-2 py-2">
+        <div className="mx-auto flex max-w-5xl items-center justify-around px-1 py-2">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="flex flex-col items-center gap-1 rounded-lg px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
               <link.icon className="size-5" />
               {link.label}

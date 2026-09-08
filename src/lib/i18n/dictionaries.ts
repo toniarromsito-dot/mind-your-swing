@@ -9,6 +9,8 @@ const es = {
   nav: {
     inicio: "Inicio",
     historial: "Historial",
+    aprender: "Aprende",
+    comunidad: "Comunidad",
     perfil: "Perfil",
     cerrarSesion: "Cerrar sesión",
   },
@@ -105,6 +107,9 @@ const es = {
     retry: "Reintentar",
     genericError: "El coach no ha podido responder. Inténtalo de nuevo.",
     connectionError: "No se ha podido contactar con el coach.",
+    voiceOn: "Voz activada",
+    voiceOff: "Voz desactivada",
+    playAudio: "Escuchar",
   },
   quickPrompts: [
     "Estoy nervioso",
@@ -146,6 +151,59 @@ const es = {
       "Mind Your Swing es un apoyo para el componente mental del golf y no sustituye la terapia psicológica profesional.",
     signOut: "Cerrar sesión",
   },
+  learn: {
+    title: "Aprende los fundamentos",
+    subtitle:
+      "Un punto de partida sencillo para quien empieza en el golf. Esto es orientación general, no clases personalizadas.",
+    disclaimer:
+      "Esto es orientación general y no sustituye clases con un profesional certificado (PGA): cada swing es distinto, y un profesional ve en persona matices que un texto nunca podrá corregir. Este contenido es independiente del coach mental de la app, que no da indicaciones técnicas.",
+    topics: [
+      {
+        title: "El agarre (grip)",
+        body: "Coloca el palo apoyado en la base de los dedos de la mano guía (no en la palma), con el pulgar señalando hacia abajo por el mango. Cierra la otra mano encajando sus dedos con los de la primera. Un agarre demasiado fuerte tensa los brazos; empieza suave y ajusta desde ahí.",
+      },
+      {
+        title: "Postura y colocación",
+        body: "Pies a la anchura de los hombros, rodillas ligeramente flexionadas, e inclina el tronco desde la cadera (no desde la espalda) hasta que los brazos cuelguen con naturalidad. El peso debe repartirse entre ambos pies, ni en los talones ni en las puntas.",
+      },
+      {
+        title: "Alineación",
+        body: "Los pies, caderas y hombros deben apuntar en paralelo a la línea hacia el objetivo, como los raíles de una vía de tren (la bola en un raíl, tú en el otro). Comprueba tu alineación con un palo en el suelo cuando practiques.",
+      },
+      {
+        title: "El swing básico",
+        body: "Piensa en tres fases: subida controlada girando los hombros (no solo los brazos), un cambio de dirección suave, y una bajada donde las caderas inician el movimiento antes que los brazos. Termina el gesto con el cuerpo mirando hacia el objetivo y el peso en el pie delantero.",
+      },
+      {
+        title: "Errores comunes de principiante",
+        body: "Los más frecuentes: agarrar el palo con demasiada fuerza, levantar la cabeza antes de golpear la bola, intentar pegarle con todas las fuerzas (perdiendo control) y usar solo los brazos en vez de girar el cuerpo. Practicar despacio y en control ayuda más que practicar rápido y sin foco.",
+      },
+      {
+        title: "Juego corto: chip y putt",
+        body: "En el putt, la cabeza del palo debe moverse como un péndulo, con los hombros haciendo el trabajo y las manos quietas respecto al cuerpo. En el chip, adelanta un poco el peso y las manos respecto a la bola, y usa un golpe corto y controlado en vez de un swing completo.",
+      },
+      {
+        title: "Cómo practicar",
+        body: "Mejor 15-20 minutos de práctica enfocada en un solo aspecto que una hora sin foco. Empieza cada sesión con golpes cortos y controlados, aumenta la distancia poco a poco, y termina practicando putts: es donde más golpes se ahorran en una ronda real.",
+      },
+    ],
+  },
+  stories: {
+    title: "Historias de la comunidad",
+    subtitle:
+      "Comparte tu experiencia real o lee la de otros jugadores. Nada generado por IA: son historias de gente real.",
+    shareTitle: "Comparte tu historia",
+    titleLabel: "Título",
+    titlePlaceholder: "Ej. Mi primer hoyo en uno",
+    contentLabel: "Tu historia",
+    contentPlaceholder: "Cuenta qué pasó, qué aprendiste, o qué haces para mejorar…",
+    submit: "Publicar",
+    submitting: "Publicando…",
+    empty: "Todavía no hay historias. ¡Sé el primero en compartir la tuya!",
+    delete: "Eliminar",
+    deleted: "Historia eliminada",
+    deleteError: "No se ha podido eliminar",
+  },
   dateLocale: "es-ES",
 };
 
@@ -157,6 +215,8 @@ const en: typeof es = {
   nav: {
     inicio: "Home",
     historial: "History",
+    aprender: "Learn",
+    comunidad: "Community",
     perfil: "Profile",
     cerrarSesion: "Sign out",
   },
@@ -253,6 +313,9 @@ const en: typeof es = {
     retry: "Retry",
     genericError: "The coach couldn't respond. Please try again.",
     connectionError: "Couldn't reach the coach.",
+    voiceOn: "Voice on",
+    voiceOff: "Voice off",
+    playAudio: "Listen",
   },
   quickPrompts: [
     "I'm nervous",
@@ -293,6 +356,59 @@ const en: typeof es = {
     disclaimer:
       "Mind Your Swing supports the mental side of golf and is not a substitute for professional psychological therapy.",
     signOut: "Sign out",
+  },
+  learn: {
+    title: "Learn the fundamentals",
+    subtitle:
+      "A simple starting point if you're new to golf. This is general orientation, not personalized coaching.",
+    disclaimer:
+      "This is general orientation and not a substitute for lessons with a certified (PGA) instructor: every swing is different, and a pro can spot in person what a text never could. This content is separate from the app's mental coach, which doesn't give technical instruction.",
+    topics: [
+      {
+        title: "The grip",
+        body: "Rest the club in the base of your lead hand's fingers (not the palm), thumb pointing down the shaft. Close your other hand so its fingers interlock or overlap with the first. A grip that's too tight tenses your arms — start soft and adjust from there.",
+      },
+      {
+        title: "Stance and posture",
+        body: "Feet shoulder-width apart, knees slightly flexed, and bend forward from the hips (not the back) until your arms hang naturally. Your weight should be balanced between both feet — not on your heels or toes.",
+      },
+      {
+        title: "Alignment",
+        body: "Your feet, hips, and shoulders should point parallel to the target line, like train tracks (the ball on one rail, you on the other). Check your alignment with a club laid on the ground when you practice.",
+      },
+      {
+        title: "The basic swing",
+        body: "Think in three phases: a controlled backswing turning your shoulders (not just your arms), a smooth transition, and a downswing where the hips start the motion before the arms. Finish with your body facing the target and your weight on your front foot.",
+      },
+      {
+        title: "Common beginner mistakes",
+        body: "The most frequent ones: gripping the club too tightly, lifting your head before striking the ball, swinging as hard as possible (losing control), and using only your arms instead of turning your body. Practicing slowly and in control helps more than practicing fast without focus.",
+      },
+      {
+        title: "Short game: chip and putt",
+        body: "In putting, the clubhead should move like a pendulum, with the shoulders doing the work and the hands staying quiet relative to the body. When chipping, shift your weight and hands slightly ahead of the ball, and use a short, controlled stroke instead of a full swing.",
+      },
+      {
+        title: "How to practice",
+        body: "15-20 focused minutes on a single thing beats an unfocused hour. Start each session with short, controlled shots, build up distance gradually, and finish by practicing putts — that's where most strokes are saved in a real round.",
+      },
+    ],
+  },
+  stories: {
+    title: "Community stories",
+    subtitle:
+      "Share your real experience or read other players'. Nothing AI-generated: these are stories from real people.",
+    shareTitle: "Share your story",
+    titleLabel: "Title",
+    titlePlaceholder: "E.g. My first hole in one",
+    contentLabel: "Your story",
+    contentPlaceholder: "Tell us what happened, what you learned, or what you do to improve…",
+    submit: "Post",
+    submitting: "Posting…",
+    empty: "No stories yet. Be the first to share yours!",
+    delete: "Delete",
+    deleted: "Story deleted",
+    deleteError: "Couldn't delete this",
   },
   dateLocale: "en-US",
 };

@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, RotateCcw, Loader2 } from "lucide-react";
+import { Send, RotateCcw, Loader2, Volume2, VolumeX, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
+
+const VOICE_PREF_KEY = "mys-voice-enabled";
 
 type ChatMessage = {
   id: string;
@@ -13,6 +15,7 @@ type ChatMessage = {
   content: string;
   pending?: boolean;
   failed?: boolean;
+  audioUrl?: string;
 };
 
 export function CoachChat({
@@ -32,11 +35,58 @@ export function CoachChat({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [lastFailedContent, setLastFailedContent] = useState<string | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(VOICE_PREF_KEY);
+      if (stored !== null) setVoiceEnabled(stored === "true");
+    } catch {
+      // localStorage no disponible (modo privado, etc.): se queda en el valor por defecto
+    }
+  }, []);
+
+  function toggleVoice() {
+    setVoiceEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(VOICE_PREF_KEY, String(next));
+      } catch {
+        // no pasa nada si no se puede persistir
+      }
+      return next;
+    });
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  async function playMessageAudio(id: string, text: string) {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return; // la voz es un extra: si falla, el chat de texto sigue funcionando
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, audioUrl: url } : m)));
+
+      audioRef.current?.pause();
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      await audio.play().catch(() => {
+        // autoplay bloqueado por el navegador: el usuario puede darle al botón "Escuchar"
+      });
+    } catch {
+      // best-effort: nunca romper el chat por un fallo de voz
+    }
+  }
 
   async function send(content: string) {
     if (!content.trim() || sending) return;
@@ -52,6 +102,8 @@ export function CoachChat({
       { id: userMsgId, role: "USER", content },
       { id: assistantMsgId, role: "ASSISTANT", content: "", pending: true },
     ]);
+
+    let assistantText = "";
 
     try {
       const res = await fetch("/api/chat", {
@@ -85,6 +137,7 @@ export function CoachChat({
             | { type: "error"; message: string };
 
           if (event.type === "token") {
+            assistantText += event.text;
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMsgId ? { ...m, content: m.content + event.text, pending: false } : m
@@ -104,6 +157,8 @@ export function CoachChat({
               : m
           )
         );
+      } else if (voiceEnabled && assistantText.trim()) {
+        void playMessageAudio(assistantMsgId, assistantText);
       }
     } catch (err) {
       setLastFailedContent(content);
@@ -126,6 +181,17 @@ export function CoachChat({
 
   return (
     <div className="flex h-full flex-col">
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={toggleVoice}
+          title={voiceEnabled ? t.voiceOn : t.voiceOff}
+          className="flex items-center gap-1.5 rounded-full px-2 py-1 text-xs text-muted-foreground hover:bg-secondary/60"
+        >
+          {voiceEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+        </button>
+      </div>
+
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-1 py-2">
         {messages.length === 0 && (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">{t.emptyState}</p>
@@ -148,7 +214,19 @@ export function CoachChat({
               {m.pending && m.content.length === 0 ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                m.content
+                <>
+                  {m.content}
+                  {m.role === "ASSISTANT" && m.audioUrl && (
+                    <button
+                      type="button"
+                      onClick={() => new Audio(m.audioUrl).play().catch(() => {})}
+                      className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <Play className="size-3" />
+                      {t.playAudio}
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
