@@ -33,10 +33,11 @@ export const MOOD_SCORE: Record<Mood, number> = {
 export type MoodPoint = { label: string; mood: Mood; score: number };
 
 export function moodTrend(
-  entries: { mood: Mood; hole?: { number: number } | null }[]
+  entries: { mood: Mood; hole?: { number: number } | null }[],
+  labels: { hole: (n: number) => string; checkin: (n: number) => string }
 ): MoodPoint[] {
   return entries.map((e, i) => ({
-    label: e.hole ? `Hoyo ${e.hole.number}` : `Check-in ${i + 1}`,
+    label: e.hole ? labels.hole(e.hole.number) : labels.checkin(i + 1),
     mood: e.mood,
     score: MOOD_SCORE[e.mood],
   }));

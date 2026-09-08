@@ -7,10 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MoodPicker } from "@/components/mood-picker";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const HOLE_OPTIONS = [9, 18];
 
-export function NewRoundForm() {
+export function NewRoundForm({
+  t,
+  moodLabels,
+}: {
+  t: Dictionary["newRound"];
+  moodLabels: Dictionary["mood"];
+}) {
   const [state, formAction, pending] = useActionState(createRound, undefined);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -18,17 +25,17 @@ export function NewRoundForm() {
   return (
     <form action={formAction} className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="course">Campo</Label>
-        <Input id="course" name="course" placeholder="Ej. Club de Golf Las Encinas" required />
+        <Label htmlFor="course">{t.course}</Label>
+        <Input id="course" name="course" placeholder={t.coursePlaceholder} required />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="date">Fecha</Label>
+          <Label htmlFor="date">{t.date}</Label>
           <Input id="date" name="date" type="date" defaultValue={today} required />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="totalHoles">Nº de hoyos</Label>
+          <Label htmlFor="totalHoles">{t.totalHoles}</Label>
           <select
             id="totalHoles"
             name="totalHoles"
@@ -45,29 +52,23 @@ export function NewRoundForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="goal">Objetivo del día (opcional)</Label>
-        <Input id="goal" name="goal" placeholder="Ej. Disfrutar y no arrastrar un mal hoyo" />
+        <Label htmlFor="goal">{t.goal}</Label>
+        <Input id="goal" name="goal" placeholder={t.goalPlaceholder} />
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-secondary/30 p-4">
         <div>
-          <p className="font-medium">¿Cómo llegas hoy?</p>
-          <p className="text-sm text-muted-foreground">
-            Un check-in rápido antes de empezar, opcional.
-          </p>
+          <p className="font-medium">{t.moodPrompt}</p>
+          <p className="text-sm text-muted-foreground">{t.moodPromptSubtitle}</p>
         </div>
-        <MoodPicker name="initialMood" />
-        <Textarea
-          name="initialNote"
-          placeholder="Algo que quieras anotar (opcional)"
-          rows={2}
-        />
+        <MoodPicker name="initialMood" t={moodLabels} />
+        <Textarea name="initialNote" placeholder={t.notePlaceholder} rows={2} />
       </div>
 
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
 
       <Button type="submit" size="lg" disabled={pending} className="w-full">
-        {pending ? "Creando ronda…" : "Empezar ronda"}
+        {pending ? t.submitting : t.submit}
       </Button>
     </form>
   );

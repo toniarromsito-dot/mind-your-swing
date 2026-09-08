@@ -29,7 +29,9 @@ export async function updateProfile(_prev: ActionState, formData: FormData): Pro
     data,
   });
 
-  revalidatePath("/perfil");
+  // Revalida todo el árbol (no solo /perfil): un cambio de idioma afecta al
+  // <html lang> y a los textos de todas las páginas, no solo a esta.
+  revalidatePath("/", "layout");
   return undefined;
 }
 

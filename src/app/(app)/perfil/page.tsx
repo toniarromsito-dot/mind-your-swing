@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { ProfileForm } from "@/components/profile-form";
 import { signOutAction } from "@/actions/profile";
 import { Button } from "@/components/ui/button";
+import { getDictionary } from "@/lib/i18n/current-locale";
 
 export default async function ProfilePage() {
   const userId = await requireUserId();
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const { t } = await getDictionary();
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -22,20 +24,18 @@ export default async function ProfilePage() {
       </div>
 
       <ProfileForm
+        t={t.perfil}
         defaultName={user.name ?? ""}
         defaultHandicap={user.handicap}
         defaultCoachTone={user.coachTone}
         defaultLanguage={user.language}
       />
 
-      <p className="text-xs text-muted-foreground">
-        Mind Your Swing es un apoyo para el componente mental del golf y no sustituye la
-        terapia psicológica profesional.
-      </p>
+      <p className="text-xs text-muted-foreground">{t.perfil.disclaimer}</p>
 
       <form action={signOutAction} className="sm:hidden">
         <Button type="submit" variant="outline" className="w-full">
-          Cerrar sesión
+          {t.perfil.signOut}
         </Button>
       </form>
     </div>

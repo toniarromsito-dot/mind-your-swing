@@ -17,15 +17,27 @@ import { CoachChat } from "@/components/coach-chat";
 import { finishRound } from "@/actions/rounds";
 import { cn } from "@/lib/utils";
 import { formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { fmt } from "@/lib/i18n/format";
 
 type ChatMessage = { id: string; role: "USER" | "ASSISTANT"; content: string };
 
 export function RoundView({
   round,
   initialMessages,
+  t,
+  moodLabels,
+  golfLabels,
+  chatT,
+  quickPrompts,
 }: {
   round: Round & { holes: Hole[] };
   initialMessages: ChatMessage[];
+  t: Dictionary["round"];
+  moodLabels: Dictionary["mood"];
+  golfLabels: Dictionary["golfResult"];
+  chatT: Dictionary["chat"];
+  quickPrompts: readonly string[];
 }) {
   const firstUnplayed = round.holes.find((h) => h.strokes == null);
   const [currentHoleId, setCurrentHoleId] = useState(
@@ -54,7 +66,7 @@ export function RoundView({
           <form action={finishRoundBound}>
             <Button type="submit" variant="outline" size="sm" className="gap-2">
               <Flag className="size-4" />
-              Finalizar ronda
+              {t.finish}
             </Button>
           </form>
         )}
@@ -81,8 +93,20 @@ export function RoundView({
 
       {currentHole && (
         <div className="flex flex-col gap-4">
-          <HoleEditor key={`editor-${currentHole.id}`} roundId={round.id} hole={currentHole} />
-          <MoodCheckin key={`mood-${currentHole.id}`} roundId={round.id} holeId={currentHole.id} />
+          <HoleEditor
+            key={`editor-${currentHole.id}`}
+            roundId={round.id}
+            hole={currentHole}
+            t={t}
+            golfLabels={golfLabels}
+          />
+          <MoodCheckin
+            key={`mood-${currentHole.id}`}
+            roundId={round.id}
+            holeId={currentHole.id}
+            t={t}
+            moodLabels={moodLabels}
+          />
         </div>
       )}
 
@@ -92,15 +116,15 @@ export function RoundView({
         className="fixed right-4 bottom-20 z-20 gap-2 rounded-full shadow-lg sm:bottom-6"
       >
         <MessageCircle className="size-5" />
-        Hablar con el coach
+        {t.talkToCoach}
       </Button>
 
       <Drawer open={chatOpen} onOpenChange={setChatOpen}>
         <DrawerContent className="h-[85dvh]">
           <DrawerHeader>
-            <DrawerTitle>Coach mental</DrawerTitle>
+            <DrawerTitle>{t.coachTitle}</DrawerTitle>
             <DrawerDescription>
-              {currentHole ? `Hoyo ${currentHole.number} · ${round.course}` : round.course}
+              {currentHole ? `${fmt(t.hole, { n: currentHole.number })} · ${round.course}` : round.course}
             </DrawerDescription>
           </DrawerHeader>
           <div className="min-h-0 flex-1 px-4 pb-4">
@@ -108,6 +132,8 @@ export function RoundView({
               roundId={round.id}
               holeId={currentHole?.id}
               initialMessages={initialMessages}
+              t={chatT}
+              quickPrompts={quickPrompts}
             />
           </div>
         </DrawerContent>

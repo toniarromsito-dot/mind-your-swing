@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import type { Mood } from "@prisma/client";
-import { MOOD_EMOJI, MOOD_LABELS } from "@/lib/mood";
+import { MOOD_EMOJI } from "@/lib/mood";
 import { cn } from "@/lib/utils";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const MOODS: Mood[] = ["TRANQUILO", "NERVIOSO", "FRUSTRADO", "CONFIADO", "CONCENTRADO"];
 
@@ -11,10 +12,12 @@ export function MoodPicker({
   name,
   defaultValue,
   onChange,
+  t,
 }: {
   name: string;
   defaultValue?: Mood | null;
   onChange?: (mood: Mood) => void;
+  t: Dictionary["mood"];
 }) {
   const [selected, setSelected] = useState<Mood | null>(defaultValue ?? null);
 
@@ -39,7 +42,7 @@ export function MoodPicker({
             )}
           >
             <span className="text-base leading-none">{MOOD_EMOJI[mood]}</span>
-            {MOOD_LABELS[mood]}
+            {t[mood]}
           </button>
         );
       })}

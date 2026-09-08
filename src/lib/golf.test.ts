@@ -6,19 +6,22 @@ import {
   relativeToPar,
   totalStrokes,
 } from "./golf";
+import { dictionaries } from "./i18n/dictionaries";
+
+const labels = dictionaries.es.golfResult;
 
 describe("holeResultLabel", () => {
   it("etiqueta los resultados estándar", () => {
-    expect(holeResultLabel(4, 3)).toBe("Birdie");
-    expect(holeResultLabel(4, 4)).toBe("Par");
-    expect(holeResultLabel(4, 5)).toBe("Bogey");
-    expect(holeResultLabel(4, 6)).toBe("Doble bogey");
-    expect(holeResultLabel(5, 2)).toBe("Albatross");
-    expect(holeResultLabel(4, 2)).toBe("Eagle");
+    expect(holeResultLabel(4, 3, labels)).toBe("Birdie");
+    expect(holeResultLabel(4, 4, labels)).toBe("Par");
+    expect(holeResultLabel(4, 5, labels)).toBe("Bogey");
+    expect(holeResultLabel(4, 6, labels)).toBe("Doble bogey");
+    expect(holeResultLabel(5, 2, labels)).toBe("Albatross");
+    expect(holeResultLabel(4, 2, labels)).toBe("Eagle");
   });
 
   it("cae a formato +N/-N para resultados fuera de la tabla", () => {
-    expect(holeResultLabel(4, 8)).toBe("+4");
+    expect(holeResultLabel(4, 8, labels)).toBe("+4");
   });
 });
 

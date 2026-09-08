@@ -5,7 +5,7 @@ import { Send, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { QUICK_PROMPTS } from "@/lib/coach/prompt";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type ChatMessage = {
   id: string;
@@ -19,10 +19,14 @@ export function CoachChat({
   roundId,
   holeId,
   initialMessages,
+  t,
+  quickPrompts,
 }: {
   roundId: string;
   holeId?: string | null;
   initialMessages: { id: string; role: "USER" | "ASSISTANT"; content: string }[];
+  t: Dictionary["chat"];
+  quickPrompts: readonly string[];
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -58,7 +62,7 @@ export function CoachChat({
 
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? "No se ha podido contactar con el coach.");
+        throw new Error(data?.error ?? t.connectionError);
       }
 
       const reader = res.body.getReader();
@@ -108,10 +112,7 @@ export function CoachChat({
           m.id === assistantMsgId
             ? {
                 ...m,
-                content:
-                  err instanceof Error
-                    ? err.message
-                    : "El coach no ha podido responder. Inténtalo de nuevo.",
+                content: err instanceof Error ? err.message : t.genericError,
                 pending: false,
                 failed: true,
               }
@@ -127,9 +128,7 @@ export function CoachChat({
     <div className="flex h-full flex-col">
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-1 py-2">
         {messages.length === 0 && (
-          <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-            Cuéntame cómo estás o pulsa una sugerencia rápida.
-          </p>
+          <p className="px-2 py-6 text-center text-sm text-muted-foreground">{t.emptyState}</p>
         )}
         {messages.map((m) => (
           <div
@@ -165,12 +164,12 @@ export function CoachChat({
           onClick={() => send(lastFailedContent)}
         >
           <RotateCcw className="size-3.5" />
-          Reintentar
+          {t.retry}
         </Button>
       )}
 
       <div className="flex flex-wrap gap-2 py-2">
-        {QUICK_PROMPTS.map((p) => (
+        {quickPrompts.map((p) => (
           <button
             key={p}
             type="button"
@@ -199,7 +198,7 @@ export function CoachChat({
               send(input);
             }
           }}
-          placeholder="Escribe al coach…"
+          placeholder={t.inputPlaceholder}
           rows={1}
           className="min-h-10 flex-1 resize-none"
           disabled={sending}

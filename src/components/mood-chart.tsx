@@ -11,13 +11,9 @@ const MOOD_TICKS: Record<number, string> = {
   [2]: "😎",
 };
 
-export function MoodChart({ data }: { data: MoodPoint[] }) {
+export function MoodChart({ data, emptyLabel }: { data: MoodPoint[]; emptyLabel: string }) {
   if (data.length === 0) {
-    return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No se registraron check-ins de ánimo en esta ronda.
-      </p>
-    );
+    return <p className="py-8 text-center text-sm text-muted-foreground">{emptyLabel}</p>;
   }
 
   return (

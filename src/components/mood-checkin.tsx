@@ -7,15 +7,18 @@ import { createMoodEntry } from "@/actions/mood";
 import { MoodPicker } from "@/components/mood-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function MoodCheckin({
   roundId,
   holeId,
-  label = "¿Cómo te sientes tras este hoyo?",
+  t,
+  moodLabels,
 }: {
   roundId: string;
   holeId?: string;
-  label?: string;
+  t: Dictionary["round"];
+  moodLabels: Dictionary["mood"];
 }) {
   const [mood, setMood] = useState<Mood | null>(null);
   const [note, setNote] = useState("");
@@ -23,33 +26,33 @@ export function MoodCheckin({
 
   function save() {
     if (!mood) {
-      toast.error("Elige cómo te sientes primero");
+      toast.error(t.chooseMoodFirst);
       return;
     }
     startTransition(async () => {
       try {
         await createMoodEntry({ roundId, holeId, mood, note });
-        toast.success("Check-in guardado");
+        toast.success(t.checkinSaved);
         setMood(null);
         setNote("");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "No se ha podido guardar");
+        toast.error(err instanceof Error ? err.message : t.saveError);
       }
     });
   }
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-secondary/30 p-4">
-      <p className="text-sm font-medium">{label}</p>
-      <MoodPicker name="mood" onChange={setMood} defaultValue={mood} />
+      <p className="text-sm font-medium">{t.moodCheckinLabel}</p>
+      <MoodPicker name="mood" onChange={setMood} defaultValue={mood} t={moodLabels} />
       <Textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Nota opcional"
+        placeholder={t.notePlaceholder}
         rows={2}
       />
       <Button size="sm" onClick={save} disabled={isPending} className="self-start">
-        {isPending ? "Guardando…" : "Guardar check-in"}
+        {isPending ? t.saving : t.saveCheckin}
       </Button>
     </div>
   );

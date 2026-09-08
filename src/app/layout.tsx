@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { getDictionary } from "@/lib/i18n/current-locale";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,15 +20,20 @@ const newsreader = Newsreader({
   style: ["normal", "italic"],
 });
 
-export const metadata: Metadata = {
-  title: "Mind Your Swing",
-  description: "Tu coach mental de golf: calma antes del golpe, foco durante la ronda.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getDictionary();
+  return {
+    title: t.meta.title,
+    description: t.meta.description,
+  };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const { locale } = await getDictionary();
+
   return (
     <html
-      lang="es"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">

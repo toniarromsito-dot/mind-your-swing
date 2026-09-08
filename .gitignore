@@ -50,3 +50,8 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# neon CLI (local project link + generated agent skill docs)
+.neon
+/.claude/skills/
+/skills-lock.json

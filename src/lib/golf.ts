@@ -1,23 +1,24 @@
+import type { Dictionary } from "./i18n/dictionaries";
+
 export type HoleResult = {
   number: number;
   par: number;
   strokes: number | null;
 };
 
-const RESULT_LABELS: Record<number, string> = {
-  [-3]: "Albatross",
-  [-2]: "Eagle",
-  [-1]: "Birdie",
-  [0]: "Par",
-  [1]: "Bogey",
-  [2]: "Doble bogey",
-  [3]: "Triple bogey",
-};
-
 /** Etiqueta del resultado de un hoyo relativa al par (Birdie, Par, Bogey...). */
-export function holeResultLabel(par: number, strokes: number): string {
+export function holeResultLabel(par: number, strokes: number, labels: Dictionary["golfResult"]): string {
   const diff = strokes - par;
-  if (diff in RESULT_LABELS) return RESULT_LABELS[diff];
+  const byDiff: Record<number, string> = {
+    [-3]: labels.albatross,
+    [-2]: labels.eagle,
+    [-1]: labels.birdie,
+    [0]: labels.par,
+    [1]: labels.bogey,
+    [2]: labels.dobleBogey,
+    [3]: labels.tripleBogey,
+  };
+  if (diff in byDiff) return byDiff[diff];
   return diff > 0 ? `+${diff}` : `${diff}`;
 }
 
