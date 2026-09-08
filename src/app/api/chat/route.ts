@@ -93,7 +93,8 @@ export async function POST(req: Request) {
 
         await anthropicStream.finalMessage();
         controller.enqueue(ndjson({ type: "done" }));
-      } catch {
+      } catch (err) {
+        console.error("Error llamando a Anthropic:", err);
         controller.enqueue(
           ndjson({
             type: "error",

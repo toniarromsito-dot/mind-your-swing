@@ -122,6 +122,8 @@ Abre [http://localhost:3000](http://localhost:3000).
    ```
    `ANTHROPIC_MODEL` es configurable: cambia el modelo sin tocar código.
 
+   Si al probar el chat ves en la terminal un error `"This API key is not scoped to a workspace"`, tu key no está asociada a un workspace concreto. Ve a **console.anthropic.com → Settings → Workspaces**, copia el ID del workspace que quieras usar, y añádelo como `ANTHROPIC_WORKSPACE_ID=` en tu `.env`.
+
 ### 4.3. `NEXTAUTH_SECRET`
 
 Genera uno con:
