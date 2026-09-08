@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { useConversation } from "@elevenlabs/react";
+import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { Phone, PhoneOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function CallCoach({
+export function CallCoach(props: { roundId: string; holeId?: string | null; t: Dictionary["chat"] }) {
+  return (
+    <ConversationProvider>
+      <CallCoachInner {...props} />
+    </ConversationProvider>
+  );
+}
+
+function CallCoachInner({
   roundId,
   holeId,
   t,
