@@ -1,0 +1,169 @@
+// Mind Your Swing — Prisma schema
+// Postgres in production; see README for local dev options.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth.js (NextAuth) models ----------
+// Required shape for @auth/prisma-adapter.
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Domain models ----------
+
+enum CoachTone {
+  CERCANO
+  FORMAL
+}
+
+enum RoundStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Mood {
+  TRANQUILO
+  NERVIOSO
+  FRUSTRADO
+  CONFIADO
+  CONCENTRADO
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+
+  handicap   Float?
+  coachTone  CoachTone @default(CERCANO)
+  language   String    @default("es")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts   Account[]
+  sessions   Session[]
+  rounds     Round[]
+  moodEntries MoodEntry[]
+  messages   Message[]
+}
+
+model Round {
+  id         String      @id @default(cuid())
+  userId     String
+  course     String
+  date       DateTime
+  totalHoles Int         @default(18)
+  goal       String?
+  status     RoundStatus @default(IN_PROGRESS)
+  insight    String?     @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holes       Hole[]
+  moodEntries MoodEntry[]
+  messages    Message[]
+
+  @@index([userId, date])
+}
+
+model Hole {
+  id       String  @id @default(cuid())
+  roundId  String
+  number   Int
+  par      Int
+  distance Int?
+  strokes  Int?
+  putts    Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  round       Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  moodEntries MoodEntry[]
+
+  @@unique([roundId, number])
+}
+
+model MoodEntry {
+  id      String @id @default(cuid())
+  userId  String
+  roundId String
+  holeId  String?
+
+  mood Mood
+  note String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  hole  Hole?  @relation(fields: [holeId], references: [id], onDelete: Cascade)
+
+  @@index([roundId, createdAt])
+}
+
+model Message {
+  id      String @id @default(cuid())
+  userId  String
+  roundId String
+
+  role    MessageRole
+  content String      @db.Text
+
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@index([roundId, createdAt])
+}

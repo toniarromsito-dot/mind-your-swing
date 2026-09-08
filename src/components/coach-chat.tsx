@@ -1,0 +1,213 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { Send, RotateCcw, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { QUICK_PROMPTS } from "@/lib/coach/prompt";
+
+type ChatMessage = {
+  id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  pending?: boolean;
+  failed?: boolean;
+};
+
+export function CoachChat({
+  roundId,
+  holeId,
+  initialMessages,
+}: {
+  roundId: string;
+  holeId?: string | null;
+  initialMessages: { id: string; role: "USER" | "ASSISTANT"; content: string }[];
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [lastFailedContent, setLastFailedContent] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages]);
+
+  async function send(content: string) {
+    if (!content.trim() || sending) return;
+    setInput("");
+    setSending(true);
+    setLastFailedContent(null);
+
+    const userMsgId = `local-${Date.now()}`;
+    const assistantMsgId = `local-${Date.now()}-a`;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: userMsgId, role: "USER", content },
+      { id: assistantMsgId, role: "ASSISTANT", content: "", pending: true },
+    ]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roundId, holeId: holeId ?? undefined, content }),
+      });
+
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "No se ha podido contactar con el coach.");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let sawError: string | null = null;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const event = JSON.parse(line) as
+            | { type: "token"; text: string }
+            | { type: "done" }
+            | { type: "error"; message: string };
+
+          if (event.type === "token") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsgId ? { ...m, content: m.content + event.text, pending: false } : m
+              )
+            );
+          } else if (event.type === "error") {
+            sawError = event.message;
+          }
+        }
+      }
+
+      if (sawError) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId && m.content.length === 0
+              ? { ...m, content: sawError!, pending: false, failed: true }
+              : m
+          )
+        );
+      }
+    } catch (err) {
+      setLastFailedContent(content);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMsgId
+            ? {
+                ...m,
+                content:
+                  err instanceof Error
+                    ? err.message
+                    : "El coach no ha podido responder. Inténtalo de nuevo.",
+                pending: false,
+                failed: true,
+              }
+            : m
+        )
+      );
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-1 py-2">
+        {messages.length === 0 && (
+          <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+            Cuéntame cómo estás o pulsa una sugerencia rápida.
+          </p>
+        )}
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className={cn("flex", m.role === "USER" ? "justify-end" : "justify-start")}
+          >
+            <div
+              className={cn(
+                "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
+                m.role === "USER"
+                  ? "bg-primary text-primary-foreground"
+                  : m.failed
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-secondary text-secondary-foreground"
+              )}
+            >
+              {m.pending && m.content.length === 0 ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                m.content
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {lastFailedContent && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mb-1 gap-2 self-start text-muted-foreground"
+          onClick={() => send(lastFailedContent)}
+        >
+          <RotateCcw className="size-3.5" />
+          Reintentar
+        </Button>
+      )}
+
+      <div className="flex flex-wrap gap-2 py-2">
+        {QUICK_PROMPTS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            disabled={sending}
+            onClick={() => send(p)}
+            className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary/60 disabled:opacity-50"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          send(input);
+        }}
+        className="flex items-end gap-2 border-t border-border pt-3"
+      >
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              send(input);
+            }
+          }}
+          placeholder="Escribe al coach…"
+          rows={1}
+          className="min-h-10 flex-1 resize-none"
+          disabled={sending}
+        />
+        <Button type="submit" size="icon" disabled={sending || !input.trim()}>
+          <Send className="size-4" />
+        </Button>
+      </form>
+    </div>
+  );
+}
