@@ -3,13 +3,26 @@ import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { ProfileForm } from "@/components/profile-form";
 import { signOutAction } from "@/actions/profile";
+import { createCheckoutSession, createPortalSession } from "@/actions/stripe";
+import { isStripeConfigured } from "@/lib/stripe";
+import { getVoiceMinutesUsedThisPeriod, INCLUDED_VOICE_MINUTES } from "@/lib/billing";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/lib/i18n/current-locale";
+import { fmt } from "@/lib/i18n/format";
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
   const userId = await requireUserId();
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   const { t } = await getDictionary();
+  const { checkout } = await searchParams;
+
+  const minutesUsed = await getVoiceMinutesUsedThisPeriod(userId);
+  const minutesIncluded = INCLUDED_VOICE_MINUTES[user.plan];
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -22,6 +35,51 @@ export default async function ProfilePage() {
           <p className="text-sm text-muted-foreground">{user.email}</p>
         </div>
       </div>
+
+      {checkout === "success" && (
+        <p className="rounded-xl border border-primary/30 bg-secondary/40 p-3 text-sm">
+          {t.perfil.checkoutSuccess}
+        </p>
+      )}
+      {checkout === "cancel" && (
+        <p className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
+          {t.perfil.checkoutCancelled}
+        </p>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-heading text-lg">{t.perfil.billingTitle}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {user.plan === "PRO" ? t.perfil.proPlan : t.perfil.freePlan}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {fmt(t.perfil.minutesUsed, { used: Math.round(minutesUsed), included: minutesIncluded })}
+            </span>
+          </div>
+
+          {isStripeConfigured() ? (
+            user.plan === "PRO" ? (
+              <form action={createPortalSession}>
+                <Button type="submit" variant="outline" size="sm">
+                  {t.perfil.manageSubscription}
+                </Button>
+              </form>
+            ) : (
+              <form action={createCheckoutSession}>
+                <Button type="submit" size="sm">
+                  {t.perfil.upgrade}
+                </Button>
+              </form>
+            )
+          ) : (
+            <p className="text-xs text-muted-foreground">{t.perfil.billingUnavailable}</p>
+          )}
+        </CardContent>
+      </Card>
 
       <ProfileForm
         t={t.perfil}

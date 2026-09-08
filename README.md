@@ -15,6 +15,8 @@ Implementado y funcionando de extremo a extremo en local (build, tests unitarios
 - Chat con el coach IA (Claude, streaming), con contexto real de la ronda/hoyo actual, tono e historial reciente del jugador. Tono motivador, no solo calmado.
 - Voz del coach (opcional, ElevenLabs): las respuestas se pueden escuchar además de leer, con un interruptor para silenciarlas.
 - Llamada de voz en tiempo real (opcional, ElevenLabs Conversational AI): botón "Llamar al coach" para una conversación de voz en vivo, generada con el mismo Claude que el chat de texto.
+- Instalable como app (PWA): "Añadir a pantalla de inicio" / "Instalar app" desde el móvil, con icono y modo standalone.
+- Suscripción (opcional, Stripe): plan Gratis (5 min de llamada/mes) y plan Pro (40 min/mes), con checkout y portal de facturación.
 - Check-in de estado de ánimo por hoyo y pre-ronda.
 - Resumen post-ronda con evolución del ánimo (gráfico) y cierre generado por el coach.
 - Historial de rondas y perfil de usuario con preferencias del coach.
@@ -48,11 +50,12 @@ Dos cosas **solo tú puedes completar** porque requieren tus propias credenciale
 - **i18n sin librería externa**: `src/lib/i18n/dictionaries.ts` centraliza todos los textos (es/en). El idioma se resuelve en `src/lib/i18n/current-locale.ts`: si hay sesión, manda `User.language` (persistido en el perfil); si no, una cookie que cambia el toggle de la landing. Los diccionarios que cruzan a un Client Component se mantienen como strings/arrays planos (las funciones no pueden pasar la frontera Server→Client Component de Next.js); para los pocos textos con interpolación se usa una plantilla `"Hoyo {n}"` + el helper `fmt()` (`src/lib/i18n/format.ts`).
 - **Voz vía ElevenLabs, no navegador**: se eligió una API de voz realista sobre la Web Speech API nativa (gratis pero con voces muy robóticas) porque el objetivo es que suene bien mientras se juega, no solo que funcione. La llamada vive en `/api/tts` (backend), y el modelo `eleven_multilingual_v2` cubre es/en sin cambiar de modelo según el idioma. Es "best-effort": si falla o no hay clave, el chat de texto sigue funcionando exactamente igual.
 - **Llamada en vivo: Claude detrás de un agente de ElevenLabs, no el LLM de ElevenLabs**: la conversación de voz usa ElevenLabs Conversational AI solo para el oído y la voz (STT/TTS); el texto lo sigue generando Claude, vía la integración "Custom LLM" de ElevenLabs. `src/app/api/voice/v1/chat/completions/route.ts` expone un endpoint compatible con la API de Chat Completions de OpenAI (streaming SSE) que por dentro llama a Anthropic — así el agente de voz usa exactamente el mismo modelo, tono y reglas que el chat de texto. Protegido con un secreto compartido (`ELEVENLABS_CUSTOM_LLM_SECRET`) en vez de la sesión del usuario, porque quien llama es el servidor de ElevenLabs, no el navegador. El contexto real de la ronda (campo, hoyo, ánimo) se pasa como "dynamic variables" de ElevenLabs, generadas en `src/app/api/voice/session/route.ts` a partir de los mismos datos que usa el chat de texto.
-- **Contenido de swing separado del coach mental**: `/aprender` es contenido estático (estructurado en el diccionario de i18n, no generado por IA en tiempo real) para no mezclar el rol del coach — que evita a propósito la mecánica de swing — con instrucción técnica.
+- **Contenido de swing separado del coach mental**: `/aprender` es contenido estático (estructurado en el diccionario de i18n, no generado por IA en tiempo real) con fundamentos genéricos para principiantes. El coach en sí también puede responder preguntas técnicas puntuales si se lo piden (no las evita), pero su foco por diseño sigue siendo el componente mental — `/aprender` existe como referencia aparte, no como su reemplazo.
+- **Límite de minutos de llamada por mes natural, no por ciclo de Stripe**: `src/lib/billing.ts` suma la duración de las llamadas (`VoiceCallLog`) desde el día 1 del mes en curso, en vez de consultar el `current_period_start` real de la suscripción en Stripe. Es una simplificación deliberada (evita una llamada a la API de Stripe en cada intento de llamada) razonable para el volumen de esta app; si se necesitara más precisión o facturación por consumo real, habría que sustituirlo por el ciclo exacto de Stripe.
 
 ### Modelo de datos (resumen)
 
-`User` (con preferencias de coach: tono, idioma) → `Round` (ronda de golf) → `Hole` (hoyos de esa ronda, par/distancia/golpes/putts) y `MoodEntry` (check-in de ánimo, ligado a una ronda y opcionalmente a un hoyo) → `Message` (mensajes de la conversación con el coach, rol usuario/asistente). `Story` (historias de la comunidad) cuelga solo de `User`, independiente de las rondas. Esquema completo en [`prisma/schema.prisma`](prisma/schema.prisma).
+`User` (con preferencias de coach: tono, idioma; y de suscripción: `plan`, IDs de Stripe) → `Round` (ronda de golf) → `Hole` (hoyos de esa ronda, par/distancia/golpes/putts) y `MoodEntry` (check-in de ánimo, ligado a una ronda y opcionalmente a un hoyo) → `Message` (mensajes de la conversación con el coach, rol usuario/asistente). `Story` (historias de la comunidad) y `VoiceCallLog` (duración de cada llamada, para el límite de minutos del plan) cuelgan solo de `User`, independientes de las rondas. Esquema completo en [`prisma/schema.prisma`](prisma/schema.prisma).
 
 ---
 
@@ -187,7 +190,23 @@ Todo esto también se puede hacer por API (así es como se configuró en este pr
 
 Sin `ELEVENLABS_AGENT_ID`/`ELEVENLABS_CUSTOM_LLM_SECRET` configurados, el botón de llamada simplemente muestra un error controlado; el resto de la app no se ve afectado.
 
-### 4.6. Resumen de variables (`.env.example`)
+### 4.6. Suscripción (Stripe) — opcional
+
+Plan Gratis (5 min de llamada/mes) vs. plan Pro (40 min/mes) — ver `src/lib/billing.ts` para los límites exactos. Sin esto configurado, todo el mundo se queda en el plan Gratis y el botón "Pasar a Pro" del perfil avisa de que los pagos no están listos; el resto de la app funciona igual.
+
+1. Crea una cuenta en [dashboard.stripe.com/register](https://dashboard.stripe.com/register) (gratis, comisión solo por transacción). Trabaja en **modo Test** al principio (interruptor arriba a la derecha del dashboard).
+2. **Developers → API keys**, copia la **Secret key** (`sk_test_...`) a `.env` como `STRIPE_SECRET_KEY=`.
+3. **Product catalog → Add product**: crea un producto (ej. "Mind Your Swing Pro"), precio recurrente mensual (ej. 7,99€/mes). Copia el **Price ID** (`price_...`) a `.env` como `STRIPE_PRO_PRICE_ID=`.
+4. **Developers → Webhooks → Add endpoint**:
+   - URL: `https://<tu-dominio>/api/stripe/webhook`
+   - Eventos a escuchar: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+   - Copia el **Signing secret** (`whsec_...`) a `.env`/Vercel como `STRIPE_WEBHOOK_SECRET=`.
+5. Para probar en local sin desplegar, usa la [Stripe CLI](https://docs.stripe.com/stripe-cli): `stripe listen --forward-to localhost:3000/api/stripe/webhook` (te da un `whsec_...` propio para local).
+6. Cuando quieras cobrar de verdad, cambia el interruptor del dashboard a **modo Live** y repite los pasos 2-4 con las claves `sk_live_...` / `price_...` / `whsec_...` de producción.
+
+**Cómo se aplican los minutos incluidos**: cada llamada terminada se registra en `VoiceCallLog` (duración en segundos). `/api/voice/session` suma los minutos usados en lo que va de mes natural antes de dejar empezar una llamada nueva; si se supera el límite del plan, devuelve un 402 y la UI pide pasar a Pro. Es una aproximación al mes natural, no al ciclo exacto de facturación de Stripe — suficiente para el volumen de esta app, pero anótalo si migras a facturación por consumo más fina.
+
+### 4.7. Resumen de variables (`.env.example`)
 
 ```
 DATABASE_URL=
@@ -202,6 +221,9 @@ ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=
 ELEVENLABS_AGENT_ID=
 ELEVENLABS_CUSTOM_LLM_SECRET=
+STRIPE_SECRET_KEY=
+STRIPE_PRO_PRICE_ID=
+STRIPE_WEBHOOK_SECRET=
 ```
 
 ---
@@ -243,6 +265,7 @@ Crea una base de datos Postgres en [Neon](https://neon.tech) o [Supabase](https:
    - `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (y `ANTHROPIC_WORKSPACE_ID` si tu key lo pide).
    - `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` (opcionales, solo si quieres voz en producción).
    - `ELEVENLABS_AGENT_ID`, `ELEVENLABS_CUSTOM_LLM_SECRET` (opcionales, solo para la llamada de voz en tiempo real — ver 4.5; el agente debe apuntar a este mismo dominio de producción).
+   - `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET` (opcionales, solo para cobrar el plan Pro — ver 4.6; usa las claves `sk_live_...` cuando actives el modo Live en Stripe).
 3. Despliega.
 
 ### 6.3. Migraciones en producción

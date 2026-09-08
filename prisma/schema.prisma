@@ -74,6 +74,11 @@ enum MessageRole {
   ASSISTANT
 }
 
+enum Plan {
+  FREE
+  PRO
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -85,15 +90,36 @@ model User {
   coachTone  CoachTone @default(CERCANO)
   language   String    @default("es")
 
+  // Suscripción / Stripe
+  plan                     Plan      @default(FREE)
+  stripeCustomerId         String?   @unique
+  stripeSubscriptionId     String?   @unique
+  stripeSubscriptionStatus String?
+  currentPeriodEnd         DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts   Account[]
-  sessions   Session[]
-  rounds     Round[]
-  moodEntries MoodEntry[]
-  messages   Message[]
-  stories    Story[]
+  accounts      Account[]
+  sessions      Session[]
+  rounds        Round[]
+  moodEntries   MoodEntry[]
+  messages      Message[]
+  stories       Story[]
+  voiceCallLogs VoiceCallLog[]
+}
+
+// Registro de duración de cada llamada de voz con el coach, para aplicar
+// los minutos incluidos en cada plan (ver src/lib/billing.ts).
+model VoiceCallLog {
+  id              String   @id @default(cuid())
+  userId          String
+  durationSeconds Int
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Round {

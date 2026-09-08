@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { Phone, PhoneOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,6 +15,20 @@ export function CallCoach(props: { roundId: string; holeId?: string | null; t: D
   );
 }
 
+function logCallDuration(startedAt: number | null) {
+  if (startedAt == null) return;
+  const durationSeconds = Math.round((Date.now() - startedAt) / 1000);
+  if (durationSeconds <= 0) return;
+  fetch("/api/voice/log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ durationSeconds }),
+    keepalive: true,
+  }).catch(() => {
+    // best-effort: si falla, en el peor caso ese tramo no cuenta para el límite mensual
+  });
+}
+
 function CallCoachInner({
   roundId,
   holeId,
@@ -25,9 +39,14 @@ function CallCoachInner({
   t: Dictionary["chat"];
 }) {
   const [connecting, setConnecting] = useState(false);
+  const callStartRef = useRef<number | null>(null);
 
   const conversation = useConversation({
     onError: () => toast.error(t.callError),
+    onDisconnect: () => {
+      logCallDuration(callStartRef.current);
+      callStartRef.current = null;
+    },
   });
 
   const inCall = conversation.status === "connected";
@@ -50,10 +69,14 @@ function CallCoachInner({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
+        if (data?.code === "VOICE_LIMIT_REACHED") {
+          throw new Error(t.callLimitReached);
+        }
         throw new Error(data?.error ?? t.callUnavailable);
       }
       const { signedUrl, dynamicVariables } = await res.json();
       await conversation.startSession({ signedUrl, dynamicVariables });
+      callStartRef.current = Date.now();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t.callError);
     } finally {

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getCoachContext } from "@/lib/coach/context";
 import { buildDynamicVariables } from "@/lib/coach/voice-variables";
+import { canStartVoiceCall } from "@/lib/billing";
 
 export const runtime = "nodejs";
 
@@ -43,6 +45,20 @@ export async function POST(req: Request) {
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+  }
+
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
+  const usage = await canStartVoiceCall(session.user.id, user.plan);
+  if (!usage.allowed) {
+    return NextResponse.json(
+      {
+        error: "Has usado todos los minutos de llamada de este mes.",
+        code: "VOICE_LIMIT_REACHED",
+        minutesUsed: usage.minutesUsed,
+        minutesIncluded: usage.minutesIncluded,
+      },
+      { status: 402 }
+    );
   }
 
   let dynamicVariables: Record<string, string>;

@@ -119,6 +119,7 @@ const es = {
     micDenied: "Necesitamos acceso al micrófono para la llamada.",
     callError: "No se ha podido iniciar la llamada. Inténtalo de nuevo.",
     callUnavailable: "La llamada con el coach no está disponible ahora mismo.",
+    callLimitReached: "Has usado tus minutos de llamada de este mes. Ve a tu perfil para ampliar el plan.",
   },
   quickPrompts: [
     "Estoy nervioso",
@@ -159,6 +160,15 @@ const es = {
     disclaimer:
       "Mind Your Swing es un apoyo para el componente mental del golf y no sustituye la terapia psicológica profesional.",
     signOut: "Cerrar sesión",
+    billingTitle: "Suscripción",
+    freePlan: "Plan Gratis",
+    proPlan: "Plan Pro",
+    minutesUsed: "{used} / {included} min de llamada usados este mes",
+    upgrade: "Pasar a Pro",
+    manageSubscription: "Gestionar suscripción",
+    checkoutSuccess: "¡Bienvenido al plan Pro!",
+    checkoutCancelled: "Suscripción cancelada, no se ha realizado ningún cobro.",
+    billingUnavailable: "Los pagos no están configurados todavía.",
   },
   learn: {
     title: "Aprende los fundamentos",
@@ -334,6 +344,7 @@ const en: typeof es = {
     micDenied: "We need microphone access for the call.",
     callError: "Couldn't start the call. Please try again.",
     callUnavailable: "Calling the coach isn't available right now.",
+    callLimitReached: "You've used your call minutes for this month. Go to your profile to upgrade your plan.",
   },
   quickPrompts: [
     "I'm nervous",
@@ -374,6 +385,15 @@ const en: typeof es = {
     disclaimer:
       "Mind Your Swing supports the mental side of golf and is not a substitute for professional psychological therapy.",
     signOut: "Sign out",
+    billingTitle: "Subscription",
+    freePlan: "Free plan",
+    proPlan: "Pro plan",
+    minutesUsed: "{used} / {included} call minutes used this month",
+    upgrade: "Upgrade to Pro",
+    manageSubscription: "Manage subscription",
+    checkoutSuccess: "Welcome to the Pro plan!",
+    checkoutCancelled: "Subscription cancelled, you haven't been charged.",
+    billingUnavailable: "Payments aren't configured yet.",
   },
   learn: {
     title: "Learn the fundamentals",
