@@ -26,10 +26,10 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("Suele registrar nerviosismo en hoyos par 3.");
   });
 
-  it("usa un tono breve durante la ronda e instruye evitar mecánica de swing", () => {
+  it("usa un tono breve durante la ronda y permite responder preguntas técnicas si se piden", () => {
     const prompt = buildSystemPrompt(baseContext);
     expect(prompt).toMatch(/breve por defecto/i);
-    expect(prompt).toMatch(/no eres un profesor técnico de swing/i);
+    expect(prompt).toMatch(/si el jugador te pregunta por algo técnico/i);
   });
 
   it("permite respuestas más elaboradas antes y después de la ronda", () => {

@@ -23,6 +23,7 @@
     "@anthropic-ai/sdk": "^0.124.0",
     "@auth/prisma-adapter": "^2.11.3",
     "@base-ui/react": "^1.8.0",
+    "@elevenlabs/react": "^1.15.2",
     "@prisma/client": "^6.19.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

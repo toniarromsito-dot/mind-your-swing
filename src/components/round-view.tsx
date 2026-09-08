@@ -14,6 +14,7 @@ import {
 import { HoleEditor } from "@/components/hole-editor";
 import { MoodCheckin } from "@/components/mood-checkin";
 import { CoachChat } from "@/components/coach-chat";
+import { CallCoach } from "@/components/call-coach";
 import { finishRound } from "@/actions/rounds";
 import { cn } from "@/lib/utils";
 import { formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
@@ -127,14 +128,17 @@ export function RoundView({
               {currentHole ? `${fmt(t.hole, { n: currentHole.number })} · ${round.course}` : round.course}
             </DrawerDescription>
           </DrawerHeader>
-          <div className="min-h-0 flex-1 px-4 pb-4">
-            <CoachChat
-              roundId={round.id}
-              holeId={currentHole?.id}
-              initialMessages={initialMessages}
-              t={chatT}
-              quickPrompts={quickPrompts}
-            />
+          <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4">
+            <CallCoach roundId={round.id} holeId={currentHole?.id} t={chatT} />
+            <div className="min-h-0 flex-1">
+              <CoachChat
+                roundId={round.id}
+                holeId={currentHole?.id}
+                initialMessages={initialMessages}
+                t={chatT}
+                quickPrompts={quickPrompts}
+              />
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
