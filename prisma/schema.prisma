@@ -79,6 +79,11 @@ enum Plan {
   PRO
 }
 
+enum SwingVideoStatus {
+  PENDING
+  REVIEWED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -86,9 +91,9 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  handicap   Float?
-  coachTone  CoachTone @default(CERCANO)
-  language   String    @default("es")
+  handicap  Float?
+  coachTone CoachTone @default(CERCANO)
+  language  String    @default("es")
 
   // Suscripción / Stripe
   plan                     Plan      @default(FREE)
@@ -107,6 +112,34 @@ model User {
   messages      Message[]
   stories       Story[]
   voiceCallLogs VoiceCallLog[]
+  swingVideos   SwingVideo[]
+}
+
+// Vídeo de swing subido por un jugador (plan Pro). Recibe una puntuación
+// automática (estimación heurística a partir de pose estimation en el
+// navegador — no un diagnóstico clínico) al instante, y opcionalmente
+// feedback escrito de un revisor humano más adelante.
+model SwingVideo {
+  id       String           @id @default(cuid())
+  userId   String
+  videoUrl String
+  note     String?          @db.Text
+  status   SwingVideoStatus @default(PENDING)
+  feedback String?          @db.Text
+
+  // Puntuación y métricas automáticas (heurística de biomecánica sobre
+  // keypoints extraídos con MediaPipe Pose en el cliente).
+  score      Int?
+  metrics    Json?
+  aiFeedback String? @db.Text
+
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 // Registro de duración de cada llamada de voz con el coach, para aplicar
@@ -144,7 +177,7 @@ model Round {
 }
 
 model Hole {
-  id       String  @id @default(cuid())
+  id       String @id @default(cuid())
   roundId  String
   number   Int
   par      Int
@@ -162,7 +195,7 @@ model Hole {
 }
 
 model MoodEntry {
-  id      String @id @default(cuid())
+  id      String  @id @default(cuid())
   userId  String
   roundId String
   holeId  String?
@@ -172,9 +205,9 @@ model MoodEntry {
 
   createdAt DateTime @default(now())
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  round Round  @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  hole  Hole?  @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  hole  Hole? @relation(fields: [holeId], references: [id], onDelete: Cascade)
 
   @@index([roundId, createdAt])
 }

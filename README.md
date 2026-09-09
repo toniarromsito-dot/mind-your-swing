@@ -207,7 +207,19 @@ Plan Gratis (5 min de llamada/mes) vs. plan Pro (40 min/mes) — ver `src/lib/bi
 
 **Cómo se aplican los minutos incluidos**: cada llamada terminada se registra en `VoiceCallLog` (duración en segundos). `/api/voice/session` suma los minutos usados en lo que va de mes natural antes de dejar empezar una llamada nueva; si se supera el límite del plan, devuelve un 402 y la UI pide pasar a Pro. Es una aproximación al mes natural, no al ciclo exacto de facturación de Stripe — suficiente para el volumen de esta app, pero anótalo si migras a facturación por consumo más fina.
 
-### 4.7. Resumen de variables (`.env.example`)
+### 4.7. Vídeos de swing con puntuación automática (`/aprender/videos`) — opcional
+
+Un jugador Pro puede subir un vídeo de su swing y recibir, al instante, una puntuación 0-100 y feedback en texto — sin esperar a que Antonio lo revise. Cómo funciona, en orden:
+
+1. **Subida**: el vídeo va directo del navegador a Vercel Blob (`@vercel/blob/client`), autorizado por `src/app/api/swing-videos/upload/route.ts` (comprueba sesión + plan Pro antes de emitir el token). El servidor nunca recibe el archivo de vídeo en sí.
+2. **Detección de pose**: en el propio navegador, `src/lib/swing/pose-landmarker.ts` usa [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) (WASM + modelo "lite", cargados desde el CDN oficial de Google) para extraer ~20 fotogramas/segundo de keypoints del cuerpo. El vídeo tampoco sale del dispositivo para este paso.
+3. **Puntuación heurística**: `src/lib/swing/scoring.ts` (función pura, con tests unitarios) calcula 5 métricas clásicas — estabilidad de la cabeza, mantenimiento del ángulo de columna, rango de rotación de caderas, transferencia de peso y tempo subida:bajada — y las combina en una puntuación 0-100. **Esto es una estimación heurística, no un análisis biomecánico validado ni un sustituto de un profesor de golf**: los propios textos de la app lo dejan claro al jugador.
+4. **Feedback en lenguaje natural**: los números (nunca el vídeo ni fotogramas) se mandan a Claude (`src/lib/swing/feedback.ts`), que los traduce a un feedback breve y motivador en el idioma del jugador.
+5. El vídeo, la puntuación y el feedback automático quedan guardados (`SwingVideo` en Prisma) y visibles para el propio jugador en `/aprender/videos`, y para Antonio en `/admin/videos`, donde puede añadir su propio feedback manual encima.
+
+**Revisión manual (`/admin/videos`)**: solo accesible para los emails listados en `ADMIN_EMAILS` (separados por comas). Sin esta variable, nadie puede entrar a esa página.
+
+### 4.8. Resumen de variables (`.env.example`)
 
 ```
 DATABASE_URL=
@@ -226,7 +238,10 @@ STRIPE_SECRET_KEY=
 STRIPE_PRO_PRICE_ID=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_WELCOME_COUPON_ID=
+ADMIN_EMAILS=
 ```
+
+(`BLOB_READ_WRITE_TOKEN` no va en `.env.example`: lo provisiona automáticamente Vercel al enlazar un store de Vercel Blob — ver 6.2.)
 
 ---
 
@@ -268,6 +283,8 @@ Crea una base de datos Postgres en [Neon](https://neon.tech) o [Supabase](https:
    - `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` (opcionales, solo si quieres voz en producción).
    - `ELEVENLABS_AGENT_ID`, `ELEVENLABS_CUSTOM_LLM_SECRET` (opcionales, solo para la llamada de voz en tiempo real — ver 4.5; el agente debe apuntar a este mismo dominio de producción).
    - `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_WELCOME_COUPON_ID` (opcionales, solo para cobrar el plan Pro — ver 4.6; usa las claves `sk_live_...` cuando actives el modo Live en Stripe).
+   - `ADMIN_EMAILS` (opcional, solo para poder acceder a `/admin/videos` — ver 4.7).
+   - `BLOB_READ_WRITE_TOKEN`: se provisiona solo al crear/enlazar un store de [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (`npx vercel blob create-store <nombre>` o desde el dashboard, pestaña Storage) — necesario para que funcione la subida de vídeos de swing.
 3. Despliega.
 
 ### 6.3. Migraciones en producción
@@ -300,9 +317,11 @@ https://tu-dominio.vercel.app/api/auth/callback/google
 | `/rondas/[id]` | Ronda en curso: navegación hoyo a hoyo, chat del coach integrado (drawer, 1-2 toques desde cualquier hoyo). |
 | `/rondas/[id]/resumen` | Resumen post-ronda: resultado, evolución del ánimo, cierre del coach. |
 | `/historial` | Rondas pasadas. |
-| `/aprender` | Fundamentos de swing para principiantes (contenido estático, no del coach mental). |
+| `/aprender` | Fundamentos de swing para principiantes (contenido estático, no del coach mental) + vídeos embebidos (Pro). |
+| `/aprender/videos` | Sube tu swing, recibe puntuación automática al instante (plan Pro) — ver 4.7. |
+| `/admin/videos` | Revisión manual de vídeos de swing, solo para `ADMIN_EMAILS` — ver 4.7. |
 | `/historias` | Historias y consejos reales compartidos por la comunidad de jugadores. |
-| `/perfil` | Datos de usuario, preferencias del coach (tono, idioma), cerrar sesión. |
+| `/perfil` | Datos de usuario, preferencias del coach (tono, idioma), suscripción, cerrar sesión. |
 
 ---
 
@@ -319,4 +338,4 @@ https://tu-dominio.vercel.app/api/auth/callback/google
 
 ## 9. Posibles siguientes pasos (fuera del MVP)
 
-Explícitamente fuera de alcance por ahora (ver spec): análisis de vídeo/sensores de swing, motor oficial de hándicap. Ideas razonables para una v2: notificaciones push antes de una ronda agendada, analítica más rica de patrones de ánimo a largo plazo, más idiomas además de es/en, exportar el historial a PDF, moderación/reportar en las historias de la comunidad si crece el volumen de usuarios.
+Explícitamente fuera de alcance por ahora (ver spec): motor oficial de hándicap. Ideas razonables para una v2: notificaciones push antes de una ronda agendada, analítica más rica de patrones de ánimo a largo plazo, más idiomas además de es/en, exportar el historial a PDF, moderación/reportar en las historias de la comunidad si crece el volumen de usuarios, y para la puntuación automática de swing: comparar contra vídeo de referencia lateral (no solo frontal), detectar automáticamente las fases del swing en vez de asumir proporciones fijas del clip, e ir ajustando los pesos de cada métrica con feedback real de Antonio sobre si la puntuación automática acierta o no.

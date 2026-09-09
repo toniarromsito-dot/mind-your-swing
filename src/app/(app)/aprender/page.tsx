@@ -1,5 +1,8 @@
+import Link from "next/link";
+import { Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoCard } from "@/components/video-card";
+import { buttonVariants } from "@/components/ui/button";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
@@ -73,6 +76,21 @@ export default async function LearnPage() {
       <p className="rounded-xl border border-border bg-secondary/30 p-4 text-xs text-muted-foreground">
         {t.learn.disclaimer}
       </p>
+
+      <Card>
+        <CardContent className="flex flex-col items-start gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Camera className="size-6 text-primary" />
+            <div>
+              <p className="font-heading text-base">{t.swingVideos.navLink}</p>
+              <p className="text-sm text-muted-foreground">{t.swingVideos.subtitle}</p>
+            </div>
+          </div>
+          <Link href="/aprender/videos" className={buttonVariants({ size: "sm" })}>
+            {t.swingVideos.navLink}
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }

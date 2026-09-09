@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Home, History, User, BookOpen, Users } from "lucide-react";
+import { Home, History, User, BookOpen, Users, ShieldCheck } from "lucide-react";
 import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -9,10 +9,12 @@ export function AppShell({
   children,
   user,
   t,
+  isAdmin,
 }: {
   children: React.ReactNode;
   user: { name?: string | null; image?: string | null };
   t: Dictionary["nav"];
+  isAdmin?: boolean;
 }) {
   const navLinks = [
     { href: "/dashboard", label: t.inicio, icon: Home },
@@ -20,6 +22,7 @@ export function AppShell({
     { href: "/aprender", label: t.aprender, icon: BookOpen },
     { href: "/historias", label: t.comunidad, icon: Users },
     { href: "/perfil", label: t.perfil, icon: User },
+    ...(isAdmin ? [{ href: "/admin/videos", label: "Admin", icon: ShieldCheck }] : []),
   ];
 
   return (
