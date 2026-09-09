@@ -31,10 +31,25 @@ export const createGameSchema = z.object({
   goal: z.string().trim().max(300).optional().or(z.literal("")),
 }).refine((v) => v.courseId || v.course, { message: "Elige un campo" });
 
-export const saveScoreSchema = z.object({
+// Scorecard compartido: cualquier jugador de la partida puede anotar el
+// hoyo por todo el grupo en un solo guardado (ver saveHoleScores).
+export const saveHoleScoresSchema = z.object({
+  gameId: z.string().min(1),
   holeId: z.string().min(1),
-  strokes: z.coerce.number().int().min(1).max(15).optional().nullable(),
-  putts: z.coerce.number().int().min(0).max(10).optional().nullable(),
+  entries: z
+    .array(
+      z.object({
+        playerId: z.string().min(1),
+        strokes: z.coerce.number().int().min(1).max(15).optional().nullable(),
+        putts: z.coerce.number().int().min(0).max(10).optional().nullable(),
+      })
+    )
+    .min(1),
+});
+
+export const setBetSchema = z.object({
+  gameId: z.string().min(1),
+  bet: z.string().trim().max(200).nullable(),
 });
 
 export const markChallengeWinSchema = z.object({
@@ -72,7 +87,8 @@ export const storySchema = z.object({
 });
 
 export type CreateGameInput = z.infer<typeof createGameSchema>;
-export type SaveScoreInput = z.infer<typeof saveScoreSchema>;
+export type SaveHoleScoresInput = z.infer<typeof saveHoleScoresSchema>;
+export type SetBetInput = z.infer<typeof setBetSchema>;
 export type MarkChallengeWinInput = z.infer<typeof markChallengeWinSchema>;
 export type MoodEntryInput = z.infer<typeof moodEntrySchema>;
 export type ChatMessageInput = z.infer<typeof chatMessageSchema>;

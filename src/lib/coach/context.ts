@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
+import { computeRoundBreakdown, formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
 import type { CoachContext, CoachPhase } from "./types";
 
 const RECENT_MOOD_LIMIT = 5;
@@ -92,6 +92,8 @@ export async function getCoachContext(params: {
 
   const historySummary = await buildHistorySummary(userId, gameId ?? undefined);
 
+  const mindMemory = user.plan === "PRO" ? (user.mindMemory ?? null) : null;
+
   if (!gameId) {
     return {
       phase: "standalone",
@@ -103,6 +105,7 @@ export async function getCoachContext(params: {
       gameProgress: null,
       recentMood,
       historySummary,
+      mindMemory,
     };
   }
 
@@ -125,9 +128,10 @@ export async function getCoachContext(params: {
     strokes: h.myScore?.strokes ?? null,
   }));
   const playedHoles = forGolfHelpers.filter((h) => h.strokes != null);
+  const phase = derivePhase(myPlayer.game.status, Boolean(currentHole));
 
   return {
-    phase: derivePhase(myPlayer.game.status, Boolean(currentHole)),
+    phase,
     playerName: user.name ?? "jugador/a",
     tone: user.coachTone,
     language: user.language,
@@ -154,7 +158,9 @@ export async function getCoachContext(params: {
             relativeToPar: formatRelativeToPar(relativeToPar(forGolfHelpers)),
           }
         : null,
+    roundBreakdown: phase === "post_partida" ? computeRoundBreakdown(forGolfHelpers) : null,
     recentMood,
     historySummary,
+    mindMemory,
   };
 }

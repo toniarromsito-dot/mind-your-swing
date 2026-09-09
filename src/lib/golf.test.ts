@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  computeRoundBreakdown,
   formatRelativeToPar,
   holeResultLabel,
   holesPlayed,
@@ -50,5 +51,54 @@ describe("formatRelativeToPar", () => {
     expect(formatRelativeToPar(3)).toBe("+3");
     expect(formatRelativeToPar(-2)).toBe("-2");
     expect(formatRelativeToPar(0)).toBe("E");
+  });
+});
+
+describe("computeRoundBreakdown", () => {
+  it("cuenta birdies, pares, bogeys y dobles-o-peor", () => {
+    const holes = [
+      { number: 1, par: 4, strokes: 3 }, // birdie
+      { number: 2, par: 4, strokes: 4 }, // par
+      { number: 3, par: 4, strokes: 5 }, // bogey
+      { number: 4, par: 4, strokes: 7 }, // triple+
+    ];
+    const result = computeRoundBreakdown(holes, 2);
+    expect(result.birdiesOrBetter).toBe(1);
+    expect(result.pars).toBe(1);
+    expect(result.bogeys).toBe(1);
+    expect(result.doubleBogeysOrWorse).toBe(1);
+  });
+
+  it("encuentra el peor tramo contiguo de N hoyos", () => {
+    const holes = [
+      { number: 1, par: 4, strokes: 4 },
+      { number: 2, par: 4, strokes: 4 },
+      { number: 3, par: 4, strokes: 6 }, // +2
+      { number: 4, par: 4, strokes: 6 }, // +2
+      { number: 5, par: 4, strokes: 4 },
+    ];
+    const result = computeRoundBreakdown(holes, 2);
+    expect(result.worstStretch).toEqual({ startHole: 3, endHole: 4, strokesOverPar: 4 });
+  });
+
+  it("ignora huecos sin jugar y hoyos no consecutivos al buscar el tramo", () => {
+    const holes = [
+      { number: 1, par: 4, strokes: 6 },
+      { number: 2, par: 4, strokes: null },
+      { number: 3, par: 4, strokes: 6 },
+    ];
+    // Los hoyos 1 y 3 no son consecutivos (falta el 2 jugado), así que no
+    // deben combinarse en una sola ventana.
+    const result = computeRoundBreakdown(holes, 2);
+    expect(result.worstStretch).toBeNull();
+  });
+
+  it("no reporta un tramo cuando la vuelta va igual o mejor que el par", () => {
+    const holes = [
+      { number: 1, par: 4, strokes: 4 },
+      { number: 2, par: 4, strokes: 3 },
+    ];
+    const result = computeRoundBreakdown(holes, 2);
+    expect(result.worstStretch).toBeNull();
   });
 });

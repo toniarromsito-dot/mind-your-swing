@@ -12,6 +12,7 @@ const baseContext: CoachContext = {
   gameProgress: { holesPlayed: 6, totalHoles: 18, relativeToPar: "+2" },
   recentMood: [{ mood: "NERVIOSO", note: "manos frías", holeNumber: 6 }],
   historySummary: "Suele registrar nerviosismo en hoyos par 3.",
+  mindMemory: null,
 };
 
 describe("buildSystemPrompt", () => {
@@ -55,5 +56,29 @@ describe("buildSystemPrompt", () => {
     expect(calm).toMatch(/personalidad calm/i);
     expect(coach).toMatch(/personalidad coach/i);
     expect(motivator).toMatch(/personalidad motivator/i);
+  });
+
+  it("incluye el desglose de la vuelta y el tramo más flojo cuando están disponibles", () => {
+    const prompt = buildSystemPrompt({
+      ...baseContext,
+      phase: "post_partida",
+      roundBreakdown: {
+        birdiesOrBetter: 1,
+        pars: 10,
+        bogeys: 5,
+        doubleBogeysOrWorse: 2,
+        worstStretch: { startHole: 11, endHole: 14, strokesOverPar: 5 },
+      },
+    });
+    expect(prompt).toContain("1 birdie(s) o mejor");
+    expect(prompt).toContain("entre los hoyos 11 y 14 perdió 5 golpes");
+  });
+
+  it("incluye la memoria de Mind cuando existe (solo Pro)", () => {
+    const prompt = buildSystemPrompt({
+      ...baseContext,
+      mindMemory: "La semana pasada trabajamos la reacción tras un doble bogey.",
+    });
+    expect(prompt).toContain("La semana pasada trabajamos la reacción tras un doble bogey.");
   });
 });

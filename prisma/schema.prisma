@@ -123,6 +123,11 @@ model User {
   coachTone CoachTone @default(FRIEND)
   language  String    @default("es")
 
+  // Memoria persistente de Mind (solo Pro) — un párrafo corto que se
+  // reescribe tras cada partida, no un historial completo. Ver
+  // src/actions/games.ts (updateMindMemory) y coach/context.ts.
+  mindMemory String? @db.Text
+
   // Suscripción / Stripe
   plan                     Plan      @default(FREE)
   stripeCustomerId         String?   @unique
@@ -212,20 +217,29 @@ model GolfCourseHole {
   @@unique([courseId, number])
 }
 
-// Una partida de golf: solitaria (modo SOLO, el uso original de la app)
-// o multijugador. Cada jugador —incluido el creador— tiene su propia fila
-// en GamePlayer, y cada uno introduce sus propios golpes (Score) desde su
-// propia sesión: así es como un amigo invitado se convierte en un usuario
-// real de la app en vez de que el creador teclee por todos.
+// Una partida de golf: solitaria (modo SOLO, el uso original de la app) o
+// multijugador. Cada jugador —incluido el creador— tiene su propia fila en
+// GamePlayer (así es como un amigo invitado se convierte en un usuario
+// real de la app), pero los golpes se registran en un scorecard
+// compartido: cualquier jugador de la partida puede anotar el hoyo por
+// todo el grupo desde su propio móvil — no hace falta que cada uno saque
+// el suyo (ver saveHoleScores en actions/games.ts).
+//
+// started=false mientras la partida está en el "lobby" (uniéndose
+// amigos, eligiendo apuesta, check-in mental opcional) — al pulsar
+// "Empezar partida" pasa a true y arranca el Focus Mode sin más chrome
+// que el scorecard.
 model Game {
   id          String     @id @default(cuid())
   courseId    String?
   course      String
   mode        GameMode
   playerCount Int        @default(1)
+  started     Boolean    @default(false)
   date        DateTime
   totalHoles  Int        @default(18)
   goal        String?
+  bet         String?    @db.Text
   status      GameStatus @default(IN_PROGRESS)
   insight     String?    @db.Text
   inviteCode  String     @unique

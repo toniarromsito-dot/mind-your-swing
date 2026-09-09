@@ -63,6 +63,22 @@ function renderContextBlock(ctx: CoachContext): string {
     );
   }
 
+  if (ctx.roundBreakdown) {
+    const b = ctx.roundBreakdown;
+    lines.push(
+      `Desglose de la vuelta que acaba de terminar: ${b.birdiesOrBetter} birdie(s) o mejor, ${b.pars} par(es), ${b.bogeys} bogey(s), ${b.doubleBogeysOrWorse} doble bogey(s) o peor.`
+    );
+    if (b.worstStretch) {
+      lines.push(
+        `Tramo más flojo: entre los hoyos ${b.worstStretch.startHole} y ${b.worstStretch.endHole} perdió ${b.worstStretch.strokesOverPar} golpes respecto al par. Usa este dato concreto en tu análisis si tiene sentido, en vez de hablar en general.`
+      );
+    }
+  }
+
+  if (ctx.mindMemory) {
+    lines.push(`Memoria de partidas anteriores con este jugador: ${ctx.mindMemory}`);
+  }
+
   if (ctx.recentMood.length > 0) {
     lines.push(`Estado de ánimo reciente (más reciente primero):`);
     for (const m of ctx.recentMood) {

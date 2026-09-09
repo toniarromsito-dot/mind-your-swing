@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chatMessageSchema, createGameSchema, moodEntrySchema, saveScoreSchema } from "./validations";
+import { chatMessageSchema, createGameSchema, moodEntrySchema, saveHoleScoresSchema, setBetSchema } from "./validations";
 
 describe("createGameSchema", () => {
   it("acepta una entrada válida y coacciona tipos", () => {
@@ -55,14 +55,42 @@ describe("createGameSchema", () => {
   });
 });
 
-describe("saveScoreSchema", () => {
-  it("permite campos opcionales nulos", () => {
-    const result = saveScoreSchema.safeParse({ holeId: "abc", strokes: null });
+describe("saveHoleScoresSchema", () => {
+  it("acepta varias entradas de jugador con campos opcionales nulos", () => {
+    const result = saveHoleScoresSchema.safeParse({
+      gameId: "g1",
+      holeId: "abc",
+      entries: [
+        { playerId: "p1", strokes: 4, putts: 2 },
+        { playerId: "p2", strokes: null, putts: null },
+      ],
+    });
     expect(result.success).toBe(true);
   });
 
   it("rechaza golpes fuera de rango", () => {
-    const result = saveScoreSchema.safeParse({ holeId: "abc", strokes: 30 });
+    const result = saveHoleScoresSchema.safeParse({
+      gameId: "g1",
+      holeId: "abc",
+      entries: [{ playerId: "p1", strokes: 30 }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("exige al menos una entrada", () => {
+    const result = saveHoleScoresSchema.safeParse({ gameId: "g1", holeId: "abc", entries: [] });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("setBetSchema", () => {
+  it("acepta una apuesta de texto o null (sin apuesta)", () => {
+    expect(setBetSchema.safeParse({ gameId: "g1", bet: "El perdedor invita a comer" }).success).toBe(true);
+    expect(setBetSchema.safeParse({ gameId: "g1", bet: null }).success).toBe(true);
+  });
+
+  it("rechaza una apuesta demasiado larga", () => {
+    const result = setBetSchema.safeParse({ gameId: "g1", bet: "a".repeat(201) });
     expect(result.success).toBe(false);
   });
 });

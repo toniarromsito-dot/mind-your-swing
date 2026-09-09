@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "@/lib/require-user";
-import { getGameForPlayer, getMessagesForGame } from "@/lib/data/games";
+import { getGameForPlayer } from "@/lib/data/games";
+import { GameLobby } from "@/components/game-lobby";
 import { GameView } from "@/components/game-view";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
@@ -15,21 +16,24 @@ export default async function GamePage({ params }: PageProps<"/play/[id]">) {
     redirect(`/play/${id}/resumen`);
   }
 
-  const messages = await getMessagesForGame(id, userId);
   const { t } = await getDictionary();
 
-  return (
-    <GameView
-      game={game}
-      myUserId={userId}
-      initialMessages={messages.map((m) => ({ id: m.id, role: m.role, content: m.content }))}
-      t={t.playGame}
-      moodLabels={t.mood}
-      golfLabels={t.golfResult}
-      standingsT={t.standings}
-      chatT={t.chat}
-      moodCheckinT={t.moodCheckin}
-      quickPrompts={t.quickPrompts}
-    />
-  );
+  if (!game.started) {
+    return (
+      <GameLobby
+        gameId={game.id}
+        course={game.course}
+        inviteCode={game.inviteCode}
+        isSolo={game.mode === "SOLO"}
+        playerCount={game.playerCount}
+        players={game.players.map((p) => ({ id: p.id, name: p.user.name ?? "Jugador", image: p.user.image }))}
+        bet={game.bet}
+        t={t.lobby}
+        moodLabels={t.mood}
+        moodCheckinT={t.moodCheckin}
+      />
+    );
+  }
+
+  return <GameView game={game} t={t.playGame} />;
 }

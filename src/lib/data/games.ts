@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { toStandingsInput } from "@/lib/games/adapt";
+import { computeStrokeStandings } from "@/lib/games/standings";
 
 const gameWithPlayersInclude = {
   players: { include: { user: { select: { id: true, name: true, image: true } }, scores: true } },
@@ -65,4 +67,46 @@ export function getCourseWithHoles(courseId: string) {
     where: { id: courseId },
     include: { holes: { orderBy: { number: "asc" } } },
   });
+}
+
+export type HeadToHead = {
+  totalGamesTogether: number;
+  /** Solo tiene sentido mostrarlo cuando son 2 jugadores — ver resumen page. */
+  winsByUserId: Record<string, number>;
+  lastWinnerUserId: string | null;
+};
+
+/**
+ * Historial entre este grupo de jugadores (partidas ya completadas donde
+ * todos ellos jugaron juntos). El ganador de cada partida pasada se
+ * calcula con la misma lógica de stroke play de siempre — suficiente para
+ * el "pique" post-partida, no pretende ser exacto para modos por equipos.
+ */
+export async function getHeadToHeadHistory(userIds: string[], excludeGameId: string): Promise<HeadToHead> {
+  const games = await prisma.game.findMany({
+    where: {
+      id: { not: excludeGameId },
+      status: "COMPLETED",
+      AND: userIds.map((userId) => ({ players: { some: { userId } } })),
+    },
+    include: {
+      players: { include: { user: { select: { id: true, name: true } }, scores: true } },
+      holes: { orderBy: { number: "asc" } },
+    },
+    orderBy: { date: "desc" },
+  });
+
+  const winsByUserId: Record<string, number> = Object.fromEntries(userIds.map((id) => [id, 0]));
+  let lastWinnerUserId: string | null = null;
+
+  games.forEach((g, index) => {
+    const { players, scores } = toStandingsInput(g);
+    const standings = computeStrokeStandings(players, scores);
+    const winnerPlayerId = standings[0]?.playerId;
+    const winnerUserId = g.players.find((p) => p.id === winnerPlayerId)?.userId ?? null;
+    if (winnerUserId && winnerUserId in winsByUserId) winsByUserId[winnerUserId] += 1;
+    if (index === 0) lastWinnerUserId = winnerUserId;
+  });
+
+  return { totalGamesTogether: games.length, winsByUserId, lastWinnerUserId };
 }
