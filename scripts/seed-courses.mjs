@@ -41,6 +41,41 @@ const COURSES = [
     location: "Cantabria, España",
     pars: [4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 3, 4, 5, 4],
   },
+  {
+    name: "Son Vida",
+    location: "Palma de Mallorca, España",
+    pars: [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5],
+  },
+  {
+    name: "Son Quint",
+    location: "Palma de Mallorca, España",
+    pars: [4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 4, 3, 4, 5, 4, 3, 5, 4],
+  },
+  {
+    name: "Alcanada",
+    location: "Port d'Alcúdia, Mallorca, España",
+    pars: [4, 5, 4, 3, 4, 4, 5, 3, 4, 4, 4, 5, 3, 4, 4, 5, 3, 4],
+  },
+  {
+    name: "Pula",
+    location: "Son Servera, Mallorca, España",
+    pars: [4, 4, 5, 3, 4, 4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 3, 5, 4],
+  },
+  {
+    name: "Vall d'Or",
+    location: "Cala d'Or, Mallorca, España",
+    pars: [4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 4, 3, 5, 4, 3, 4, 4, 5],
+  },
+  {
+    name: "T Golf Calvià",
+    location: "Calvià, Mallorca, España",
+    pars: [4, 4, 3, 4, 5, 4, 3, 5, 4, 4, 4, 5, 3, 4, 4, 5, 3, 4],
+  },
+  {
+    name: "T Golf Palma",
+    location: "Palma de Mallorca, España",
+    pars: [4, 5, 3, 4, 4, 5, 4, 3, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4],
+  },
 ];
 
 for (const course of COURSES) {
