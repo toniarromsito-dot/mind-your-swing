@@ -169,8 +169,8 @@ const es = {
     checkoutSuccess: "¡Bienvenido al plan Pro!",
     checkoutCancelled: "Suscripción cancelada, no se ha realizado ningún cobro.",
     billingUnavailable: "Los pagos no están configurados todavía.",
-    welcomeOffer: "3,99€ el primer mes · después 7,99€/mes",
-    proPrice: "7,99€/mes",
+    welcomeOffer: "13,99€ el primer mes · después 20€/mes",
+    proPrice: "20€/mes",
   },
   learn: {
     title: "Aprende los fundamentos",
@@ -448,8 +448,8 @@ const en: typeof es = {
     checkoutSuccess: "Welcome to the Pro plan!",
     checkoutCancelled: "Subscription cancelled, you haven't been charged.",
     billingUnavailable: "Payments aren't configured yet.",
-    welcomeOffer: "€3.99 first month · then €7.99/month",
-    proPrice: "€7.99/month",
+    welcomeOffer: "€13.99 first month · then €20/month",
+    proPrice: "€20/month",
   },
   learn: {
     title: "Learn the fundamentals",
