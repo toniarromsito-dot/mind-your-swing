@@ -10,14 +10,14 @@ import { Button } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function MoodCheckin({
-  roundId,
+  gameId,
   holeId,
   t,
   moodLabels,
 }: {
-  roundId: string;
+  gameId?: string;
   holeId?: string;
-  t: Dictionary["round"];
+  t: Dictionary["moodCheckin"];
   moodLabels: Dictionary["mood"];
 }) {
   const [mood, setMood] = useState<Mood | null>(null);
@@ -31,7 +31,7 @@ export function MoodCheckin({
     }
     startTransition(async () => {
       try {
-        await createMoodEntry({ roundId, holeId, mood, note });
+        await createMoodEntry({ gameId, holeId, mood, note });
         toast.success(t.checkinSaved);
         setMood(null);
         setNote("");

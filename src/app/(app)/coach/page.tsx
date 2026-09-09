@@ -16,12 +16,12 @@ export default async function LearnPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <div>
-        <h1 className="font-heading text-2xl">{t.learn.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t.learn.subtitle}</p>
+        <h1 className="font-heading text-2xl">{t.coach.title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t.coach.subtitle}</p>
       </div>
 
       <div className="flex flex-col gap-3">
-        {t.learn.topics.map((topic) => (
+        {t.coach.topics.map((topic) => (
           <Card key={topic.title}>
             <CardHeader>
               <CardTitle className="font-heading text-lg">{topic.title}</CardTitle>
@@ -35,38 +35,38 @@ export default async function LearnPage() {
 
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="font-heading text-xl">{t.learn.videosTitle}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t.learn.videosSubtitle}</p>
+          <h2 className="font-heading text-xl">{t.coach.videosTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.coach.videosSubtitle}</p>
         </div>
 
         <div>
-          <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t.learn.freeVideosTitle}</h3>
+          <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t.coach.freeVideosTitle}</h3>
           <div className="grid gap-4 sm:grid-cols-2">
-            {t.learn.freeVideos.map((video) => (
+            {t.coach.freeVideos.map((video) => (
               <VideoCard
                 key={video.title}
                 title={video.title}
                 description={video.description}
                 url={video.url}
-                comingSoonLabel={t.learn.comingSoon}
-                lockedMessage={t.learn.proLockedMessage}
+                comingSoonLabel={t.coach.comingSoon}
+                lockedMessage={t.coach.proLockedMessage}
               />
             ))}
           </div>
         </div>
 
         <div>
-          <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t.learn.proVideosTitle}</h3>
+          <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t.coach.proVideosTitle}</h3>
           <div className="grid gap-4 sm:grid-cols-2">
-            {t.learn.proVideos.map((video) => (
+            {t.coach.proVideos.map((video) => (
               <VideoCard
                 key={video.title}
                 title={video.title}
                 description={video.description}
                 url={video.url}
                 locked={!isPro}
-                comingSoonLabel={t.learn.comingSoon}
-                lockedMessage={t.learn.proLockedMessage}
+                comingSoonLabel={t.coach.comingSoon}
+                lockedMessage={t.coach.proLockedMessage}
               />
             ))}
           </div>
@@ -74,7 +74,7 @@ export default async function LearnPage() {
       </div>
 
       <p className="rounded-xl border border-border bg-secondary/30 p-4 text-xs text-muted-foreground">
-        {t.learn.disclaimer}
+        {t.coach.disclaimer}
       </p>
 
       <Card>
@@ -86,7 +86,7 @@ export default async function LearnPage() {
               <p className="text-sm text-muted-foreground">{t.swingVideos.subtitle}</p>
             </div>
           </div>
-          <Link href="/aprender/videos" className={buttonVariants({ size: "sm" })}>
+          <Link href="/coach/videos" className={buttonVariants({ size: "sm" })}>
             {t.swingVideos.navLink}
           </Link>
         </CardContent>

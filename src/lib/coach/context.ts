@@ -3,13 +3,19 @@ import { formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
 import type { CoachContext, CoachPhase } from "./types";
 
 const RECENT_MOOD_LIMIT = 5;
-const HISTORY_ROUNDS_LIMIT = 5;
+const HISTORY_ENTRIES_LIMIT = 20;
 
-async function buildHistorySummary(userId: string, excludeRoundId: string): Promise<string | null> {
+/**
+ * Busca un patrón simple en el historial de ánimo del jugador (no solo de
+ * la partida actual): "sueles frustrarte en hoyos par X" o "sueles
+ * frustrarte tras un resultado peor que el par". Es lo que hace que el
+ * compañero se sienta consistente en el tiempo, no un chat sin memoria.
+ */
+async function buildHistorySummary(userId: string, excludeGameId?: string): Promise<string | null> {
   const pastMoodEntries = await prisma.moodEntry.findMany({
     where: {
       userId,
-      roundId: { not: excludeRoundId },
+      ...(excludeGameId ? { gameId: { not: excludeGameId } } : {}),
       mood: { in: ["FRUSTRADO", "NERVIOSO"] },
       holeId: { not: null },
     },
@@ -20,13 +26,22 @@ async function buildHistorySummary(userId: string, excludeRoundId: string): Prom
 
   if (pastMoodEntries.length < 2) return null;
 
-  // Agrupa por par del hoyo y por si el resultado fue igual o peor que bogey.
+  const myPlayers = await prisma.gamePlayer.findMany({ where: { userId }, select: { id: true } });
+  const myPlayerIds = myPlayers.map((p) => p.id);
+  const holeIds = pastMoodEntries.map((e) => e.holeId).filter((id): id is string => id != null);
+  const scores =
+    holeIds.length > 0
+      ? await prisma.score.findMany({ where: { holeId: { in: holeIds }, playerId: { in: myPlayerIds } } })
+      : [];
+  const scoreByHole = new Map(scores.map((s) => [s.holeId, s]));
+
   const byPar = new Map<number, number>();
   let badResultCount = 0;
-  for (const entry of pastMoodEntries.slice(0, HISTORY_ROUNDS_LIMIT * 4)) {
+  for (const entry of pastMoodEntries.slice(0, HISTORY_ENTRIES_LIMIT)) {
     if (!entry.hole) continue;
     byPar.set(entry.hole.par, (byPar.get(entry.hole.par) ?? 0) + 1);
-    if (entry.hole.strokes != null && entry.hole.strokes - entry.hole.par >= 1) {
+    const score = scoreByHole.get(entry.hole.id);
+    if (score?.strokes != null && score.strokes - entry.hole.par >= 1) {
       badResultCount += 1;
     }
   }
@@ -42,67 +57,104 @@ async function buildHistorySummary(userId: string, excludeRoundId: string): Prom
 }
 
 function derivePhase(status: "IN_PROGRESS" | "COMPLETED", hasCurrentHole: boolean): CoachPhase {
-  if (status === "COMPLETED") return "post_ronda";
-  return hasCurrentHole ? "durante_ronda" : "pre_ronda";
+  if (status === "COMPLETED") return "post_partida";
+  return hasCurrentHole ? "durante_partida" : "pre_partida";
 }
 
+/**
+ * Construye el contexto que ve el compañero de IA. gameId es opcional:
+ * MIND funciona también fuera de una partida activa (fase "standalone").
+ * Cuando hay partida, cada jugador solo ve SU PROPIA experiencia (sus
+ * propios golpes) — el chat con el compañero es personal, no compartido
+ * con el resto del grupo (ver spec: "the AI should NOT replace the
+ * friends").
+ */
 export async function getCoachContext(params: {
   userId: string;
-  roundId: string;
+  gameId?: string | null;
   holeId?: string | null;
 }): Promise<CoachContext> {
-  const { userId, roundId, holeId } = params;
+  const { userId, gameId, holeId } = params;
 
-  const round = await prisma.round.findFirstOrThrow({
-    where: { id: roundId, userId },
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+
+  const recentMoodEntries = await prisma.moodEntry.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: RECENT_MOOD_LIMIT,
+    include: { hole: true },
+  });
+  const recentMood = recentMoodEntries.map((m) => ({
+    mood: m.mood,
+    note: m.note,
+    holeNumber: m.hole?.number ?? null,
+  }));
+
+  const historySummary = await buildHistorySummary(userId, gameId ?? undefined);
+
+  if (!gameId) {
+    return {
+      phase: "standalone",
+      playerName: user.name ?? "jugador/a",
+      tone: user.coachTone,
+      language: user.language,
+      game: null,
+      currentHole: null,
+      gameProgress: null,
+      recentMood,
+      historySummary,
+    };
+  }
+
+  const myPlayer = await prisma.gamePlayer.findFirstOrThrow({
+    where: { gameId, userId },
     include: {
-      user: true,
-      holes: { orderBy: { number: "asc" } },
-      moodEntries: {
-        orderBy: { createdAt: "desc" },
-        take: RECENT_MOOD_LIMIT,
-        include: { hole: true },
-      },
+      game: { include: { holes: { orderBy: { number: "asc" } } } },
+      scores: true,
     },
   });
 
-  const currentHole = holeId ? round.holes.find((h) => h.id === holeId) ?? null : null;
-
-  const playedHoles = round.holes.filter((h) => h.strokes != null);
-  const historySummary = await buildHistorySummary(userId, roundId);
+  const holesWithMyScore = myPlayer.game.holes.map((h) => ({
+    ...h,
+    myScore: myPlayer.scores.find((s) => s.holeId === h.id) ?? null,
+  }));
+  const currentHole = holeId ? holesWithMyScore.find((h) => h.id === holeId) ?? null : null;
+  const forGolfHelpers = holesWithMyScore.map((h) => ({
+    number: h.number,
+    par: h.par,
+    strokes: h.myScore?.strokes ?? null,
+  }));
+  const playedHoles = forGolfHelpers.filter((h) => h.strokes != null);
 
   return {
-    phase: derivePhase(round.status, Boolean(currentHole)),
-    playerName: round.user.name ?? "jugador/a",
-    tone: round.user.coachTone,
-    language: round.user.language,
-    round: {
-      course: round.course,
-      totalHoles: round.totalHoles,
-      goal: round.goal,
+    phase: derivePhase(myPlayer.game.status, Boolean(currentHole)),
+    playerName: user.name ?? "jugador/a",
+    tone: user.coachTone,
+    language: user.language,
+    game: {
+      course: myPlayer.game.course,
+      totalHoles: myPlayer.game.totalHoles,
+      goal: myPlayer.game.goal,
+      mode: myPlayer.game.mode,
     },
     currentHole: currentHole
       ? {
           number: currentHole.number,
           par: currentHole.par,
           distance: currentHole.distance,
-          strokes: currentHole.strokes,
-          putts: currentHole.putts,
+          strokes: currentHole.myScore?.strokes ?? null,
+          putts: currentHole.myScore?.putts ?? null,
         }
       : null,
-    roundProgress:
+    gameProgress:
       playedHoles.length > 0
         ? {
-            holesPlayed: holesPlayed(round.holes),
-            totalHoles: round.totalHoles,
-            relativeToPar: formatRelativeToPar(relativeToPar(round.holes)),
+            holesPlayed: holesPlayed(forGolfHelpers),
+            totalHoles: myPlayer.game.totalHoles,
+            relativeToPar: formatRelativeToPar(relativeToPar(forGolfHelpers)),
           }
         : null,
-    recentMood: round.moodEntries.map((m) => ({
-      mood: m.mood,
-      note: m.note,
-      holeNumber: m.hole?.number ?? null,
-    })),
+    recentMood,
     historySummary,
   };
 }

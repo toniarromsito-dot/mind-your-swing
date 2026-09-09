@@ -196,14 +196,13 @@ Plan Gratis (5 min de llamada/mes) vs. plan Pro (40 min/mes) — ver `src/lib/bi
 
 1. Crea una cuenta en [dashboard.stripe.com/register](https://dashboard.stripe.com/register) (gratis, comisión solo por transacción). Trabaja en **modo Test** al principio (interruptor arriba a la derecha del dashboard).
 2. **Developers → API keys**, copia la **Secret key** (`sk_test_...`) a `.env` como `STRIPE_SECRET_KEY=`.
-3. **Product catalog → Add product**: crea un producto (ej. "Mind Your Swing Pro"), precio recurrente mensual (20€/mes). Copia el **Price ID** (`price_...`) a `.env` como `STRIPE_PRO_PRICE_ID=`.
+3. **Product catalog → Add product**: crea un producto (ej. "Mind Your Swing Pro"), precio recurrente mensual (24,99€/mes). Copia el **Price ID** (`price_...`) a `.env` como `STRIPE_PRO_PRICE_ID=`.
 4. **Developers → Webhooks → Add endpoint**:
    - URL: `https://<tu-dominio>/api/stripe/webhook`
    - Eventos a escuchar: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
    - Copia el **Signing secret** (`whsec_...`) a `.env`/Vercel como `STRIPE_WEBHOOK_SECRET=`.
 5. Para probar en local sin desplegar, usa la [Stripe CLI](https://docs.stripe.com/stripe-cli): `stripe listen --forward-to localhost:3000/api/stripe/webhook` (te da un `whsec_...` propio para local).
 6. Cuando quieras cobrar de verdad, cambia el interruptor del dashboard a **modo Live** y repite los pasos 2-4 con las claves `sk_live_...` / `price_...` / `whsec_...` de producción.
-7. **Opcional — oferta de bienvenida**: crea un cupón en **Product catalog → Coupons** (ej. importe fijo de descuento, duración "Once" = solo el primer mes — actualmente 6,01€ de descuento sobre 20€/mes, para dejar el primer mes en 13,99€). Copia su ID a `.env`/Vercel como `STRIPE_WELCOME_COUPON_ID=`. Se aplica automáticamente (sin código que teclear) la primera vez que alguien se suscribe — `src/actions/stripe.ts` comprueba que el usuario no tenga ya un `stripeSubscriptionId` antes de ofrecérselo, para que no se pueda reutilizar cancelando y resuscribiéndose.
 
 **Cómo se aplican los minutos incluidos**: cada llamada terminada se registra en `VoiceCallLog` (duración en segundos). `/api/voice/session` suma los minutos usados en lo que va de mes natural antes de dejar empezar una llamada nueva; si se supera el límite del plan, devuelve un 402 y la UI pide pasar a Pro. Es una aproximación al mes natural, no al ciclo exacto de facturación de Stripe — suficiente para el volumen de esta app, pero anótalo si migras a facturación por consumo más fina.
 
@@ -237,7 +236,6 @@ ELEVENLABS_CUSTOM_LLM_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_PRO_PRICE_ID=
 STRIPE_WEBHOOK_SECRET=
-STRIPE_WELCOME_COUPON_ID=
 ADMIN_EMAILS=
 ```
 
@@ -282,7 +280,7 @@ Crea una base de datos Postgres en [Neon](https://neon.tech) o [Supabase](https:
    - `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (y `ANTHROPIC_WORKSPACE_ID` si tu key lo pide).
    - `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` (opcionales, solo si quieres voz en producción).
    - `ELEVENLABS_AGENT_ID`, `ELEVENLABS_CUSTOM_LLM_SECRET` (opcionales, solo para la llamada de voz en tiempo real — ver 4.5; el agente debe apuntar a este mismo dominio de producción).
-   - `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_WELCOME_COUPON_ID` (opcionales, solo para cobrar el plan Pro — ver 4.6; usa las claves `sk_live_...` cuando actives el modo Live en Stripe).
+   - `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET` (opcionales, solo para cobrar el plan Pro — ver 4.6; usa las claves `sk_live_...` cuando actives el modo Live en Stripe).
    - `ADMIN_EMAILS` (opcional, solo para poder acceder a `/admin/videos` — ver 4.7).
    - `BLOB_READ_WRITE_TOKEN`: se provisiona solo al crear/enlazar un store de [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (`npx vercel blob create-store <nombre>` o desde el dashboard, pestaña Storage) — necesario para que funcione la subida de vídeos de swing.
 3. Despliega.

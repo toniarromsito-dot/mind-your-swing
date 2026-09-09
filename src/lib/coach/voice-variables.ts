@@ -10,12 +10,12 @@ import type { CoachContext } from "./types";
 export function buildDynamicVariables(ctx: CoachContext): Record<string, string> {
   return {
     player_name: ctx.playerName,
-    course: ctx.round.course,
+    course: ctx.game?.course ?? "sin partida activa",
     hole_number: ctx.currentHole ? String(ctx.currentHole.number) : "sin hoyo activo",
     hole_par: ctx.currentHole ? String(ctx.currentHole.par) : "-",
-    round_progress: ctx.roundProgress
-      ? `${ctx.roundProgress.holesPlayed}/${ctx.roundProgress.totalHoles} hoyos jugados, resultado ${ctx.roundProgress.relativeToPar}`
-      : "todavía no hay hoyos jugados en esta ronda",
+    round_progress: ctx.gameProgress
+      ? `${ctx.gameProgress.holesPlayed}/${ctx.gameProgress.totalHoles} hoyos jugados, resultado ${ctx.gameProgress.relativeToPar}`
+      : "todavía no hay hoyos jugados en esta partida",
     recent_mood:
       ctx.recentMood.length > 0
         ? ctx.recentMood

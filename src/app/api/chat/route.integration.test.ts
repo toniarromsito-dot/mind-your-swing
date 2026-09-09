@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { prisma } from "@/lib/prisma";
 
 let userId: string;
-let roundId: string;
+let gameId: string;
 let holeId: string;
 
 vi.mock("@/lib/auth", () => ({
@@ -69,17 +69,19 @@ describe("POST /api/chat (integración, DB real + Anthropic mockeado)", () => {
     });
     userId = user.id;
 
-    const round = await prisma.round.create({
+    const game = await prisma.game.create({
       data: {
-        userId,
         course: "Campo del Chat",
+        mode: "SOLO",
         date: new Date(),
+        inviteCode: `chat-test-${Date.now()}`,
         holes: { create: [{ number: 1, par: 4 }] },
+        players: { create: { userId } },
       },
       include: { holes: true },
     });
-    roundId = round.id;
-    holeId = round.holes[0].id;
+    gameId = game.id;
+    holeId = game.holes[0].id;
   });
 
   afterEach(() => {
@@ -92,12 +94,12 @@ describe("POST /api/chat (integración, DB real + Anthropic mockeado)", () => {
   });
 
   it("responde 400 si el mensaje está vacío", async () => {
-    const res = await POST(chatRequest({ roundId, content: "   " }));
+    const res = await POST(chatRequest({ gameId, content: "   " }));
     expect(res.status).toBe(400);
   });
 
-  it("responde 404 si la ronda no pertenece al usuario", async () => {
-    const res = await POST(chatRequest({ roundId: "no-existe", content: "hola" }));
+  it("responde 404 si la partida no pertenece al usuario", async () => {
+    const res = await POST(chatRequest({ gameId: "no-existe", content: "hola" }));
     expect(res.status).toBe(404);
   });
 
@@ -105,10 +107,10 @@ describe("POST /api/chat (integración, DB real + Anthropic mockeado)", () => {
     const prev = process.env.ANTHROPIC_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
 
-    const res = await POST(chatRequest({ roundId, content: "Estoy nervioso" }));
+    const res = await POST(chatRequest({ gameId, content: "Estoy nervioso" }));
     expect(res.status).toBe(503);
 
-    const messages = await prisma.message.findMany({ where: { roundId } });
+    const messages = await prisma.message.findMany({ where: { gameId } });
     expect(messages).toHaveLength(0);
 
     if (prev) process.env.ANTHROPIC_API_KEY = prev;
@@ -117,7 +119,7 @@ describe("POST /api/chat (integración, DB real + Anthropic mockeado)", () => {
   it("hace streaming de la respuesta y persiste ambos mensajes", async () => {
     process.env.ANTHROPIC_API_KEY = "test-key";
 
-    const res = await POST(chatRequest({ roundId, holeId, content: "Estoy nervioso" }));
+    const res = await POST(chatRequest({ gameId, holeId, content: "Estoy nervioso" }));
     expect(res.status).toBe(200);
 
     const events = await readNdjson(res);
@@ -125,12 +127,23 @@ describe("POST /api/chat (integración, DB real + Anthropic mockeado)", () => {
     expect(tokens.map((t) => t.text).join("")).toBe("Respira hondo.");
     expect(events.some((e) => (e as { type: string }).type === "done")).toBe(true);
 
-    const messages = await prisma.message.findMany({ where: { roundId }, orderBy: { createdAt: "asc" } });
+    const messages = await prisma.message.findMany({ where: { gameId }, orderBy: { createdAt: "asc" } });
     expect(messages).toHaveLength(2);
     expect(messages[0]).toMatchObject({ role: "USER", content: "Estoy nervioso" });
     expect(messages[1]).toMatchObject({ role: "ASSISTANT", content: "Respira hondo." });
 
     expect(streamMock).toHaveBeenCalledTimes(1);
     expect(streamMock.mock.calls[0][0].system).toContain("Campo del Chat");
+  });
+
+  it("funciona en modo standalone, sin ninguna partida activa", async () => {
+    process.env.ANTHROPIC_API_KEY = "test-key";
+
+    const res = await POST(chatRequest({ content: "Necesito hablar" }));
+    expect(res.status).toBe(200);
+    await readNdjson(res);
+
+    const messages = await prisma.message.findMany({ where: { userId, gameId: null } });
+    expect(messages.length).toBeGreaterThan(0);
   });
 });

@@ -14,18 +14,18 @@ export default async function StoriesPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div>
-        <h1 className="font-heading text-2xl">{t.stories.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t.stories.subtitle}</p>
+        <h1 className="font-heading text-2xl">{t.community.title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t.community.subtitle}</p>
       </div>
 
       <Card>
         <CardContent className="pt-6">
-          <StoryForm t={t.stories} />
+          <StoryForm t={t.community} />
         </CardContent>
       </Card>
 
       {stories.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t.stories.empty}</p>
+        <p className="text-sm text-muted-foreground">{t.community.empty}</p>
       ) : (
         <div className="flex flex-col gap-3">
           {stories.map((story) => (
@@ -60,7 +60,7 @@ export default async function StoriesPage() {
                 <p className="text-sm whitespace-pre-wrap text-muted-foreground">{story.content}</p>
                 {story.userId === userId && (
                   <div className="pt-1">
-                    <StoryDeleteButton storyId={story.id} t={t.stories} />
+                    <StoryDeleteButton storyId={story.id} t={t.community} />
                   </div>
                 )}
               </CardContent>

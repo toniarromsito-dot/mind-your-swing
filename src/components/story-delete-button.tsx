@@ -6,7 +6,7 @@ import { Trash2 } from "lucide-react";
 import { deleteStory } from "@/actions/stories";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function StoryDeleteButton({ storyId, t }: { storyId: string; t: Dictionary["stories"] }) {
+export function StoryDeleteButton({ storyId, t }: { storyId: string; t: Dictionary["community"] }) {
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {

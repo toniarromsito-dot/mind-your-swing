@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function StoryForm({ t }: { t: Dictionary["stories"] }) {
+export function StoryForm({ t }: { t: Dictionary["community"] }) {
   const [state, formAction, pending] = useActionState(createStory, undefined);
   const formRef = useRef<HTMLFormElement>(null);
   const prevPending = useRef(pending);

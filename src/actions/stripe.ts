@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isStripeConfigured, PRO_PRICE_ID, stripe, WELCOME_COUPON_ID } from "@/lib/stripe";
+import { isStripeConfigured, PRO_PRICE_ID, stripe } from "@/lib/stripe";
 
 async function getOrCreateStripeCustomerId(userId: string, email: string, name: string | null) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
@@ -28,7 +28,6 @@ export async function createCheckoutSession() {
   if (!session?.user?.id) redirect("/");
   if (!isStripeConfigured()) throw new Error("Los pagos no están configurados todavía.");
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
   const customerId = await getOrCreateStripeCustomerId(
     session.user.id,
     session.user.email!,
@@ -37,16 +36,11 @@ export async function createCheckoutSession() {
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
-  // Oferta de bienvenida solo para quien nunca ha tenido una suscripción.
-  const eligibleForWelcomeOffer = WELCOME_COUPON_ID && !user.stripeSubscriptionId;
-
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: PRO_PRICE_ID, quantity: 1 }],
-    ...(eligibleForWelcomeOffer
-      ? { discounts: [{ coupon: WELCOME_COUPON_ID }] }
-      : { allow_promotion_codes: true }),
+    allow_promotion_codes: true,
     success_url: `${baseUrl}/perfil?checkout=success`,
     cancel_url: `${baseUrl}/perfil?checkout=cancel`,
     client_reference_id: session.user.id,

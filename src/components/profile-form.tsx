@@ -11,13 +11,11 @@ export function ProfileForm({
   t,
   defaultName,
   defaultHandicap,
-  defaultCoachTone,
   defaultLanguage,
 }: {
   t: Dictionary["perfil"];
   defaultName: string;
   defaultHandicap: number | null;
-  defaultCoachTone: string;
   defaultLanguage: string;
 }) {
   const [state, formAction, pending] = useActionState(updateProfile, undefined);
@@ -38,19 +36,6 @@ export function ProfileForm({
           step="0.1"
           defaultValue={defaultHandicap ?? ""}
         />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="coachTone">{t.coachTone}</Label>
-        <select
-          id="coachTone"
-          name="coachTone"
-          defaultValue={defaultCoachTone}
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
-        >
-          <option value="CERCANO">{t.toneCercano}</option>
-          <option value="FORMAL">{t.toneFormal}</option>
-        </select>
       </div>
 
       <div className="flex flex-col gap-2">

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { storySchema } from "@/lib/validations";
-import type { ActionState } from "./rounds";
+
+export type ActionState = { error?: string } | undefined;
 
 export async function createStory(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await auth();
@@ -22,7 +23,7 @@ export async function createStory(_prev: ActionState, formData: FormData): Promi
     data: { userId: session.user.id, ...parsed.data },
   });
 
-  revalidatePath("/historias");
+  revalidatePath("/community");
   return undefined;
 }
 
@@ -36,5 +37,5 @@ export async function deleteStory(storyId: string) {
   if (!story) throw new Error("Historia no encontrada");
 
   await prisma.story.delete({ where: { id: storyId } });
-  revalidatePath("/historias");
+  revalidatePath("/community");
 }

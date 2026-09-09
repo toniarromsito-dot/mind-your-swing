@@ -1,11 +1,9 @@
-import Link from "next/link";
-import { Lock } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { listMySwingVideos } from "@/lib/data/swing-videos";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { SwingVideosSection } from "@/components/swing-videos-section";
-import { buttonVariants } from "@/components/ui/button";
+import { ProUpsell } from "@/components/pro-upsell";
 
 export default async function SwingVideosPage() {
   const userId = await requireUserId();
@@ -14,13 +12,8 @@ export default async function SwingVideosPage() {
 
   if (user.plan !== "PRO") {
     return (
-      <div className="mx-auto flex max-w-lg flex-col items-center gap-4 py-16 text-center">
-        <Lock className="size-8 text-muted-foreground" />
-        <h1 className="font-heading text-xl">{t.swingVideos.proOnlyTitle}</h1>
-        <p className="text-sm text-muted-foreground">{t.swingVideos.proOnlyBody}</p>
-        <Link href="/perfil" className={buttonVariants({ className: "mt-2" })}>
-          {t.swingVideos.upgradeLink}
-        </Link>
+      <div className="mx-auto max-w-lg py-8">
+        <ProUpsell t={t.landing} />
       </div>
     );
   }

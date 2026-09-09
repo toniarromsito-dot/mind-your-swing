@@ -3,13 +3,13 @@ import { buildSystemPrompt } from "./prompt";
 import type { CoachContext } from "./types";
 
 const baseContext: CoachContext = {
-  phase: "durante_ronda",
+  phase: "durante_partida",
   playerName: "Ana",
-  tone: "CERCANO",
+  tone: "FRIEND",
   language: "es",
-  round: { course: "Club de Golf Las Encinas", totalHoles: 18, goal: "Disfrutar" },
+  game: { course: "Club de Golf Las Encinas", totalHoles: 18, goal: "Disfrutar", mode: "STROKE_PLAY" },
   currentHole: { number: 7, par: 3, distance: 150, strokes: null, putts: null },
-  roundProgress: { holesPlayed: 6, totalHoles: 18, relativeToPar: "+2" },
+  gameProgress: { holesPlayed: 6, totalHoles: 18, relativeToPar: "+2" },
   recentMood: [{ mood: "NERVIOSO", note: "manos frías", holeNumber: 6 }],
   historySummary: "Suele registrar nerviosismo en hoyos par 3.",
 };
@@ -26,18 +26,20 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("Suele registrar nerviosismo en hoyos par 3.");
   });
 
-  it("usa un tono breve durante la ronda y permite responder preguntas técnicas si se piden", () => {
+  it("usa un tono breve durante la partida y permite responder preguntas técnicas si se piden", () => {
     const prompt = buildSystemPrompt(baseContext);
     expect(prompt).toMatch(/breve por defecto/i);
     expect(prompt).toMatch(/si el jugador te pregunta por algo técnico/i);
   });
 
-  it("permite respuestas más elaboradas antes y después de la ronda", () => {
-    const preRonda = buildSystemPrompt({ ...baseContext, phase: "pre_ronda" });
-    const postRonda = buildSystemPrompt({ ...baseContext, phase: "post_ronda" });
+  it("permite respuestas más elaboradas antes y después de la partida, y en modo standalone", () => {
+    const prePartida = buildSystemPrompt({ ...baseContext, phase: "pre_partida" });
+    const postPartida = buildSystemPrompt({ ...baseContext, phase: "post_partida" });
+    const standalone = buildSystemPrompt({ ...baseContext, phase: "standalone", game: null, currentHole: null, gameProgress: null });
 
-    expect(preRonda).toMatch(/preparación previa/i);
-    expect(postRonda).toMatch(/ha terminado/i);
+    expect(prePartida).toMatch(/preparación previa/i);
+    expect(postPartida).toMatch(/ha terminado/i);
+    expect(standalone).toMatch(/no hay ninguna partida activa/i);
   });
 
   it("respeta el idioma configurado", () => {
@@ -45,8 +47,13 @@ describe("buildSystemPrompt", () => {
     expect(enPrompt).toContain("Responde siempre en inglés.");
   });
 
-  it("ajusta el tono cercano vs. formal", () => {
-    const formal = buildSystemPrompt({ ...baseContext, tone: "FORMAL" });
-    expect(formal).toMatch(/tono más formal/i);
+  it("ajusta la personalidad del compañero", () => {
+    const calm = buildSystemPrompt({ ...baseContext, tone: "CALM" });
+    const coach = buildSystemPrompt({ ...baseContext, tone: "COACH" });
+    const motivator = buildSystemPrompt({ ...baseContext, tone: "MOTIVATOR" });
+
+    expect(calm).toMatch(/personalidad calm/i);
+    expect(coach).toMatch(/personalidad coach/i);
+    expect(motivator).toMatch(/personalidad motivator/i);
   });
 });

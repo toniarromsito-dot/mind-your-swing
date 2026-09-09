@@ -51,14 +51,42 @@ model VerificationToken {
 
 // ---------- Domain models ----------
 
+// Cómo se comunica el compañero. Reemplaza al antiguo CERCANO/FORMAL: el
+// producto ahora se vende como "tu compañero de golf", así que las
+// personalidades son más expresivas que un simple tono formal/informal.
 enum CoachTone {
-  CERCANO
-  FORMAL
+  CALM
+  MOTIVATOR
+  COACH
+  FRIEND
 }
 
-enum RoundStatus {
+enum GameStatus {
   IN_PROGRESS
   COMPLETED
+}
+
+// Modos de juego. Uno por concepto, no uno por número de jugadores: la
+// misma FRIENDLY_CHALLENGE es "Reto amistoso" a 2, "Mini retos" a 3 y
+// "Retos amistosos" a 4 — solo cambia la etiqueta (ver dictionaries.ts),
+// no la lógica (ver src/lib/games/standings.ts).
+enum GameMode {
+  SOLO
+  STROKE_PLAY
+  MATCH_PLAY
+  DUEL
+  FRIENDLY_CHALLENGE
+  EVERYONE_VS_EVERYONE
+  POINTS
+  TWO_VS_TWO
+  BEST_BALL
+  SCRAMBLE
+  TEAM_DUEL
+}
+
+enum Team {
+  A
+  B
 }
 
 enum Mood {
@@ -92,7 +120,7 @@ model User {
   image         String?
 
   handicap  Float?
-  coachTone CoachTone @default(CERCANO)
+  coachTone CoachTone @default(FRIEND)
   language  String    @default("es")
 
   // Suscripción / Stripe
@@ -107,7 +135,7 @@ model User {
 
   accounts      Account[]
   sessions      Session[]
-  rounds        Round[]
+  gamePlayers   GamePlayer[]
   moodEntries   MoodEntry[]
   messages      Message[]
   stories       Story[]
@@ -155,77 +183,174 @@ model VoiceCallLog {
   @@index([userId, createdAt])
 }
 
-model Round {
-  id         String      @id @default(cuid())
-  userId     String
-  course     String
-  date       DateTime
-  totalHoles Int         @default(18)
-  goal       String?
-  status     RoundStatus @default(IN_PROGRESS)
-  insight    String?     @db.Text
+// Campo de golf. isDemo=true marca explícitamente que son datos de
+// demostración para el prototipo, nunca datos reales inventados — ver
+// README, la integración con una API real de campos queda para más
+// adelante.
+model GolfCourse {
+  id       String  @id @default(cuid())
+  name     String
+  location String?
+  isDemo   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  holes GolfCourseHole[]
+  games Game[]
+}
+
+model GolfCourseHole {
+  id       String @id @default(cuid())
+  courseId String
+  number   Int
+  par      Int
+  index    Int?
+  distance Int?
+
+  course GolfCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, number])
+}
+
+// Una partida de golf: solitaria (modo SOLO, el uso original de la app)
+// o multijugador. Cada jugador —incluido el creador— tiene su propia fila
+// en GamePlayer, y cada uno introduce sus propios golpes (Score) desde su
+// propia sesión: así es como un amigo invitado se convierte en un usuario
+// real de la app en vez de que el creador teclee por todos.
+model Game {
+  id          String     @id @default(cuid())
+  courseId    String?
+  course      String
+  mode        GameMode
+  playerCount Int        @default(1)
+  date        DateTime
+  totalHoles  Int        @default(18)
+  goal        String?
+  status      GameStatus @default(IN_PROGRESS)
+  insight     String?    @db.Text
+  inviteCode  String     @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  holes       Hole[]
-  moodEntries MoodEntry[]
-  messages    Message[]
+  golfCourse    GolfCourse?    @relation(fields: [courseId], references: [id])
+  holes         Hole[]
+  players       GamePlayer[]
+  moodEntries   MoodEntry[]
+  messages      Message[]
+  challengeWins ChallengeWin[]
 
-  @@index([userId, date])
+  @@index([date])
+}
+
+// Un jugador dentro de una partida. userId + gameId es único: no puedes
+// unirte dos veces a la misma partida.
+model GamePlayer {
+  id     String @id @default(cuid())
+  gameId String
+  userId String
+  team   Team?
+
+  joinedAt DateTime @default(now())
+
+  game   Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scores Score[]
+
+  @@unique([gameId, userId])
+  @@index([gameId])
 }
 
 model Hole {
   id       String @id @default(cuid())
-  roundId  String
+  gameId   String
   number   Int
   par      Int
   distance Int?
+  index    Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  game        Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  moodEntries MoodEntry[]
+  scores      Score[]
+
+  @@unique([gameId, number])
+}
+
+// Golpes de UN jugador en UN hoyo. Antes vivía como columnas sueltas en
+// Hole (solo servía para partidas de un jugador); ahora cada GamePlayer
+// tiene su propia fila por hoyo, lo que permite partidas multijugador.
+model Score {
+  id       String @id @default(cuid())
+  holeId   String
+  playerId String
   strokes  Int?
   putts    Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  round       Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  moodEntries MoodEntry[]
+  hole   Hole       @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  player GamePlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-  @@unique([roundId, number])
+  @@unique([holeId, playerId])
+}
+
+// Reto opcional marcado manualmente durante la partida (más cercano a
+// bandera, drive más preciso, mejor putt...). Sin detección automática
+// por GPS: lo marca un jugador o el creador de la partida.
+model ChallengeWin {
+  id           String  @id @default(cuid())
+  gameId       String
+  challengeKey String
+  playerId     String
+  holeId       String?
+
+  createdAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
 }
 
 model MoodEntry {
-  id      String  @id @default(cuid())
-  userId  String
-  roundId String
-  holeId  String?
+  id     String  @id @default(cuid())
+  userId String
+  gameId String?
+  holeId String?
 
   mood Mood
   note String? @db.Text
 
   createdAt DateTime @default(now())
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  hole  Hole? @relation(fields: [holeId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game? @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  hole Hole? @relation(fields: [holeId], references: [id], onDelete: Cascade)
 
-  @@index([roundId, createdAt])
+  @@index([gameId, createdAt])
+  @@index([userId, createdAt])
 }
 
+// El chat/llamada con el compañero. gameId es opcional: MIND funciona
+// también fuera de una partida activa (ver /mind), no solo dentro de ella.
 model Message {
-  id      String @id @default(cuid())
-  userId  String
-  roundId String
+  id     String  @id @default(cuid())
+  userId String
+  gameId String?
 
   role    MessageRole
   content String      @db.Text
 
   createdAt DateTime @default(now())
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game? @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
-  @@index([roundId, createdAt])
+  @@index([gameId, createdAt])
+  @@index([userId, createdAt])
 }
 
 // Historias reales compartidas por jugadores de la app (no contenido

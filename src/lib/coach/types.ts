@@ -1,6 +1,6 @@
-import type { CoachTone, Mood } from "@prisma/client";
+import type { CoachTone, GameMode, Mood } from "@prisma/client";
 
-export type CoachPhase = "pre_ronda" | "durante_ronda" | "post_ronda";
+export type CoachPhase = "pre_partida" | "durante_partida" | "post_partida" | "standalone";
 
 export type CoachMoodSnapshot = {
   mood: Mood;
@@ -13,11 +13,13 @@ export type CoachContext = {
   playerName: string;
   tone: CoachTone;
   language: string;
-  round: {
+  /** null cuando el jugador habla con su compañero fuera de una partida activa (ver /mind). */
+  game: {
     course: string;
     totalHoles: number;
     goal: string | null;
-  };
+    mode: GameMode;
+  } | null;
   currentHole?: {
     number: number;
     par: number;
@@ -25,7 +27,7 @@ export type CoachContext = {
     strokes: number | null;
     putts: number | null;
   } | null;
-  roundProgress?: {
+  gameProgress?: {
     holesPlayed: number;
     totalHoles: number;
     relativeToPar: string;

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Home, History, User, BookOpen, Users, ShieldCheck } from "lucide-react";
+import { Home, Flag, Brain, GraduationCap, Users, User, ShieldCheck } from "lucide-react";
 import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -17,10 +17,11 @@ export function AppShell({
   isAdmin?: boolean;
 }) {
   const navLinks = [
-    { href: "/dashboard", label: t.inicio, icon: Home },
-    { href: "/historial", label: t.historial, icon: History },
-    { href: "/aprender", label: t.aprender, icon: BookOpen },
-    { href: "/historias", label: t.comunidad, icon: Users },
+    { href: "/dashboard", label: t.home, icon: Home },
+    { href: "/play", label: t.play, icon: Flag },
+    { href: "/mind", label: t.mind, icon: Brain },
+    { href: "/coach", label: t.coach, icon: GraduationCap },
+    { href: "/community", label: t.community, icon: Users },
     { href: "/perfil", label: t.perfil, icon: User },
     ...(isAdmin ? [{ href: "/admin/videos", label: "Admin", icon: ShieldCheck }] : []),
   ];

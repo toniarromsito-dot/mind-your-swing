@@ -73,9 +73,7 @@ export default async function ProfilePage({
                 <Button type="submit" size="sm">
                   {t.perfil.upgrade}
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  {user.stripeSubscriptionId ? t.perfil.proPrice : t.perfil.welcomeOffer}
-                </span>
+                <span className="text-xs text-muted-foreground">{t.perfil.proPrice}</span>
               </form>
             )
           ) : (
@@ -88,7 +86,6 @@ export default async function ProfilePage({
         t={t.perfil}
         defaultName={user.name ?? ""}
         defaultHandicap={user.handicap}
-        defaultCoachTone={user.coachTone}
         defaultLanguage={user.language}
       />
 

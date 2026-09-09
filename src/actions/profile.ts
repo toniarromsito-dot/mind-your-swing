@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { profileSchema, type ProfileInput } from "@/lib/validations";
-import type { ActionState } from "./rounds";
+
+export type ActionState = { error?: string } | undefined;
 
 export async function updateProfile(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await auth();

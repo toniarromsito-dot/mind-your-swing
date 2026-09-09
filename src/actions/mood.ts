@@ -12,22 +12,22 @@ export async function createMoodEntry(input: unknown) {
   const parsed = moodEntrySchema.safeParse(input);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
 
-  const { roundId, holeId, mood, note } = parsed.data;
+  const { gameId, holeId, mood, note } = parsed.data;
 
-  const round = await prisma.round.findFirst({
-    where: { id: roundId, userId: session.user.id },
-  });
-  if (!round) throw new Error("Ronda no encontrada");
+  if (gameId) {
+    const player = await prisma.gamePlayer.findFirst({ where: { gameId, userId: session.user.id } });
+    if (!player) throw new Error("No perteneces a esta partida");
+  }
 
   await prisma.moodEntry.create({
     data: {
       userId: session.user.id,
-      roundId,
+      gameId: gameId ?? null,
       holeId: holeId ?? null,
       mood,
       note: note || null,
     },
   });
 
-  revalidatePath(`/rondas/${roundId}`);
+  revalidatePath(gameId ? `/play/${gameId}` : "/mind");
 }

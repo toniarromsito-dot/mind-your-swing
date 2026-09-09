@@ -10,7 +10,7 @@ import { canStartVoiceCall } from "@/lib/billing";
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
-  roundId: z.string().min(1),
+  gameId: z.string().min(1).optional(),
   holeId: z.string().min(1).optional(),
 });
 
@@ -65,12 +65,12 @@ export async function POST(req: Request) {
   try {
     const ctx = await getCoachContext({
       userId: session.user.id,
-      roundId: parsed.data.roundId,
+      gameId: parsed.data.gameId,
       holeId: parsed.data.holeId,
     });
     dynamicVariables = buildDynamicVariables(ctx);
   } catch {
-    return NextResponse.json({ error: "Ronda no encontrada" }, { status: 404 });
+    return NextResponse.json({ error: "Partida no encontrada" }, { status: 404 });
   }
 
   try {

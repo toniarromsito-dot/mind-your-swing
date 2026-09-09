@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  const { roundId, holeId, content } = parsed.data;
+  const { gameId, holeId, content } = parsed.data;
 
   const rl = checkRateLimit(userId);
   if (!rl.allowed) {
@@ -49,10 +49,10 @@ export async function POST(req: Request) {
 
   let systemPrompt: string;
   try {
-    const ctx = await getCoachContext({ userId, roundId, holeId });
+    const ctx = await getCoachContext({ userId, gameId, holeId });
     systemPrompt = buildSystemPrompt(ctx);
   } catch {
-    return NextResponse.json({ error: "Ronda no encontrada" }, { status: 404 });
+    return NextResponse.json({ error: "Partida no encontrada" }, { status: 404 });
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -63,11 +63,13 @@ export async function POST(req: Request) {
   }
 
   await prisma.message.create({
-    data: { userId, roundId, role: "USER", content },
+    data: { userId, gameId: gameId ?? null, role: "USER", content },
   });
 
+  // El chat es siempre privado del jugador, incluso dentro de una partida
+  // compartida — nunca se mezcla con los mensajes de otros jugadores.
   const history = await prisma.message.findMany({
-    where: { roundId },
+    where: { userId, gameId: gameId ?? null },
     orderBy: { createdAt: "asc" },
     take: HISTORY_LIMIT,
   });
@@ -104,7 +106,7 @@ export async function POST(req: Request) {
       } finally {
         if (full.trim().length > 0) {
           await prisma.message.create({
-            data: { userId, roundId, role: "ASSISTANT", content: full },
+            data: { userId, gameId: gameId ?? null, role: "ASSISTANT", content: full },
           });
         }
         controller.close();

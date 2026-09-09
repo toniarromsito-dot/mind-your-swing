@@ -19,13 +19,13 @@ type ChatMessage = {
 };
 
 export function CoachChat({
-  roundId,
+  gameId,
   holeId,
   initialMessages,
   t,
   quickPrompts,
 }: {
-  roundId: string;
+  gameId?: string | null;
   holeId?: string | null;
   initialMessages: { id: string; role: "USER" | "ASSISTANT"; content: string }[];
   t: Dictionary["chat"];
@@ -109,7 +109,7 @@ export function CoachChat({
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roundId, holeId: holeId ?? undefined, content }),
+        body: JSON.stringify({ gameId: gameId ?? undefined, holeId: holeId ?? undefined, content }),
       });
 
       if (!res.ok || !res.body) {

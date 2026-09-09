@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function CallCoach(props: { roundId: string; holeId?: string | null; t: Dictionary["chat"] }) {
+export function CallCoach(props: { gameId?: string | null; holeId?: string | null; t: Dictionary["chat"] }) {
   return (
     <ConversationProvider>
       <CallCoachInner {...props} />
@@ -30,11 +30,11 @@ function logCallDuration(startedAt: number | null) {
 }
 
 function CallCoachInner({
-  roundId,
+  gameId,
   holeId,
   t,
 }: {
-  roundId: string;
+  gameId?: string | null;
   holeId?: string | null;
   t: Dictionary["chat"];
 }) {
@@ -65,7 +65,7 @@ function CallCoachInner({
       const res = await fetch("/api/voice/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roundId, holeId: holeId ?? undefined }),
+        body: JSON.stringify({ gameId: gameId ?? undefined, holeId: holeId ?? undefined }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
