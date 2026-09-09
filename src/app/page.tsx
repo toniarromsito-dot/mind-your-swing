@@ -32,11 +32,32 @@ export default async function LandingPage() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
+          aria-hidden
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
-            background: "radial-gradient(60% 50% at 50% 0%, var(--secondary) 0%, transparent 70%)",
+            maskImage: "radial-gradient(65% 60% at 50% 15%, black 0%, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(65% 60% at 50% 15%, black 0%, transparent 75%)",
           }}
-        />
+        >
+          <svg
+            viewBox="0 0 800 500"
+            preserveAspectRatio="xMidYMin slice"
+            className="h-full w-full"
+            fill="none"
+          >
+            {/* Curvas de nivel de un green, como en una libreta de distancias — un guiño sutil al golf sin caer en el césped/cliché. */}
+            <g stroke="var(--foreground)" strokeWidth="1.1" opacity="0.16">
+              <path d="M100,180 C150,80 400,40 550,90 C700,130 720,260 620,320 C520,380 300,400 180,340 C90,300 60,250 100,180 Z" />
+              <path d="M150,190 C190,110 380,80 500,115 C630,150 645,250 565,295 C480,345 320,360 225,315 C155,285 130,245 150,190 Z" />
+              <path d="M200,200 C230,140 370,120 460,145 C555,170 565,240 505,270 C445,305 335,315 265,285 C215,262 195,235 200,200 Z" />
+              <path d="M260,210 C280,175 355,165 410,182 C465,200 470,235 435,255 C400,275 330,280 290,262 C265,250 252,230 260,210 Z" />
+            </g>
+            <g stroke="var(--primary)" opacity="0.4">
+              <line x1="344" y1="150" x2="344" y2="225" strokeWidth="2" />
+              <path d="M344,150 L344,172 L372,161 Z" fill="var(--primary)" stroke="none" />
+            </g>
+          </svg>
+        </div>
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-6 pt-10 pb-16 text-center sm:pt-20">
           <Image src="/icons/icon-192.png" alt="Mind Your Swing" width={56} height={56} className="rounded-2xl shadow-sm" />
           <h1 className="font-heading text-4xl leading-tight tracking-tight text-balance sm:text-5xl">{l.heroTitle}</h1>
