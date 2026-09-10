@@ -8,7 +8,9 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { LandingMobileNav } from "@/components/landing-mobile-nav";
 import { LogoMark } from "@/components/logo-mark";
 import { HeroIllustration } from "@/components/hero-illustration";
-import { LobbyMockup, ScorecardMockup, MindAnalysisMockup, RivalryCard } from "@/components/landing-mockups";
+import { LobbyMockup, ScorecardMockup, MindAnalysisMockup, ResultMockup, RivalryCard } from "@/components/landing-mockups";
+import { Reveal } from "@/components/reveal";
+import { LandingFooter } from "@/components/landing-footer";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
 const BEGINNER_ICONS = [Hand, Waves, Target, Mountain, BookOpen, Flag];
@@ -141,7 +143,7 @@ export default async function LandingPage() {
 
       {/* Filosofía: antes / durante / después */}
       <section className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-10 text-center sm:grid-cols-3 sm:gap-4">
+        <Reveal className="mx-auto grid max-w-6xl gap-8 px-6 py-10 text-center sm:grid-cols-3 sm:gap-4">
           {[
             { label: l.philosophyBeforeLabel, body: l.philosophyBeforeBody },
             { label: l.philosophyDuringLabel, body: l.philosophyDuringBody },
@@ -152,12 +154,12 @@ export default async function LandingPage() {
               <p className="mt-1 font-heading text-xl font-semibold">{item.body}</p>
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Cómo funciona: preparar, jugar, aprender */}
       <section id="como-funciona" className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
-        <div className="grid gap-16 sm:grid-cols-3">
+        <Reveal className="grid gap-16 sm:grid-cols-3">
           {steps.map((step) => (
             <div key={step.number} className="flex flex-col items-center gap-6 text-center">
               <div>
@@ -168,12 +170,12 @@ export default async function LandingPage() {
               {step.mockup}
             </div>
           ))}
-        </div>
+        </Reveal>
       </section>
 
       {/* Jugar con amigos */}
       <section className="bg-secondary/40 px-6 py-20 sm:py-28">
-        <div className="mx-auto max-w-5xl">
+        <Reveal className="mx-auto max-w-5xl">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.friendsTitle}</h2>
             <p className="mt-3 text-muted-foreground">{l.friendsBody}</p>
@@ -193,29 +195,50 @@ export default async function LandingPage() {
             ))}
           </div>
           <p className="mt-8 text-center text-sm font-medium text-primary">{l.friendsFreeNote}</p>
-        </div>
+        </Reveal>
       </section>
 
       {/* Focus mode */}
-      <section className="mx-auto grid max-w-5xl items-center gap-12 px-6 py-20 sm:grid-cols-2 sm:py-28">
-        <div className="order-2 sm:order-1">
-          <p className="text-xs font-medium tracking-wide text-primary uppercase">{l.focusEyebrow}</p>
-          <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.focusTitle}</h2>
-          <p className="mt-4 max-w-md text-muted-foreground">{l.focusBody}</p>
-        </div>
-        <div className="order-1 sm:order-2">
-          <ScorecardMockup holeNumber={11} />
-        </div>
+      <section className="mx-auto max-w-5xl px-6 py-20 sm:py-28">
+        <Reveal className="grid items-center gap-12 sm:grid-cols-2">
+          <div className="order-2 sm:order-1">
+            <p className="text-xs font-medium tracking-wide text-primary uppercase">{l.focusEyebrow}</p>
+            <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.focusTitle}</h2>
+            <p className="mt-4 max-w-md text-muted-foreground">{l.focusBody}</p>
+          </div>
+          <div className="order-1 sm:order-2">
+            <ScorecardMockup holeNumber={11} />
+          </div>
+        </Reveal>
       </section>
 
-      {/* Mentoría post-vuelta + revancha */}
+      {/* Después de la vuelta */}
+      <section className="mx-auto max-w-5xl px-6 py-20 sm:py-28">
+        <Reveal className="grid items-center gap-12 sm:grid-cols-2">
+          <div className="order-2 sm:order-1">
+            <p className="text-xs font-medium tracking-wide text-primary uppercase">{l.afterRoundEyebrow}</p>
+            <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.afterRoundTitle}</h2>
+            <p className="mt-4 max-w-md text-muted-foreground">{l.afterRoundBody}</p>
+          </div>
+          <div className="order-1 sm:order-2">
+            <ResultMockup />
+          </div>
+        </Reveal>
+      </section>
+
+      {/* Mentoría post-vuelta + memoria + revancha */}
       <section className="bg-secondary/40 px-6 py-20 sm:py-28">
-        <div className="mx-auto grid max-w-5xl items-center gap-12 sm:grid-cols-2">
+        <Reveal className="mx-auto grid max-w-5xl items-center gap-12 sm:grid-cols-2">
           <MindAnalysisMockup />
           <div>
             <p className="text-xs font-medium tracking-wide text-primary uppercase">{l.mentorEyebrow}</p>
             <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.mentorTitle}</h2>
             <p className="mt-4 max-w-md text-muted-foreground">{l.mentorBody}</p>
+
+            <div className="mt-6 rounded-2xl border border-border bg-card p-4">
+              <p className="text-sm text-muted-foreground italic">&ldquo;{l.memoryQuote}&rdquo;</p>
+              <p className="mt-2 text-xs text-muted-foreground">{l.memoryNote}</p>
+            </div>
 
             <div className="mt-8 border-t border-border pt-8">
               <h3 className="font-heading text-xl font-semibold">{l.revengeTitle}</h3>
@@ -225,39 +248,41 @@ export default async function LandingPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* Aprende a jugar */}
       <section id="aprende" className="mx-auto max-w-5xl px-6 py-20 sm:py-28">
-        <div className="mx-auto max-w-xl text-center">
-          <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.beginnerTitle}</h2>
-          <p className="mt-3 text-muted-foreground">{l.beginnerBody}</p>
-        </div>
-        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {l.beginnerTopics.map((topic, i) => {
-            const Icon = BEGINNER_ICONS[i % BEGINNER_ICONS.length];
-            const isPremium = i >= l.beginnerTopics.length - 2;
-            return (
-              <div key={topic} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
-                <Icon className="size-5 text-primary" />
-                <p className="text-sm font-medium">{topic}</p>
-                <span
-                  className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                    isPremium ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"
-                  }`}
-                >
-                  {isPremium ? l.beginnerPremiumTag : l.beginnerFreeTag}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        <Reveal>
+          <div className="mx-auto max-w-xl text-center">
+            <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.beginnerTitle}</h2>
+            <p className="mt-3 text-muted-foreground">{l.beginnerBody}</p>
+          </div>
+          <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {l.beginnerTopics.map((topic, i) => {
+              const Icon = BEGINNER_ICONS[i % BEGINNER_ICONS.length];
+              const isPremium = i >= l.beginnerTopics.length - 2;
+              return (
+                <div key={topic} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
+                  <Icon className="size-5 text-primary" />
+                  <p className="text-sm font-medium">{topic}</p>
+                  <span
+                    className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      isPremium ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"
+                    }`}
+                  >
+                    {isPremium ? l.beginnerPremiumTag : l.beginnerFreeTag}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Reveal>
       </section>
 
       {/* Comunidad */}
       <section id="comunidad" className="bg-secondary/40 px-6 py-20 sm:py-28">
-        <div className="mx-auto grid max-w-4xl items-center gap-10 sm:grid-cols-2">
+        <Reveal className="mx-auto grid max-w-4xl items-center gap-10 sm:grid-cols-2">
           <div>
             <h2 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.communityTitle}</h2>
             <p className="mt-3 max-w-sm text-muted-foreground">{l.communityBody}</p>
@@ -272,22 +297,43 @@ export default async function LandingPage() {
             </div>
             <p className="mt-3 text-xs text-muted-foreground">{l.communityExampleReplies}</p>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* Premium */}
       <section id="precios" className="mx-auto max-w-3xl px-6 py-20 sm:py-28">
-        <div className="rounded-3xl border border-primary/25 bg-secondary/40 p-8 text-center">
-          <h2 className="font-heading text-2xl font-semibold">{l.premiumTitle}</h2>
-          <p className="mt-1 text-sm font-medium text-primary">{l.premiumTagline}</p>
-          <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">{l.premiumBody}</p>
-          <p className="mt-4 font-heading text-3xl font-semibold">{l.premiumPrice}</p>
-          <form action={signInWithGoogle} className="mt-5 inline-block">
-            <Button type="submit" size="lg" className="rounded-full px-6">
-              {l.premiumCta}
-            </Button>
-          </form>
-        </div>
+        <Reveal>
+          <div className="rounded-3xl border border-primary/25 bg-secondary/40 p-8 text-center">
+            <h2 className="font-heading text-2xl font-semibold">{l.premiumTitle}</h2>
+            <p className="mt-1 text-sm font-medium text-primary">{l.premiumTagline}</p>
+            <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">{l.premiumBody}</p>
+            <p className="mt-4 font-heading text-3xl font-semibold">{l.premiumPrice}</p>
+            <form action={signInWithGoogle} className="mt-5 inline-block">
+              <Button type="submit" size="lg" className="rounded-full px-6">
+                {l.premiumCta}
+              </Button>
+            </form>
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <p className="font-heading text-lg font-semibold">{l.freePlanTitle}</p>
+              <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
+                {l.freePlanFeatures.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-primary/30 bg-card p-6">
+              <p className="font-heading text-lg font-semibold text-primary">{l.premiumTitle}</p>
+              <ul className="mt-4 flex flex-col gap-2.5 text-sm text-muted-foreground">
+                {l.premiumPlanFeatures.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </Reveal>
       </section>
 
       {/* CTA final */}
@@ -305,6 +351,8 @@ export default async function LandingPage() {
           </Button>
         </form>
       </section>
+
+      <LandingFooter tagline={l.footerTagline} rights={l.footerRights} links={navLinks} />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { ChevronLeft, Minus, Plus, Users } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Trophy, Users } from "lucide-react";
 
 /**
  * Representaciones ilustrativas de la propia interfaz (no interactivas) —
@@ -151,6 +151,43 @@ export function MindAnalysisMockup() {
           Después de un error, tu reacción influye en los siguientes hoyos. Vamos a trabajarlo en la próxima vuelta.
         </p>
       </div>
+    </PhoneFrame>
+  );
+}
+
+export function ResultMockup() {
+  return (
+    <PhoneFrame>
+      <p className="text-center font-heading text-base font-semibold">¡Vuelta terminada!</p>
+      <p className="-mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
+        Son Muntaner · 18 hoyos · Par 72 <DemoTag />
+      </p>
+      <div className="flex flex-col items-center gap-1 text-center">
+        <Trophy className="size-6 text-primary" />
+        <p className="font-heading text-xl">Antonio</p>
+        <p className="text-sm text-muted-foreground">87 golpes</p>
+      </div>
+      <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+        <div className="flex items-center justify-between">
+          <span>Juan</span>
+          <span>89</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Pablo</span>
+          <span>92</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Miguel</span>
+          <span>94</span>
+        </div>
+      </div>
+      <div className="rounded-xl bg-secondary py-2 text-center text-xs font-medium text-secondary-foreground">
+        😅 Juan invita a comer
+      </div>
+      <div className="rounded-xl bg-primary py-2.5 text-center text-sm font-medium text-primary-foreground">
+        Ver análisis con Mind
+      </div>
+      <p className="text-center text-xs font-medium text-muted-foreground">¿Revancha?</p>
     </PhoneFrame>
   );
 }
