@@ -69,12 +69,18 @@ export default async function ProfilePage({
                 </Button>
               </form>
             ) : (
-              <form action={createCheckoutSession} className="flex flex-col items-start gap-1.5">
-                <Button type="submit" size="sm">
-                  {t.perfil.upgrade}
-                </Button>
-                <span className="text-xs text-muted-foreground">{t.perfil.proPrice}</span>
-              </form>
+              <div className="flex flex-col gap-3 border-t border-border pt-3">
+                <div>
+                  <p className="text-sm font-medium text-primary">{t.landing.premiumTagline}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t.landing.premiumBody}</p>
+                </div>
+                <form action={createCheckoutSession} className="flex flex-col items-start gap-1.5">
+                  <Button type="submit" size="sm">
+                    {t.perfil.upgrade}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">{t.perfil.proPrice}</span>
+                </form>
+              </div>
             )
           ) : (
             <p className="text-xs text-muted-foreground">{t.perfil.billingUnavailable}</p>

@@ -25,19 +25,22 @@ export const GAME_MODE_META: Record<GameMode, ModeMeta> = {
   TEAM_DUEL: { standingsKind: "team-stroke", usesTeams: true, usesChallenges: false, allowedPlayerCounts: [4], pro: true },
 };
 
-/** Modos disponibles para un número de jugadores, el primero es el recomendado. */
+/**
+ * Modos ofrecidos al crear una partida, el primero es el recomendado.
+ * Lista deliberadamente corta por diseño ("no hace falta crear 20
+ * modalidades, la experiencia debe ser sencilla para cualquier edad") —
+ * FRIENDLY_CHALLENGE y TEAM_DUEL existen en el schema por compatibilidad
+ * con partidas antiguas, pero ya no se ofrecen al crear una nueva.
+ */
+const CURATED_MODES: Partial<Record<number, GameMode[]>> = {
+  1: ["SOLO"],
+  2: ["STROKE_PLAY", "MATCH_PLAY", "DUEL"],
+  3: ["STROKE_PLAY", "EVERYONE_VS_EVERYONE", "POINTS"],
+  4: ["STROKE_PLAY", "TWO_VS_TWO", "BEST_BALL", "SCRAMBLE"],
+};
+
 export function modesForPlayerCount(count: number): GameMode[] {
-  const modes = (Object.keys(GAME_MODE_META) as GameMode[]).filter((m) =>
-    GAME_MODE_META[m].allowedPlayerCounts.includes(count)
-  );
-  const recommended: Partial<Record<number, GameMode>> = {
-    2: "STROKE_PLAY",
-    3: "POINTS",
-    4: "STROKE_PLAY",
-  };
-  const rec = recommended[count];
-  if (!rec) return modes;
-  return [rec, ...modes.filter((m) => m !== rec)];
+  return CURATED_MODES[count] ?? [];
 }
 
 export const CHALLENGE_KEYS = [

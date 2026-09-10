@@ -1,4 +1,4 @@
-import { ChevronLeft, Minus, Plus, Trophy, Users } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Users } from "lucide-react";
 
 /**
  * Representaciones ilustrativas de la propia interfaz (no interactivas) —
@@ -27,40 +27,6 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col gap-4 px-4 pt-1 pb-6">{children}</div>
       </div>
     </div>
-  );
-}
-
-export function HomeMockup() {
-  return (
-    <PhoneFrame>
-      <div>
-        <p className="font-heading text-lg font-semibold">Hola, Antonio</p>
-        <p className="text-xs text-muted-foreground">¿Listo para tu próxima vuelta?</p>
-      </div>
-      <div className="rounded-2xl bg-secondary p-3.5">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-semibold">Son Muntaner</p>
-          <DemoTag />
-        </div>
-        <p className="text-xs text-muted-foreground">Palma, Mallorca</p>
-        <p className="mt-1 text-xs text-muted-foreground">18 hoyos · Par 72</p>
-      </div>
-      <div className="flex flex-col divide-y divide-border rounded-2xl border border-border">
-        {[
-          { label: "Invitar jugadores", sub: "Añade a tus compañeros" },
-          { label: "Modo de juego", sub: "Stroke Play" },
-          { label: "Apuesta (opcional)", sub: "El perdedor invita a comer" },
-        ].map((row) => (
-          <div key={row.label} className="px-3.5 py-2.5">
-            <p className="text-xs font-medium">{row.label}</p>
-            <p className="text-[11px] text-muted-foreground">{row.sub}</p>
-          </div>
-        ))}
-      </div>
-      <div className="rounded-xl bg-primary py-2.5 text-center text-sm font-medium text-primary-foreground">
-        Comenzar partida
-      </div>
-    </PhoneFrame>
   );
 }
 
@@ -185,39 +151,6 @@ export function MindAnalysisMockup() {
           Después de un error, tu reacción influye en los siguientes hoyos. Vamos a trabajarlo en la próxima vuelta.
         </p>
       </div>
-    </PhoneFrame>
-  );
-}
-
-export function ResultMockup() {
-  return (
-    <PhoneFrame>
-      <p className="text-center font-heading text-base font-semibold">¡Vuelta terminada!</p>
-      <p className="-mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
-        Son Muntaner · 18 hoyos · Par 72 <DemoTag />
-      </p>
-      <div className="flex flex-col items-center gap-1 text-center">
-        <Trophy className="size-6 text-primary" />
-        <p className="font-heading text-xl">Antonio</p>
-        <p className="text-sm text-muted-foreground">87 golpes</p>
-      </div>
-      <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-        <div className="flex items-center justify-between">
-          <span>Juan</span>
-          <span>89</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Pablo</span>
-          <span>92</span>
-        </div>
-      </div>
-      <div className="rounded-xl bg-secondary py-2 text-center text-xs font-medium text-secondary-foreground">
-        😅 El perdedor invita a comer
-      </div>
-      <div className="rounded-xl bg-primary py-2.5 text-center text-sm font-medium text-primary-foreground">
-        Ver análisis con Mind
-      </div>
-      <p className="text-center text-xs font-medium text-muted-foreground">¿Revancha?</p>
     </PhoneFrame>
   );
 }

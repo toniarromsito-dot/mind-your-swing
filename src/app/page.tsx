@@ -8,14 +8,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { LandingMobileNav } from "@/components/landing-mobile-nav";
 import { LogoMark } from "@/components/logo-mark";
 import { HeroIllustration } from "@/components/hero-illustration";
-import {
-  HomeMockup,
-  LobbyMockup,
-  ScorecardMockup,
-  MindAnalysisMockup,
-  ResultMockup,
-  RivalryCard,
-} from "@/components/landing-mockups";
+import { LobbyMockup, ScorecardMockup, MindAnalysisMockup, RivalryCard } from "@/components/landing-mockups";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
 const BEGINNER_ICONS = [Hand, Waves, Target, Mountain, BookOpen, Flag];
@@ -134,13 +127,13 @@ export default async function LandingPage() {
 
           <div className="relative flex items-center justify-center">
             <div className="hidden -mr-12 rotate-[-6deg] opacity-90 sm:block">
-              <HomeMockup />
+              <LobbyMockup />
             </div>
             <div className="relative z-10 scale-100 sm:scale-110">
               <ScorecardMockup />
             </div>
             <div className="hidden -ml-12 rotate-[6deg] opacity-90 sm:block">
-              <ResultMockup />
+              <MindAnalysisMockup />
             </div>
           </div>
         </div>
