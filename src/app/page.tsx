@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { BookOpen, Flag, Hand, Mountain, Play, Target, Waves, MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GoogleIcon } from "@/components/google-icon";
 import { LanguageToggle } from "@/components/language-toggle";
 import { LandingMobileNav } from "@/components/landing-mobile-nav";
+import { LogoMark } from "@/components/logo-mark";
 import { HeroIllustration } from "@/components/hero-illustration";
 import {
   HomeMockup,
@@ -54,9 +54,9 @@ export default async function LandingPage() {
         <HeroIllustration />
 
         <nav className="relative mx-auto flex max-w-6xl items-center justify-between px-6 pt-6">
-          <a href="#top" className="flex shrink-0 items-center gap-2.5">
-            <Image src="/icons/icon-192.png" alt="Mind Your Swing" width={30} height={30} className="rounded-lg" />
-            <span className="font-heading text-sm font-semibold tracking-tight whitespace-nowrap">{l.heroTitle}</span>
+          <a href="#top" className="flex shrink-0 items-center gap-2">
+            <LogoMark className="h-5 w-auto text-white" />
+            <span className="font-heading text-sm font-semibold tracking-tight whitespace-nowrap">Mind Your Swing</span>
           </a>
           <div className="hidden items-center gap-6 text-sm whitespace-nowrap text-neutral-300 lg:flex">
             {navLinks.map((link) => (

@@ -18,27 +18,27 @@ export default async function HomePage() {
   const activeGame = activeGames[0] ?? null;
 
   const cards = [
-    { href: "/play/new", emoji: "🏌️", icon: Flag, title: t.home.playCard, body: t.home.playCardBody },
-    { href: "/mind", emoji: "🧠", icon: Brain, title: t.home.mindCard, body: t.home.mindCardBody },
-    { href: "/coach/videos", emoji: "⛳", icon: Target, title: t.home.trainCard, body: t.home.trainCardBody },
-    { href: "/coach", emoji: "🌱", icon: Sprout, title: t.home.learnCard, body: t.home.learnCardBody },
+    { href: "/play/new", icon: Flag, title: t.home.playCard, body: t.home.playCardBody },
+    { href: "/mind", icon: Brain, title: t.home.mindCard, body: t.home.mindCardBody },
+    { href: "/coach/videos", icon: Target, title: t.home.trainCard, body: t.home.trainCardBody },
+    { href: "/coach", icon: Sprout, title: t.home.learnCard, body: t.home.learnCardBody },
   ];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div>
-        <h1 className="font-heading text-2xl sm:text-3xl">
+        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
           {t.dashboard.greeting(session?.user.name?.split(" ")[0] ?? "")}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t.home.prompt}</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">{t.home.prompt}</p>
       </div>
 
       {activeGame && (
         <Card className="border-primary/30 bg-secondary/40">
           <CardContent className="flex items-center justify-between gap-4 py-5">
             <div>
-              <p className="text-xs font-medium text-primary">{t.home.gameInProgress}</p>
-              <p className="mt-1 font-medium">{activeGame.course}</p>
+              <p className="text-xs font-medium tracking-wide text-primary uppercase">{t.home.gameInProgress}</p>
+              <p className="mt-1 font-heading text-lg font-semibold">{activeGame.course}</p>
               <p className="text-sm text-muted-foreground">
                 {activeGame.players.length > 1 ? `${activeGame.players.length} ${t.play.players} · ` : ""}
                 {t.newGame.modeLabels[activeGame.mode]}
@@ -54,7 +54,7 @@ export default async function HomePage() {
                 ) : null;
               })()}
             </div>
-            <Link href={`/play/${activeGame.id}`} className={buttonVariants({ className: "gap-1.5" })}>
+            <Link href={`/play/${activeGame.id}`} className={buttonVariants({ className: "gap-1.5 rounded-full" })}>
               {t.home.continue} <ArrowRight className="size-4" />
             </Link>
           </CardContent>
@@ -64,10 +64,12 @@ export default async function HomePage() {
       <div className="grid grid-cols-2 gap-3">
         {cards.map((c) => (
           <Link key={c.href} href={c.href}>
-            <Card className="h-full transition-colors hover:bg-secondary/40">
-              <CardContent className="flex flex-col items-start gap-2 py-6">
-                <span className="text-3xl">{c.emoji}</span>
-                <p className="font-heading text-base">{c.title}</p>
+            <Card className="h-full transition-colors hover:border-primary/30 hover:bg-secondary/40">
+              <CardContent className="flex flex-col items-start gap-3 py-6">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <c.icon className="size-5" />
+                </span>
+                <p className="font-heading text-base font-semibold">{c.title}</p>
                 <p className="text-xs text-muted-foreground">{c.body}</p>
               </CardContent>
             </Card>

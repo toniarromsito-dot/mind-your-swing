@@ -62,7 +62,7 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         <p className="text-sm text-muted-foreground">
           {new Date(game.date).toLocaleDateString(t.dateLocale, { day: "numeric", month: "long", year: "numeric" })}
         </p>
-        <h1 className="font-heading text-2xl tracking-tight">{game.course}</h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">{game.course}</h1>
       </div>
 
       {usesTeams && winnerTeam && loserTeam ? (

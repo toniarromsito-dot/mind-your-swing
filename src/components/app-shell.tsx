@@ -30,7 +30,7 @@ export function AppShell({
     <div className="flex min-h-svh flex-col bg-background">
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
             <Image
               src="/icons/icon-192.png"
               alt="Mind Your Swing"
@@ -38,15 +38,15 @@ export function AppShell({
               height={32}
               className="rounded-[9px]"
             />
-            <span className="font-heading text-lg tracking-wide">MYS</span>
+            <span className="font-heading text-lg font-semibold tracking-tight whitespace-nowrap">MYS</span>
           </Link>
 
-          <nav className="hidden items-center gap-1 sm:flex">
+          <nav className="hidden items-center gap-1 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={buttonVariants({ variant: "ghost", size: "sm", className: "gap-2 text-sm" })}
+                className={buttonVariants({ variant: "ghost", size: "sm", className: "gap-2 text-sm whitespace-nowrap" })}
               >
                 <link.icon className="size-4" />
                 {link.label}
@@ -54,7 +54,7 @@ export function AppShell({
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             {user.image ? (
               <Image
                 src={user.image}
@@ -68,7 +68,7 @@ export function AppShell({
                 {user.name?.[0] ?? "?"}
               </div>
             )}
-            <form action={signOutAction} className="hidden sm:block">
+            <form action={signOutAction} className="hidden lg:block">
               <Button type="submit" variant="outline" size="sm">
                 {t.cerrarSesion}
               </Button>
@@ -81,7 +81,7 @@ export function AppShell({
         {children}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-around px-1 py-2">
           {navLinks.map((link) => (
             <Link

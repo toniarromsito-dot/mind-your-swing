@@ -16,7 +16,7 @@ export default async function LearnPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <div>
-        <h1 className="font-heading text-2xl">{t.coach.title}</h1>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.coach.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.coach.subtitle}</p>
       </div>
 

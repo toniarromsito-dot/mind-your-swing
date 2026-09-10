@@ -78,7 +78,7 @@ export function GameLobby({
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
       <div>
-        <h1 className="font-heading text-2xl tracking-tight">{course}</h1>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">{course}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.subtitle}</p>
       </div>
 

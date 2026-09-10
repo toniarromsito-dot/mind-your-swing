@@ -31,7 +31,7 @@ export default async function ProfilePage({
           <Image src={user.image} alt={user.name ?? ""} width={56} height={56} className="rounded-full" />
         )}
         <div>
-          <h1 className="font-heading text-2xl">{user.name}</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">{user.name}</h1>
           <p className="text-sm text-muted-foreground">{user.email}</p>
         </div>
       </div>
@@ -91,7 +91,7 @@ export default async function ProfilePage({
 
       <p className="text-xs text-muted-foreground">{t.perfil.disclaimer}</p>
 
-      <form action={signOutAction} className="sm:hidden">
+      <form action={signOutAction} className="lg:hidden">
         <Button type="submit" variant="outline" className="w-full">
           {t.perfil.signOut}
         </Button>

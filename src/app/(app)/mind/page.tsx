@@ -27,7 +27,7 @@ export default async function MindPage() {
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
       <div>
-        <h1 className="font-heading text-2xl">{t.mind.title}</h1>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.mind.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.mind.subtitle}</p>
       </div>
 
