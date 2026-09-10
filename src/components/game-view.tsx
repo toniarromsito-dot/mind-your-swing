@@ -3,9 +3,10 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, Home } from "lucide-react";
+import { ChevronLeft, Loader2, Home, MoreHorizontal } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
 import { finishGame } from "@/actions/games";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type GameForView = {
@@ -89,14 +90,28 @@ export function GameView({
           <ChevronLeft className="size-4" />
           {t.previousHole}
         </button>
-        <p className="text-sm font-medium text-muted-foreground">{game.course}</p>
-        <Link
-          href="/mind"
-          aria-label={t.mindButtonLabel}
-          className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          <Home className="size-4" />
-        </Link>
+        <p className="truncate px-2 text-sm font-medium text-muted-foreground">{game.course}</p>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Link
+            href="/mind"
+            aria-label={t.mindButtonLabel}
+            className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Home className="size-4" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label={t.moreOptionsLabel}
+              className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <MoreHorizontal className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled>{t.keepPlaying}</DropdownMenuItem>
+              {!isLastHole && <DropdownMenuItem onClick={finishEarly}>{t.finishEarly}</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {isFinishing ? (
@@ -105,26 +120,16 @@ export function GameView({
           <p>{t.saving}</p>
         </div>
       ) : (
-        <>
-          <SharedScorecard
-            key={hole.id}
-            gameId={game.id}
-            hole={hole}
-            players={players}
-            onSaved={goToNextHole}
-            t={t}
-            golfResult={golfResult}
-          />
-          {!isLastHole && (
-            <button
-              type="button"
-              onClick={finishEarly}
-              className="mx-auto mb-4 text-xs text-muted-foreground underline-offset-4 hover:underline"
-            >
-              {t.finishEarly}
-            </button>
-          )}
-        </>
+        <SharedScorecard
+          key={hole.id}
+          gameId={game.id}
+          hole={hole}
+          totalHoles={game.holes.length}
+          players={players}
+          onSaved={goToNextHole}
+          t={t}
+          golfResult={golfResult}
+        />
       )}
     </div>
   );

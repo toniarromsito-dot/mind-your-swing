@@ -21,6 +21,7 @@ const STROKE_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1);
 export function SharedScorecard({
   gameId,
   hole,
+  totalHoles,
   players,
   onSaved,
   t,
@@ -28,6 +29,7 @@ export function SharedScorecard({
 }: {
   gameId: string;
   hole: { id: string; number: number; par: number };
+  totalHoles: number;
   players: ScorecardPlayer[];
   onSaved: () => void;
   t: Dictionary["playGame"];
@@ -80,7 +82,9 @@ export function SharedScorecard({
   return (
     <div className="flex flex-1 flex-col items-center gap-8 px-6 py-8 text-center">
       <div>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">{fmt(t.hole, { n: hole.number })}</h1>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight">
+          {fmt(t.hole, { n: hole.number, total: totalHoles })}
+        </h1>
         <p className="mt-1 text-lg text-muted-foreground">
           {t.par} {hole.par}
         </p>

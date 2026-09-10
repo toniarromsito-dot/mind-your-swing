@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Camera, Hand, PersonStanding, Move, Target, AlertTriangle, Flag as FlagIcon, MapPinned, BookOpen, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoCard } from "@/components/video-card";
 import { buttonVariants } from "@/components/ui/button";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
+
+const TOPIC_ICONS = [Hand, PersonStanding, Move, Target, AlertTriangle, Sparkles, MapPinned, BookOpen, FlagIcon];
 
 export default async function LearnPage() {
   const userId = await requireUserId();
@@ -21,16 +23,24 @@ export default async function LearnPage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {t.coach.topics.map((topic) => (
-          <Card key={topic.title}>
-            <CardHeader>
-              <CardTitle className="font-heading text-lg">{topic.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{topic.body}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {t.coach.topics.map((topic, i) => {
+          const Icon = TOPIC_ICONS[i % TOPIC_ICONS.length];
+          return (
+            <Card key={topic.title}>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="size-4" />
+                  </span>
+                  <CardTitle className="font-heading text-lg">{topic.title}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{topic.body}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="flex flex-col gap-6">

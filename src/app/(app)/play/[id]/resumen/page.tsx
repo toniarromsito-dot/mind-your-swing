@@ -56,13 +56,29 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
     otherPlayerIds.length > 1 ? await getHeadToHeadHistory(otherPlayerIds, game.id) : null;
   const winnerUserId = winnerPlayer ? userIdByPlayerId.get(winnerPlayer.playerId) : null;
 
+  const myStanding = individualStandings.find((s) => s.playerId === myPlayer.id);
+  const holesPlayedCount = myPlayedHoles.length;
+  const playedFewerHoles = holesPlayedCount > 0 && holesPlayedCount < game.totalHoles;
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div className="text-center">
+        <p className="text-xs font-medium tracking-wide text-primary uppercase">{t.summary.roundFinished}</p>
+        {myStanding && (
+          <div className="mt-2">
+            <p className="font-heading text-6xl font-semibold tracking-tight">{myStanding.total}</p>
+            <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">{t.summary.strokes}</p>
+          </div>
+        )}
+        <h1 className="mt-4 font-heading text-xl font-semibold tracking-tight">{game.course}</h1>
         <p className="text-sm text-muted-foreground">
+          {playedFewerHoles
+            ? fmt(t.summary.holesPlayedPartial, { played: holesPlayedCount, total: game.totalHoles })
+            : fmt(t.summary.holesTotal, { total: game.totalHoles })}
+        </p>
+        <p className="text-xs text-muted-foreground">
           {new Date(game.date).toLocaleDateString(t.dateLocale, { day: "numeric", month: "long", year: "numeric" })}
         </p>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">{game.course}</h1>
       </div>
 
       {usesTeams && winnerTeam && loserTeam ? (

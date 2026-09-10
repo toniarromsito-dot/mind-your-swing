@@ -25,7 +25,9 @@ export default async function StoriesPage() {
       </Card>
 
       {stories.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t.community.empty}</p>
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">{t.community.empty}</CardContent>
+        </Card>
       ) : (
         <div className="flex flex-col gap-3">
           {stories.map((story) => (
