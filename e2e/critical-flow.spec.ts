@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 // Flujo crítico end-to-end: login (mockeado vía ruta de solo-desarrollo,
 // ver src/app/api/dev-login/route.ts) → crear partida en solitario → lobby
-// → Focus Mode (scorecard compartido, hoyo a hoyo) → resumen → aparece en
-// el historial de /play.
+// → Focus Mode (cuadrícula de golpes, toque = guardado automático, hoyo a
+// hoyo) → resumen → aparece en el historial de /play.
 
 test.beforeEach(async ({ page }) => {
   const uniqueEmail = `e2e-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
@@ -11,8 +11,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("flujo completo de una partida en solitario", async ({ page }) => {
+  // 18 hoyos con la breve pausa de confirmación (~1.1s) de la cuadrícula
+  // de golpes superan el timeout por defecto de 30s.
+  test.setTimeout(75_000);
+
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByText("Vamos a empezar.")).toBeVisible();
+  await expect(page.getByText("¿Qué quieres hacer hoy?")).toBeVisible();
 
   await page.goto("/play/new");
   await page.getByRole("button", { name: "Prefiero jugar solo" }).click();
@@ -29,13 +33,11 @@ test("flujo completo de una partida en solitario", async ({ page }) => {
 
   await page.getByRole("button", { name: "Empezar partida" }).click();
 
-  // Focus Mode: nada más que el scorecard, hoyo a hoyo hasta el 18.
+  // Focus Mode: nada más que la cuadrícula de golpes, hoyo a hoyo hasta el
+  // 18 — tocar un número guarda al instante y avanza solo, sin botones.
   for (let holeNumber = 1; holeNumber <= 18; holeNumber++) {
     await expect(page.getByRole("heading", { name: `Hoyo ${holeNumber}` })).toBeVisible();
-    await page.getByRole("button", { name: "Sumar a Golpes" }).click();
-
-    const isLastHole = holeNumber === 18;
-    await page.getByRole("button", { name: isLastHole ? "Finalizar partida" : "Guardar hoyo" }).click();
+    await page.getByRole("button", { name: "4", exact: true }).click();
   }
 
   // Finalizar la última anota-y-guarda dispara finishGame + navegación al

@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft, Loader2, Brain } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
 import { finishGame } from "@/actions/games";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -22,9 +23,21 @@ type GameForView = {
 /**
  * Focus Mode: durante la vuelta la app no muestra nada más que el
  * scorecard — sin standings, sin retos, sin chat con el compañero. Ver
- * brief §2-3: "la aplicación debe desaparecer."
+ * brief: "durante la vuelta, Mind desaparece." El único acceso a Mind es
+ * el icono pequeño de la cabecera, que navega fuera y nunca interrumpe
+ * solo. Al volver, la vuelta reanuda exactamente donde estaba porque la
+ * posición del hoyo se recalcula siempre a partir de lo ya guardado en
+ * base de datos, no de estado local.
  */
-export function GameView({ game, t }: { game: GameForView; t: Dictionary["playGame"] }) {
+export function GameView({
+  game,
+  t,
+  golfResult,
+}: {
+  game: GameForView;
+  t: Dictionary["playGame"];
+  golfResult: Dictionary["golfResult"];
+}) {
   const firstUnplayedIndex = game.holes.findIndex((h) =>
     game.players.some((p) => p.scores.find((s) => s.holeId === h.id)?.strokes == null)
   );
@@ -69,7 +82,13 @@ export function GameView({ game, t }: { game: GameForView; t: Dictionary["playGa
           {t.previousHole}
         </button>
         <p className="text-sm font-medium text-muted-foreground">{game.course}</p>
-        <span className="w-16" />
+        <Link
+          href="/mind"
+          aria-label={t.mindButtonLabel}
+          className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <Brain className="size-4" />
+        </Link>
       </div>
 
       {isFinishing ? (
@@ -83,9 +102,9 @@ export function GameView({ game, t }: { game: GameForView; t: Dictionary["playGa
           gameId={game.id}
           hole={hole}
           players={players}
-          isLastHole={isLastHole}
           onSaved={goToNextHole}
           t={t}
+          golfResult={golfResult}
         />
       )}
     </div>

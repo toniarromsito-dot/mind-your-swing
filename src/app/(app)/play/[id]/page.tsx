@@ -35,5 +35,5 @@ export default async function GamePage({ params }: PageProps<"/play/[id]">) {
     );
   }
 
-  return <GameView game={game} t={t.playGame} />;
+  return <GameView game={game} t={t.playGame} golfResult={t.golfResult} />;
 }

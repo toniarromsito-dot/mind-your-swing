@@ -69,48 +69,6 @@ export function getCourseWithHoles(courseId: string) {
   });
 }
 
-export type UserGolfSummary = {
-  completedCount: number;
-  lastGame: { id: string; course: string; total: number; relativeToPar: string; date: Date } | null;
-  bestGame: { id: string; course: string; total: number } | null;
-  latestInsight: { id: string; course: string; insight: string } | null;
-};
-
-/**
- * Resumen real del jugador para el dashboard — nunca inventa datos: si no
- * hay vueltas completadas, todo sale null/0 y la UI debe mostrar el
- * estado vacío correspondiente.
- */
-export async function getUserGolfSummary(userId: string): Promise<UserGolfSummary> {
-  const games = await listGamesForUser(userId);
-  const completed = games.filter((g) => g.status === "COMPLETED");
-
-  const withTotals = completed.map((g) => {
-    const { players, scores } = toStandingsInput(g);
-    const standings = computeStrokeStandings(players, scores);
-    const myPlayerId = g.players.find((p) => p.userId === userId)?.id;
-    const mine = standings.find((s) => s.playerId === myPlayerId);
-    return { game: g, total: mine?.total ?? 0, relativeToPar: mine?.relativeToPar ?? "" };
-  });
-
-  const lastEntry = withTotals[0] ?? null;
-  const bestEntry = withTotals.length
-    ? withTotals.reduce((best, cur) => (cur.total < best.total ? cur : best))
-    : null;
-  const insightEntry = withTotals.find((e) => e.game.insight) ?? null;
-
-  return {
-    completedCount: completed.length,
-    lastGame: lastEntry
-      ? { id: lastEntry.game.id, course: lastEntry.game.course, total: lastEntry.total, relativeToPar: lastEntry.relativeToPar, date: lastEntry.game.date }
-      : null,
-    bestGame: bestEntry ? { id: bestEntry.game.id, course: bestEntry.game.course, total: bestEntry.total } : null,
-    latestInsight: insightEntry
-      ? { id: insightEntry.game.id, course: insightEntry.game.course, insight: insightEntry.game.insight! }
-      : null,
-  };
-}
-
 export type HeadToHead = {
   totalGamesTogether: number;
   /** Solo tiene sentido mostrarlo cuando son 2 jugadores — ver resumen page. */

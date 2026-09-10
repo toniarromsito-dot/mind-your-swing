@@ -21,7 +21,7 @@ export function AppShell({
   const navLinks = [
     { href: "/dashboard", label: t.home, icon: Home },
     { href: "/play", label: t.play, icon: Flag },
-    { href: "/mind", label: t.mind, icon: Brain },
+    { href: "/mind", label: t.coach, icon: Brain },
     { href: "/community", label: t.community, icon: Users },
     { href: "/perfil", label: t.perfil, icon: User },
   ];
