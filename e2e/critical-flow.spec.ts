@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
 
 test("flujo completo de una partida en solitario", async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByText("¿Qué quieres hacer hoy?")).toBeVisible();
+  await expect(page.getByText("Vamos a empezar.")).toBeVisible();
 
   await page.goto("/play/new");
   await page.getByRole("button", { name: "Prefiero jugar solo" }).click();

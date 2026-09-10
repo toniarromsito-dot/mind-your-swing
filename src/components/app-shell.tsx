@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Home, Flag, Brain, GraduationCap, Users, User, ShieldCheck } from "lucide-react";
+import { Home, Flag, Brain, Users, User } from "lucide-react";
 import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -9,21 +9,21 @@ export function AppShell({
   children,
   user,
   t,
-  isAdmin,
 }: {
   children: React.ReactNode;
   user: { name?: string | null; image?: string | null };
   t: Dictionary["nav"];
-  isAdmin?: boolean;
 }) {
+  // Navegación reducida a lo esencial (brief: "menos opciones = mejor").
+  // Coach sigue accesible desde la tarjeta "Aprender" del dashboard;
+  // Admin vive aparte, enlazado solo para administradores desde /perfil —
+  // nunca en la navegación de un usuario normal.
   const navLinks = [
     { href: "/dashboard", label: t.home, icon: Home },
     { href: "/play", label: t.play, icon: Flag },
     { href: "/mind", label: t.mind, icon: Brain },
-    { href: "/coach", label: t.coach, icon: GraduationCap },
     { href: "/community", label: t.community, icon: Users },
     { href: "/perfil", label: t.perfil, icon: User },
-    ...(isAdmin ? [{ href: "/admin/videos", label: "Admin", icon: ShieldCheck }] : []),
   ];
 
   return (

@@ -1,10 +1,13 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { ProfileForm } from "@/components/profile-form";
 import { signOutAction } from "@/actions/profile";
 import { createCheckoutSession, createPortalSession } from "@/actions/stripe";
 import { isStripeConfigured } from "@/lib/stripe";
+import { isAdminEmail } from "@/lib/admin";
 import { getVoiceMinutesUsedThisPeriod, INCLUDED_VOICE_MINUTES } from "@/lib/billing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,6 +99,16 @@ export default async function ProfilePage({
       />
 
       <p className="text-xs text-muted-foreground">{t.perfil.disclaimer}</p>
+
+      {isAdminEmail(user.email) && (
+        <Link
+          href="/admin/videos"
+          className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ShieldCheck className="size-4" />
+          Admin
+        </Link>
+      )}
 
       <form action={signOutAction} className="lg:hidden">
         <Button type="submit" variant="outline" className="w-full">
