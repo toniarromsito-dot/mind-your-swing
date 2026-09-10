@@ -2,11 +2,8 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/require-user";
 import { getActiveGamesForUser } from "@/lib/data/games";
-import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { toStandingsInput } from "@/lib/games/adapt";
-import { computeStrokeStandings } from "@/lib/games/standings";
-import { Flag, Brain, GraduationCap, Users, ArrowRight } from "lucide-react";
+import { Flag, Brain, GraduationCap, Users, ArrowRight, Calendar } from "lucide-react";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
 export default async function HomePage() {
@@ -19,10 +16,42 @@ export default async function HomePage() {
   const activeGame = activeGames[0] ?? null;
 
   const cards = [
-    { href: "/play/new", icon: Flag, title: h.playCard, body: h.playCardBody },
-    { href: "/mind", icon: Brain, title: h.coachCard, body: h.coachCardBody },
-    { href: "/coach", icon: GraduationCap, title: h.learnCard, body: h.learnCardBody },
-    { href: "/community", icon: Users, title: h.communityCard, body: h.communityCardBody },
+    {
+      href: "/play/new",
+      icon: Flag,
+      title: h.playCard,
+      body: h.playCardBody,
+      className: "bg-primary text-primary-foreground",
+      iconClassName: "bg-primary-foreground/15 text-primary-foreground",
+      bodyClassName: "text-primary-foreground/75",
+    },
+    {
+      href: "/mind",
+      icon: Brain,
+      title: h.coachCard,
+      body: h.coachCardBody,
+      className: "bg-accent text-accent-foreground",
+      iconClassName: "bg-accent-foreground/10 text-accent-foreground",
+      bodyClassName: "text-accent-foreground/75",
+    },
+    {
+      href: "/coach",
+      icon: GraduationCap,
+      title: h.learnCard,
+      body: h.learnCardBody,
+      className: "bg-card",
+      iconClassName: "bg-primary/10 text-primary",
+      bodyClassName: "text-muted-foreground",
+    },
+    {
+      href: "/community",
+      icon: Users,
+      title: h.communityCard,
+      body: h.communityCardBody,
+      className: "bg-secondary",
+      iconClassName: "bg-primary/10 text-primary",
+      bodyClassName: "text-muted-foreground",
+    },
   ];
 
   return (
@@ -37,13 +66,16 @@ export default async function HomePage() {
       <div className="grid grid-cols-2 gap-3">
         {cards.map((c) => (
           <Link key={c.href} href={c.href}>
-            <Card className="h-full transition-colors hover:border-primary/30 hover:bg-secondary/40">
+            <Card className={`h-full border-none shadow-none transition-transform hover:-translate-y-0.5 ${c.className}`}>
               <CardContent className="flex flex-col items-start gap-3 py-6">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <span className={`flex size-10 items-center justify-center rounded-xl ${c.iconClassName}`}>
                   <c.icon className="size-5" />
                 </span>
-                <p className="font-heading text-base font-semibold">{c.title}</p>
-                <p className="text-xs text-muted-foreground">{c.body}</p>
+                <p className="flex items-center gap-1 font-heading text-base font-semibold">
+                  {c.title}
+                  <ArrowRight className="size-3.5 opacity-60" />
+                </p>
+                <p className={`text-xs ${c.bodyClassName}`}>{c.body}</p>
               </CardContent>
             </Card>
           </Link>
@@ -51,29 +83,32 @@ export default async function HomePage() {
       </div>
 
       {activeGame && (
-        <Card className="border-primary/30 bg-secondary/40">
-          <CardContent className="flex items-center justify-between gap-4 py-5">
-            <div>
-              <p className="text-xs font-medium tracking-wide text-primary uppercase">{h.nextRoundTitle}</p>
-              <p className="mt-1 font-heading text-lg font-semibold">{activeGame.course}</p>
-              <p className="text-sm text-muted-foreground">
-                {activeGame.players.length > 1 ? `${activeGame.players.length} ${t.play.players} · ` : ""}
-                {t.newGame.modeLabels[activeGame.mode]}
-              </p>
-              {(() => {
-                const { players, scores } = toStandingsInput(activeGame);
-                const standings = computeStrokeStandings(players, scores);
-                const me = standings.find(
-                  (s) => activeGame.players.find((p) => p.id === s.playerId)?.user.id === userId
-                );
-                return me ? <p className="mt-1 text-sm font-medium">{me.relativeToPar}</p> : null;
-              })()}
-            </div>
-            <Link href={`/play/${activeGame.id}`} className={buttonVariants({ className: "gap-1.5 rounded-full" })}>
-              {h.continue} <ArrowRight className="size-4" />
-            </Link>
-          </CardContent>
-        </Card>
+        <Link href={`/play/${activeGame.id}`}>
+          <Card className="border-primary/30 bg-secondary/40 transition-colors hover:bg-secondary/60">
+            <CardContent className="flex items-center justify-between gap-4 py-5">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Calendar className="size-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-medium tracking-wide text-primary uppercase">{h.nextRoundTitle}</p>
+                  <p className="mt-1 font-heading text-lg font-semibold">{activeGame.course}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(activeGame.date).toLocaleDateString(t.dateLocale, {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "short",
+                    })}{" "}
+                    ·{" "}
+                    {new Date(activeGame.date).toLocaleTimeString(t.dateLocale, { hour: "2-digit", minute: "2-digit" })}
+                    {activeGame.players.length > 1 ? ` · ${activeGame.players.length} ${t.play.players}` : ""}
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
       )}
     </div>
   );

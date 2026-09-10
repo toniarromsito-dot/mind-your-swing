@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Brain } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -14,7 +15,8 @@ export function MindInsightReveal({ insight, t }: { insight: string; t: Dictiona
       <Card className="border-primary/30 bg-secondary/40">
         <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
           <p className="font-medium">{t.reviewPrompt}</p>
-          <Button type="button" onClick={() => setShown(true)}>
+          <Button type="button" className="gap-2" onClick={() => setShown(true)}>
+            <Brain className="size-4" />
             {t.reviewButton}
           </Button>
         </CardContent>

@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, Brain } from "lucide-react";
+import { ChevronLeft, Loader2, Home } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
 import { finishGame } from "@/actions/games";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -87,7 +87,7 @@ export function GameView({
           aria-label={t.mindButtonLabel}
           className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         >
-          <Brain className="size-4" />
+          <Home className="size-4" />
         </Link>
       </div>
 

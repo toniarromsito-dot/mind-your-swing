@@ -72,6 +72,7 @@ export function SharedScorecard({
         </span>
         <p className="font-heading text-3xl font-semibold">{fmt(t.strokesCount, { n: confirmation.strokes })}</p>
         <p className="text-lg text-muted-foreground">{confirmation.label}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t.nextHolePrompt}</p>
       </div>
     );
   }

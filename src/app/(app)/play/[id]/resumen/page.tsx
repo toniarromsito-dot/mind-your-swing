@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { Trophy, RotateCcw } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { getGameForPlayer, getHeadToHeadHistory } from "@/lib/data/games";
 import { Card, CardContent } from "@/components/ui/card";
@@ -84,16 +84,30 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         </Card>
       ) : (
         <Card className="border-primary/40">
-          <CardContent className="flex flex-col items-center gap-4 py-8">
-            {individualStandings.map((s, i) => (
-              <div key={s.playerId} className="flex w-full max-w-xs items-center justify-between">
-                <span className="flex items-center gap-2">
-                  {i === 0 && <Trophy className="size-5 text-primary" />}
-                  <span className={i === 0 ? "font-heading text-xl" : "text-muted-foreground"}>{s.name}</span>
-                </span>
-                <span className={i === 0 ? "font-heading text-xl" : "text-muted-foreground"}>{s.total}</span>
-              </div>
-            ))}
+          <CardContent className="flex flex-col items-center gap-3 py-6">
+            <Trophy className="size-7 text-primary" />
+            <div className="flex w-full max-w-xs flex-col gap-2">
+              {individualStandings.map((s, i) => (
+                <div
+                  key={s.playerId}
+                  className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${
+                    i === 0 ? "bg-primary text-primary-foreground" : "text-foreground"
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={`flex size-5 items-center justify-center rounded-full text-xs font-medium ${
+                        i === 0 ? "bg-primary-foreground/20" : "bg-secondary text-secondary-foreground"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className={i === 0 ? "font-medium" : ""}>{s.name}</span>
+                  </span>
+                  <span className={i === 0 ? "font-heading font-semibold" : "text-muted-foreground"}>{s.total}</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -159,7 +173,7 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
       <div className="flex gap-3">
         <form action={createRematch.bind(null, game.id)} className="flex-1">
           <Button type="submit" variant="outline" className="w-full gap-2">
-            <Trophy className="size-4" />
+            <RotateCcw className="size-4" />
             {t.summary.rematchButton}
           </Button>
         </form>
