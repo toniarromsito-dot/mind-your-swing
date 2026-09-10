@@ -69,6 +69,14 @@ export function GameView({
     }
   }
 
+  function finishEarly() {
+    if (!window.confirm(t.finishEarlyConfirm)) return;
+    startFinishing(async () => {
+      await finishGame(game.id);
+      router.push(`/play/${game.id}/resumen`);
+    });
+  }
+
   return (
     <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
       <div className="flex items-center justify-between px-1 pt-2">
@@ -97,15 +105,26 @@ export function GameView({
           <p>{t.saving}</p>
         </div>
       ) : (
-        <SharedScorecard
-          key={hole.id}
-          gameId={game.id}
-          hole={hole}
-          players={players}
-          onSaved={goToNextHole}
-          t={t}
-          golfResult={golfResult}
-        />
+        <>
+          <SharedScorecard
+            key={hole.id}
+            gameId={game.id}
+            hole={hole}
+            players={players}
+            onSaved={goToNextHole}
+            t={t}
+            golfResult={golfResult}
+          />
+          {!isLastHole && (
+            <button
+              type="button"
+              onClick={finishEarly}
+              className="mx-auto mb-4 text-xs text-muted-foreground underline-offset-4 hover:underline"
+            >
+              {t.finishEarly}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

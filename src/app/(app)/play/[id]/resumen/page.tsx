@@ -166,7 +166,12 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         </div>
       )}
 
-      {game.insight && <MindInsightReveal insight={game.insight} t={t.summary} />}
+      {game.insight && (
+        <MindInsightReveal
+          insight={game.insight}
+          t={{ reviewPrompt: t.summary.reviewPrompt, reviewButton: t.summary.reviewButton, fromCoach: t.summary.fromCoach }}
+        />
+      )}
 
       <MoodCheckin gameId={game.id} t={t.moodCheckin} moodLabels={t.mood} />
 

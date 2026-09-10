@@ -36,6 +36,7 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     course: formData.get("course") || undefined,
     date: formData.get("date"),
     goal: formData.get("goal") ?? "",
+    holeCount: formData.get("holeCount") || 18,
   };
 
   const parsed = createGameSchema.safeParse(raw);
@@ -43,7 +44,7 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const { playerCount, mode, courseId, course, date, goal } = parsed.data;
+  const { playerCount, mode, courseId, course, date, goal, holeCount } = parsed.data;
 
   let holesData: { number: number; par: number; index: number | null; distance: number | null }[];
   let courseName: string;
@@ -63,6 +64,12 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
   } else {
     courseName = course!;
     holesData = Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 4, index: null, distance: null }));
+  }
+
+  // "9 hoyos" juega solo la primera vuelta (hoyos 1-9) — no hace falta que
+  // el usuario tenga tiempo para los 18 (ver brief).
+  if (holeCount === 9) {
+    holesData = holesData.slice(0, 9);
   }
 
   // started queda en su default (false): la partida arranca en el lobby,
@@ -210,8 +217,10 @@ export async function finishGame(gameId: string) {
 
   if (game.status === "IN_PROGRESS") {
     await prisma.game.update({ where: { id: gameId }, data: { status: "COMPLETED" } });
-    await generateGameInsight(gameId, session.user.id);
-    await updateMindMemory(session.user.id, gameId);
+    // En paralelo, no en serie — dos llamadas a Claude una detrás de otra
+    // dejaba al jugador mirando el spinner de "Guardando…" el doble de
+    // tiempo de lo necesario.
+    await Promise.all([generateGameInsight(gameId, session.user.id), updateMindMemory(session.user.id, gameId)]);
   }
 
   revalidatePath(`/play/${gameId}`);
@@ -260,18 +269,24 @@ async function generateGameInsight(gameId: string, userId: string) {
     const ctx = await getCoachContext({ userId, gameId });
     const systemPrompt = buildSystemPrompt(ctx);
 
-    const message = await anthropic.messages.create({
-      model: COACH_MODEL,
-      max_tokens: COACH_MAX_TOKENS,
-      system: systemPrompt,
-      messages: [
-        {
-          role: "user",
-          content:
-            "La partida acaba de terminar. Escribe un análisis breve pero concreto (4-6 frases): reconoce el esfuerzo, y si el desglose de la vuelta incluye un tramo flojo, señálalo específicamente por número de hoyo (no en general). Cierra con un objetivo concreto para la próxima vez.",
-        },
-      ],
-    });
+    const message = await anthropic.messages.create(
+      {
+        model: COACH_MODEL,
+        max_tokens: COACH_MAX_TOKENS,
+        system: systemPrompt,
+        messages: [
+          {
+            role: "user",
+            content:
+              "La partida acaba de terminar. Escribe un análisis breve pero concreto (4-6 frases): reconoce el esfuerzo, y si el desglose de la vuelta incluye un tramo flojo, señálalo específicamente por número de hoyo (no en general). Cierra con un objetivo concreto para la próxima vez.",
+          },
+        ],
+      },
+      // Límite defensivo: esto corre en el camino crítico de "terminar
+      // partida" — mejor un resumen sin insight que un jugador mirando el
+      // spinner indefinidamente si Anthropic tarda.
+      { timeout: 20_000 }
+    );
 
     const text = message.content
       .filter((b) => b.type === "text")
@@ -300,21 +315,24 @@ async function updateMindMemory(userId: string, gameId: string) {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const ctx = await getCoachContext({ userId, gameId });
 
-    const message = await anthropic.messages.create({
-      model: COACH_MODEL,
-      max_tokens: 300,
-      system:
-        "Mantienes una memoria corta (3-6 frases) sobre un jugador de golf para que su compañero de IA no empiece de cero cada vez. Actualiza la memoria anterior con lo más relevante de esta partida: patrones mentales, en qué se ha trabajado, objetivos pendientes. No repitas resultados numéricos de partidas concretas, quédate con el patrón. Responde solo con el párrafo actualizado, nada más.",
-      messages: [
-        {
-          role: "user",
-          content: [
-            `Memoria anterior: ${user.mindMemory ?? "(todavía no hay memoria de este jugador)"}`,
-            `Contexto de la partida que acaba de terminar: ${buildSystemPrompt(ctx)}`,
-          ].join("\n\n"),
-        },
-      ],
-    });
+    const message = await anthropic.messages.create(
+      {
+        model: COACH_MODEL,
+        max_tokens: 300,
+        system:
+          "Mantienes una memoria corta (3-6 frases) sobre un jugador de golf para que su compañero de IA no empiece de cero cada vez. Actualiza la memoria anterior con lo más relevante de esta partida: patrones mentales, en qué se ha trabajado, objetivos pendientes. No repitas resultados numéricos de partidas concretas, quédate con el patrón. Responde solo con el párrafo actualizado, nada más.",
+        messages: [
+          {
+            role: "user",
+            content: [
+              `Memoria anterior: ${user.mindMemory ?? "(todavía no hay memoria de este jugador)"}`,
+              `Contexto de la partida que acaba de terminar: ${buildSystemPrompt(ctx)}`,
+            ].join("\n\n"),
+          },
+        ],
+      },
+      { timeout: 20_000 }
+    );
 
     const text = message.content
       .filter((b) => b.type === "text")

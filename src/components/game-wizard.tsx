@@ -11,6 +11,7 @@ import { modesForPlayerCount, GAME_MODE_META } from "@/lib/games/modes";
 import type { GameMode } from "@prisma/client";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
+import { fmt } from "@/lib/i18n/format";
 
 type DemoCourse = {
   id: string;
@@ -28,6 +29,7 @@ export function GameWizard({ courses, t, isPro }: { courses: DemoCourse[]; t: Di
   const [query, setQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<DemoCourse | null>(null);
   const [freeTextCourse, setFreeTextCourse] = useState("");
+  const [holeCount, setHoleCount] = useState<9 | 18>(18);
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createGame, undefined);
 
@@ -200,14 +202,42 @@ export function GameWizard({ courses, t, isPro }: { courses: DemoCourse[]; t: Di
             <input type="hidden" name="course" value={freeTextCourse} />
           )}
           <input type="hidden" name="date" value={new Date().toISOString().slice(0, 10)} />
+          <input type="hidden" name="holeCount" value={holeCount} />
 
           <h2 className="font-heading text-xl">{selectedCourse?.name ?? freeTextCourse}</h2>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>{t.holeCountLabel}</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {([9, 18] as const).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setHoleCount(n)}
+                  className={cn(
+                    "rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                    holeCount === n
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card hover:border-primary hover:bg-secondary/40"
+                  )}
+                >
+                  {fmt(t.holeCountOption, { n })}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {selectedCourse ? (
             <Card>
               <CardContent className="grid grid-cols-3 gap-2 py-4 text-center text-xs">
                 {selectedCourse.holes.map((h) => (
-                  <div key={h.number} className="rounded-lg bg-secondary/30 p-2">
+                  <div
+                    key={h.number}
+                    className={cn(
+                      "rounded-lg p-2",
+                      h.number <= holeCount ? "bg-secondary/30" : "bg-secondary/10 opacity-40"
+                    )}
+                  >
                     <p className="font-heading text-lg">{h.number}</p>
                     <p className="text-muted-foreground">
                       {t.par} {h.par}
