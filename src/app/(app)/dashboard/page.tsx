@@ -1,10 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/require-user";
 import { getActiveGamesForUser } from "@/lib/data/games";
 import { Card, CardContent } from "@/components/ui/card";
-import { Flag, Brain, GraduationCap, Users, ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, Calendar } from "lucide-react";
 import { getDictionary } from "@/lib/i18n/current-locale";
+
+// Unsplash, licencia libre (unsplash.com/license) — sin marcas de agua ni datos inventados.
+const DASHBOARD_PHOTOS = {
+  play: "https://images.unsplash.com/photo-1683418323363-2ffc2e80a987?q=80&w=800&auto=format&fit=crop",
+  coach: "https://images.unsplash.com/photo-1743185836009-848e5035422b?q=80&w=800&auto=format&fit=crop",
+  learn: "https://images.unsplash.com/photo-1562204320-31975a5e09ce?q=80&w=800&auto=format&fit=crop",
+  community: "https://images.unsplash.com/photo-1629673120178-53a664eec9e8?q=80&w=800&auto=format&fit=crop",
+};
 
 export default async function HomePage() {
   const userId = await requireUserId();
@@ -16,42 +25,10 @@ export default async function HomePage() {
   const activeGame = activeGames[0] ?? null;
 
   const cards = [
-    {
-      href: "/play/new",
-      icon: Flag,
-      title: h.playCard,
-      body: h.playCardBody,
-      className: "bg-primary text-primary-foreground",
-      iconClassName: "bg-primary-foreground/15 text-primary-foreground",
-      bodyClassName: "text-primary-foreground/75",
-    },
-    {
-      href: "/mind",
-      icon: Brain,
-      title: h.coachCard,
-      body: h.coachCardBody,
-      className: "bg-accent text-accent-foreground",
-      iconClassName: "bg-accent-foreground/10 text-accent-foreground",
-      bodyClassName: "text-accent-foreground/75",
-    },
-    {
-      href: "/coach",
-      icon: GraduationCap,
-      title: h.learnCard,
-      body: h.learnCardBody,
-      className: "bg-card",
-      iconClassName: "bg-primary/10 text-primary",
-      bodyClassName: "text-muted-foreground",
-    },
-    {
-      href: "/community",
-      icon: Users,
-      title: h.communityCard,
-      body: h.communityCardBody,
-      className: "bg-secondary",
-      iconClassName: "bg-primary/10 text-primary",
-      bodyClassName: "text-muted-foreground",
-    },
+    { href: "/play/new", title: h.playCard, body: h.playCardBody, photo: DASHBOARD_PHOTOS.play },
+    { href: "/mind", title: h.coachCard, body: h.coachCardBody, photo: DASHBOARD_PHOTOS.coach },
+    { href: "/coach", title: h.learnCard, body: h.learnCardBody, photo: DASHBOARD_PHOTOS.learn },
+    { href: "/community", title: h.communityCard, body: h.communityCardBody, photo: DASHBOARD_PHOTOS.community },
   ];
 
   return (
@@ -65,17 +42,24 @@ export default async function HomePage() {
 
       <div className="grid grid-cols-2 gap-3">
         {cards.map((c) => (
-          <Link key={c.href} href={c.href}>
-            <Card className={`h-full border-none shadow-none transition-transform hover:-translate-y-0.5 ${c.className}`}>
-              <CardContent className="flex flex-col items-start gap-3 py-6">
-                <span className={`flex size-10 items-center justify-center rounded-xl ${c.iconClassName}`}>
-                  <c.icon className="size-5" />
+          <Link key={c.href} href={c.href} className="group">
+            <Card className="relative h-44 overflow-hidden border-none shadow-none transition-transform group-hover:-translate-y-0.5">
+              <Image
+                src={c.photo}
+                alt=""
+                fill
+                sizes="(min-width: 640px) 300px, 50vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+              <CardContent className="relative flex h-full flex-col justify-between p-4">
+                <span className="ml-auto flex size-7 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
+                  <ArrowRight className="size-3.5" />
                 </span>
-                <p className="flex items-center gap-1 font-heading text-base font-semibold">
-                  {c.title}
-                  <ArrowRight className="size-3.5 opacity-60" />
-                </p>
-                <p className={`text-xs ${c.bodyClassName}`}>{c.body}</p>
+                <div>
+                  <p className="font-heading text-base font-semibold text-white">{c.title}</p>
+                  <p className="mt-0.5 text-xs text-white/80">{c.body}</p>
+                </div>
               </CardContent>
             </Card>
           </Link>
