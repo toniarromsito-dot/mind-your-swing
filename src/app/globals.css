@@ -130,6 +130,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Sin esto, tirar de la pantalla hacia abajo hace "rebotar" el
+       contenido como una página web (pull-to-refresh / bounce del
+       WebView) — rompe la sensación de app nativa. Vale tanto para la
+       app como para la web/PWA, no cambia nada visual. */
+    overscroll-behavior-y: none;
   }
   html {
     @apply font-sans;
