@@ -61,5 +61,16 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Deep link de vuelta desde /mobile-bridge tras el login de Google en
+	     Safari — ver NativeAppInit. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mindyourswing</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

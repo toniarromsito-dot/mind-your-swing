@@ -49,6 +49,19 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// Puente de sesión para la app nativa (Capacitor). Google fuerza el login
+// fuera del WebView de la app (política anti-webview de OAuth) y lo
+// completa en el navegador del sistema; este token de un solo uso deja
+// volver a la app ya con sesión iniciada sin exponer el sessionToken real
+// en un deep link. Ver /mobile-bridge y /api/mobile/session.
+model MobileHandoff {
+  token        String   @id @default(cuid())
+  sessionToken String
+  expires      DateTime
+
+  @@index([expires])
+}
+
 // ---------- Domain models ----------
 
 // Cómo se comunica el compañero. Reemplaza al antiguo CERCANO/FORMAL: el

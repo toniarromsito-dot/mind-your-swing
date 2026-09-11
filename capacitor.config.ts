@@ -12,7 +12,11 @@ const config: CapacitorConfig = {
   appName: "Mind Your Swing",
   webDir: "public",
   server: {
-    url: "https://mind-your-swing.vercel.app",
+    // /app-entry es la puerta de entrada exclusiva de la app nativa (no la
+    // portada pública "/"): comprueba sesión y, si no hay, muestra su
+    // propia pantalla de login que abre Google en una Custom Tab — ver
+    // src/app/app-entry y src/components/native-login-screen.tsx.
+    url: "https://mind-your-swing.vercel.app/app-entry",
     cleartext: false,
   },
   ios: {
