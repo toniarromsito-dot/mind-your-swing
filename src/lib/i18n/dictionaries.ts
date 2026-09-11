@@ -369,11 +369,24 @@ const es = {
     proPrice: "7,99€/mes",
   },
   coach: {
-    title: "Aprende los fundamentos",
-    subtitle:
-      "Un punto de partida sencillo para quien empieza en el golf. Esto es orientación general, no clases personalizadas.",
+    title: "Aprender",
+    subtitle: "Mejora tu golf, paso a paso.",
     disclaimer:
       "Esto es orientación general y no sustituye clases con un profesional certificado (PGA): cada swing es distinto, y un profesional ve en persona matices que un texto nunca podrá corregir. Este contenido es independiente de tu compañero mental, que no da indicaciones técnicas por su cuenta.",
+    academyTitle: "Academia",
+    analyzeSwingCard: {
+      title: "Analiza tu swing",
+      subtitle: "Graba tu swing y descubre qué puedes mejorar.",
+      cta: "Grabar mi swing",
+    },
+    categoryLabels: {
+      fundamentos: "Fundamentos",
+      swing: "Tu swing",
+      golpes: "Tus golpes",
+      mental: "Juego mental",
+      campo: "Jugar en el campo",
+    },
+    mentalGameBody: "Tu compañero para la parte mental del juego.",
     topics: [
       {
         title: "El agarre (grip)",
@@ -428,27 +441,22 @@ const es = {
       { title: "Drills de putt", description: "Ejercicios concretos para mejorar la lectura y el ritmo.", url: null },
       { title: "Análisis de swing", description: "Qué mirar cuando revisas tu propio swing en vídeo.", url: null },
     ],
-    aiExplainer: {
-      title: "Cómo analiza tu swing la IA",
-      subtitle: "Dos tecnologías distintas, cada una haciendo lo que mejor sabe hacer.",
-      steps: [
-        {
-          title: "Grabas tu swing",
-          body: "Grabas un vídeo corto con el móvil desde el lateral. Para este análisis, el vídeo no sale de tu dispositivo.",
-        },
-        {
-          title: "Visión por ordenador detecta tu postura",
-          body: "MediaPipe (de Google) localiza en el propio teléfono 33 puntos de tu cuerpo fotograma a fotograma —hombros, caderas, rodillas, muñecas— y con ellos calculamos cinco métricas: estabilidad de la cabeza, ángulo de columna, rotación de caderas, transferencia de peso y tempo.",
-        },
-        {
-          title: "Claude traduce los números en consejos",
-          body: "Solo esas métricas (nunca el vídeo) se envían a Claude, el modelo de IA de Anthropic, que las convierte en un consejo breve y motivador: qué haces bien y qué mejorar.",
-        },
-      ],
-    },
   },
   swingVideos: {
-    navLink: "Sube tu swing",
+    navLink: "Analiza tu swing",
+    heroTitle: "Analiza tu swing",
+    heroSubtitle: "Graba tu swing y descubre qué puedes mejorar.",
+    progressPill: "Tu progreso",
+    recordCta: "Grabar mi swing",
+    benefitAnalysisTitle: "Tu análisis",
+    benefitAnalysisBody: "Recibe un análisis claro y personalizado.",
+    benefitExercisesTitle: "Ejercicios",
+    benefitExercisesBody: "Trabaja en lo que más lo necesitas.",
+    benefitMindTitle: "Mind te acompaña",
+    benefitMindBody: "Consejos adaptados a tu juego.",
+    prepTitle: "Prepara la cámara",
+    prepInstruction: "Coloca el móvil de lado y deja que se vea todo tu cuerpo.",
+    prepContinue: "Continuar",
     title: "Sube tu swing",
     subtitle: "Graba tu swing, recibe una puntuación automática al instante y, si quieres, pide revisión manual.",
     disclaimer:
@@ -467,7 +475,8 @@ const es = {
     yourVideos: "Tus vídeos",
     empty: "Todavía no has subido ningún vídeo.",
     scoreLabel: "Puntuación automática",
-    aiFeedbackLabel: "Feedback automático",
+    aiFeedbackLabel: "Mind",
+    practiceLinkLabel: "Practica en Aprender",
     manualFeedbackLabel: "Feedback de Antonio",
     statusPending: "Pendiente de revisión manual",
     statusReviewed: "Revisado por Antonio",
@@ -870,10 +879,24 @@ const en: typeof es = {
     proPrice: "€7.99/month",
   },
   coach: {
-    title: "Learn the fundamentals",
-    subtitle: "A simple starting point for those new to golf. This is general guidance, not personalized lessons.",
+    title: "Learn",
+    subtitle: "Improve your golf, step by step.",
     disclaimer:
       "This is general guidance and not a substitute for lessons with a certified (PGA) professional: every swing is different, and a professional sees nuances in person that text never can. This content is independent from your mental companion, which doesn't give technical guidance on its own.",
+    academyTitle: "Academy",
+    analyzeSwingCard: {
+      title: "Analyze your swing",
+      subtitle: "Record your swing and discover what you can improve.",
+      cta: "Record my swing",
+    },
+    categoryLabels: {
+      fundamentos: "Fundamentals",
+      swing: "Your swing",
+      golpes: "Your shots",
+      mental: "Mental game",
+      campo: "Playing on the course",
+    },
+    mentalGameBody: "Your companion for the mental side of the game.",
     topics: [
       { title: "The grip", body: "Rest the club against the base of the fingers of your lead hand (not the palm), with the thumb pointing down the shaft. Close the other hand so its fingers interlock with the first. A grip that's too tight tenses the arms — start soft and adjust from there." },
       { title: "Posture and setup", body: "Feet shoulder-width apart, knees slightly flexed, and bend from the hips (not the back) until your arms hang naturally. Weight should be spread evenly between both feet, not on the heels or the toes." },
@@ -902,27 +925,22 @@ const en: typeof es = {
       { title: "Putting drills", description: "Concrete exercises for reading greens and tempo.", url: null },
       { title: "Swing analysis", description: "What to look for when reviewing your own swing on video.", url: null },
     ],
-    aiExplainer: {
-      title: "How AI analyzes your swing",
-      subtitle: "Two different technologies, each doing what it does best.",
-      steps: [
-        {
-          title: "You record your swing",
-          body: "Record a short video with your phone from the side. For this analysis, the video never leaves your device.",
-        },
-        {
-          title: "Computer vision detects your posture",
-          body: "MediaPipe (from Google) locates 33 points on your body frame by frame, right on your phone — shoulders, hips, knees, wrists — and uses them to compute five metrics: head stability, spine angle, hip rotation, weight transfer, and tempo.",
-        },
-        {
-          title: "Claude turns the numbers into advice",
-          body: "Only those metrics (never the video) are sent to Claude, Anthropic's AI model, which turns them into brief, motivating advice: what you're doing well and what to improve.",
-        },
-      ],
-    },
   },
   swingVideos: {
-    navLink: "Upload your swing",
+    navLink: "Analyze your swing",
+    heroTitle: "Analyze your swing",
+    heroSubtitle: "Record your swing and discover what you can improve.",
+    progressPill: "Your progress",
+    recordCta: "Record my swing",
+    benefitAnalysisTitle: "Your analysis",
+    benefitAnalysisBody: "Get a clear, personalized analysis.",
+    benefitExercisesTitle: "Exercises",
+    benefitExercisesBody: "Work on what you need most.",
+    benefitMindTitle: "Mind is with you",
+    benefitMindBody: "Advice tailored to your game.",
+    prepTitle: "Get the camera ready",
+    prepInstruction: "Turn your phone sideways and make sure your whole body is in frame.",
+    prepContinue: "Continue",
     title: "Upload your swing",
     subtitle: "Record your swing, get an automatic score instantly, and optionally ask for manual review.",
     disclaimer:
@@ -941,7 +959,8 @@ const en: typeof es = {
     yourVideos: "Your videos",
     empty: "You haven't uploaded any videos yet.",
     scoreLabel: "Automatic score",
-    aiFeedbackLabel: "Automatic feedback",
+    aiFeedbackLabel: "Mind",
+    practiceLinkLabel: "Practice in Learn",
     manualFeedbackLabel: "Feedback from Antonio",
     statusPending: "Waiting for manual review",
     statusReviewed: "Reviewed by Antonio",

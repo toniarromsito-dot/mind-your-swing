@@ -1,28 +1,28 @@
 import Link from "next/link";
-import {
-  Camera,
-  Hand,
-  PersonStanding,
-  Move,
-  Target,
-  AlertTriangle,
-  Flag as FlagIcon,
-  MapPinned,
-  BookOpen,
-  Sparkles,
-  ScanEye,
-  Bot,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import { Camera, Hand, PersonStanding, Move, Target, AlertTriangle, Flag as FlagIcon, MapPinned, BookOpen, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { VideoCard } from "@/components/video-card";
-import { buttonVariants } from "@/components/ui/button";
+import { MindMark } from "@/components/mind-mark";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { hasProAccess } from "@/lib/plan";
+import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const TOPIC_ICONS = [Hand, PersonStanding, Move, Target, AlertTriangle, Sparkles, MapPinned, BookOpen, FlagIcon];
-const AI_STEP_ICONS = [Camera, ScanEye, Bot];
+
+// Agrupación visual de los temas de fundamentos en las 5 categorías de la
+// Academia. Por índice (no por texto) para no depender de traducciones;
+// "campo" toma todo lo que quede al final, así funciona igual con los 9
+// temas del español o los 10 del inglés sin tener que sincronizar listas.
+type CategoryKey = keyof Dictionary["coach"]["categoryLabels"];
+const CATEGORY_RANGES: { key: CategoryKey; start: number; end: number | null }[] = [
+  { key: "fundamentos", start: 0, end: 3 },
+  { key: "swing", start: 3, end: 5 },
+  { key: "golpes", start: 5, end: 7 },
+  { key: "campo", start: 7, end: null },
+];
 
 export default async function LearnPage() {
   const userId = await requireUserId();
@@ -37,25 +37,77 @@ export default async function LearnPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t.coach.subtitle}</p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {t.coach.topics.map((topic, i) => {
-          const Icon = TOPIC_ICONS[i % TOPIC_ICONS.length];
+      <Link href="/coach/videos" className="group block">
+        <div className="relative h-56 overflow-hidden rounded-3xl shadow-md transition-transform group-hover:-translate-y-0.5 sm:h-64">
+          <Image
+            src={DASHBOARD_PHOTOS.learn}
+            alt=""
+            fill
+            sizes="(min-width: 640px) 600px, 100vw"
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+          <div className="relative flex h-full flex-col justify-between p-5">
+            <span className="ml-auto rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+              {t.swingVideos.progressPill}
+            </span>
+            <div>
+              <p className="font-heading text-2xl font-semibold text-white">{t.coach.analyzeSwingCard.title}</p>
+              <p className="mt-1 text-sm text-white/80">{t.coach.analyzeSwingCard.subtitle}</p>
+              <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-primary shadow-sm">
+                <Camera className="size-4" />
+                {t.coach.analyzeSwingCard.cta}
+              </span>
+            </div>
+          </div>
+        </div>
+      </Link>
+
+      <div className="flex flex-col gap-5">
+        <h2 className="font-heading text-xl">{t.coach.academyTitle}</h2>
+
+        {CATEGORY_RANGES.map(({ key, start, end }) => {
+          const topics = t.coach.topics.slice(start, end ?? t.coach.topics.length);
           return (
-            <Card key={topic.title}>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon className="size-4" />
-                  </span>
-                  <CardTitle className="font-heading text-lg">{topic.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{topic.body}</p>
-              </CardContent>
-            </Card>
+            <div key={key} className="flex flex-col gap-2">
+              <h3 className="text-sm font-medium text-muted-foreground">{t.coach.categoryLabels[key]}</h3>
+              {topics.map((topic, i) => {
+                const Icon = TOPIC_ICONS[(start + i) % TOPIC_ICONS.length];
+                return (
+                  <details
+                    key={topic.title}
+                    className="group rounded-2xl border border-border bg-card [&::-webkit-details-marker]:hidden"
+                  >
+                    <summary className="flex cursor-pointer list-none items-center gap-3 p-4">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Icon className="size-4" />
+                      </span>
+                      <span className="flex-1 text-sm font-medium">{topic.title}</span>
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                    </summary>
+                    <p className="px-4 pb-4 pl-[3.25rem] text-sm text-muted-foreground">{topic.body}</p>
+                  </details>
+                );
+              })}
+            </div>
           );
         })}
+
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-medium text-muted-foreground">{t.coach.categoryLabels.mental}</h3>
+          <Link
+            href="/mind"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-secondary/40"
+          >
+            <MindMark size="sm" />
+            <span className="flex-1">
+              <span className="block text-sm font-medium">{t.home.coachCard}</span>
+              <span className="block text-xs text-muted-foreground">{t.coach.mentalGameBody}</span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col gap-6">
@@ -101,49 +153,6 @@ export default async function LearnPage() {
       <p className="rounded-xl border border-border bg-secondary/30 p-4 text-xs text-muted-foreground">
         {t.coach.disclaimer}
       </p>
-
-      <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="font-heading text-xl">{t.coach.aiExplainer.title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t.coach.aiExplainer.subtitle}</p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          {t.coach.aiExplainer.steps.map((step, i) => {
-            const Icon = AI_STEP_ICONS[i % AI_STEP_ICONS.length];
-            return (
-              <Card key={step.title}>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Icon className="size-4" />
-                    </span>
-                    <CardTitle className="font-heading text-base">{step.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{step.body}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
-      <Card>
-        <CardContent className="flex flex-col items-start gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Camera className="size-6 text-primary" />
-            <div>
-              <p className="font-heading text-base">{t.swingVideos.navLink}</p>
-              <p className="text-sm text-muted-foreground">{t.swingVideos.subtitle}</p>
-            </div>
-          </div>
-          <Link href="/coach/videos" className={buttonVariants({ size: "sm" })}>
-            {t.swingVideos.navLink}
-          </Link>
-        </CardContent>
-      </Card>
     </div>
   );
 }

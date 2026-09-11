@@ -2,11 +2,12 @@
 
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
-import { AlertCircle, Loader2, UploadCloud } from "lucide-react";
+import { AlertCircle, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { MindMark } from "@/components/mind-mark";
 import { submitSwingVideo } from "@/actions/swing-videos";
 import { PoseExtractionError, extractPoseFramesFromVideo } from "@/lib/swing/pose-landmarker";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -95,14 +96,14 @@ export function SwingVideoUploader({
       </div>
 
       {busy && (
-        <div className="flex flex-col gap-2 rounded-lg bg-secondary/40 p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
+        <div className="flex flex-col items-center gap-3 rounded-2xl bg-secondary/40 p-6 text-center">
+          <MindMark size="lg" thinking />
+          <p className="text-sm font-medium">
             {step === "uploading" && t.stepUploading}
             {step === "analyzing" && t.stepAnalyzing}
             {step === "feedback" && t.stepFeedback}
-          </div>
-          {step === "analyzing" && <Progress value={progress} />}
+          </p>
+          {step === "analyzing" && <Progress value={progress} className="w-full" />}
         </div>
       )}
 

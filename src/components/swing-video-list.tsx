@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Play, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Play, Loader2, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { MindMark } from "@/components/mind-mark";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export type SwingVideoItem = {
@@ -95,10 +97,22 @@ export function SwingVideoList({ videos, t, dateLocale }: { videos: SwingVideoIt
             {video.note && <p className="text-sm text-muted-foreground italic">&ldquo;{video.note}&rdquo;</p>}
 
             {video.aiFeedback && (
-              <div className="flex flex-col gap-1.5 rounded-lg bg-secondary/40 p-3">
-                <p className="text-xs font-medium text-muted-foreground">{t.aiFeedbackLabel}</p>
+              <div className="flex flex-col gap-2 rounded-lg bg-secondary/40 p-3">
+                <div className="flex items-center gap-2">
+                  <MindMark size="sm" />
+                  <p className="text-xs font-medium text-muted-foreground">{t.aiFeedbackLabel}</p>
+                </div>
                 <p className="text-sm whitespace-pre-wrap">{video.aiFeedback}</p>
-                <PlayFeedbackButton text={video.aiFeedback} label={t.playAudio} />
+                <div className="flex items-center justify-between">
+                  <PlayFeedbackButton text={video.aiFeedback} label={t.playAudio} />
+                  <Link
+                    href="/coach"
+                    className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    {t.practiceLinkLabel}
+                    <ArrowRight className="size-3" />
+                  </Link>
+                </div>
               </div>
             )}
 
