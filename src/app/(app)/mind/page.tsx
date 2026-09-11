@@ -1,14 +1,18 @@
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getStandaloneMessages } from "@/lib/data/games";
-import { PersonalityPicker } from "@/components/personality-picker";
-import { MoodCheckin } from "@/components/mood-checkin";
-import { MoodChart } from "@/components/mood-chart";
+import { MindSettingsDrawer } from "@/components/mind-settings-drawer";
 import { MindCompanion } from "@/components/mind-companion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MindMark } from "@/components/mind-mark";
 import { moodTrend } from "@/lib/mood";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
+/**
+ * El chat es el contenido principal de esta pantalla — no una pila de
+ * tarjetas con un botón que abre el chat en un cajón. Personalidad y
+ * estado de ánimo viven en MindSettingsDrawer, detrás de un icono
+ * pequeño en la cabecera.
+ */
 export default async function MindPage() {
   const userId = await requireUserId();
   const { t } = await getDictionary();
@@ -25,44 +29,35 @@ export default async function MindPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.mind.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t.mind.subtitle}</p>
+    // Altura exacta del hueco libre dentro de <main>: header (4rem) + su
+    // padding superior (1.5rem) + el hueco reservado para la bottom nav
+    // (6rem) + safe areas — si no se descuenta todo, el chat crece de más
+    // y empuja el campo de texto fuera de la pantalla en vez de scrollear
+    // solo internamente.
+    <div className="mx-auto flex h-[calc(100dvh-11.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-lg flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MindMark size="md" />
+          <div>
+            <h1 className="font-heading text-xl font-semibold tracking-tight">{t.mind.title}</h1>
+            <p className="text-xs text-muted-foreground">{t.mind.subtitle}</p>
+          </div>
+        </div>
+        <MindSettingsDrawer
+          coachTone={user.coachTone}
+          moodTrendData={trend}
+          noMoodDataLabel={t.summary.noMoodData}
+          t={t.mind}
+          moodCheckinT={t.moodCheckin}
+          moodLabels={t.mood}
+        />
       </div>
-
-      <div>
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t.mind.personalityTitle}</h2>
-        <PersonalityPicker defaultValue={user.coachTone} t={t.mind} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-heading text-lg">{t.mind.checkinTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MoodCheckin t={t.moodCheckin} moodLabels={t.mood} />
-        </CardContent>
-      </Card>
 
       <MindCompanion
         initialMessages={messages.map((m) => ({ id: m.id, role: m.role, content: m.content }))}
         t={t.chat}
         quickPrompts={t.quickPrompts}
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t.mind.moodHistoryTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MoodChart data={trend} emptyLabel={t.summary.noMoodData} />
-        </CardContent>
-      </Card>
-
-      <p className="rounded-xl border border-border bg-secondary/30 p-4 text-xs text-muted-foreground">
-        {t.mind.disclaimer}
-      </p>
     </div>
   );
 }

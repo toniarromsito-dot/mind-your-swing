@@ -3,8 +3,9 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, Home, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, Loader2, MoreHorizontal } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
+import { MindMark } from "@/components/mind-mark";
 import { finishGame } from "@/actions/games";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -97,12 +98,8 @@ export function GameView({
         </button>
         <p className="truncate px-2 text-sm font-medium text-muted-foreground">{game.course}</p>
         <div className="flex shrink-0 items-center gap-1.5">
-          <Link
-            href="/mind"
-            aria-label={t.mindButtonLabel}
-            className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <Home className="size-4" />
+          <Link href="/mind" aria-label={t.mindButtonLabel} className="transition-opacity hover:opacity-80">
+            <MindMark size="sm" />
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Brain } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MindMark } from "@/components/mind-mark";
 
 // Solo los 3 textos que este componente realmente usa — nunca el objeto
 // Dictionary["summary"] completo: trae funciones (holeLabel, chartHole,
@@ -19,9 +19,9 @@ export function MindInsightReveal({ insight, t }: { insight: string; t: MindInsi
     return (
       <Card className="border-primary/30 bg-secondary/40">
         <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+          <MindMark size="lg" />
           <p className="font-medium">{t.reviewPrompt}</p>
           <Button type="button" className="gap-2" onClick={() => setShown(true)}>
-            <Brain className="size-4" />
             {t.reviewButton}
           </Button>
         </CardContent>
@@ -31,7 +31,8 @@ export function MindInsightReveal({ insight, t }: { insight: string; t: MindInsi
 
   return (
     <Card className="border-primary/30 bg-secondary/40">
-      <CardHeader>
+      <CardHeader className="flex-row items-center gap-3 space-y-0">
+        <MindMark size="sm" />
         <CardTitle className="font-heading text-lg">{t.fromCoach}</CardTitle>
       </CardHeader>
       <CardContent>

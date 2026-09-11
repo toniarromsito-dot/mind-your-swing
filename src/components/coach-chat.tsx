@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, RotateCcw, Loader2, Volume2, VolumeX, Play } from "lucide-react";
+import { Send, RotateCcw, Volume2, VolumeX, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MindMark } from "@/components/mind-mark";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -196,41 +197,43 @@ export function CoachChat({
         {messages.length === 0 && (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">{t.emptyState}</p>
         )}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={cn("flex", m.role === "USER" ? "justify-end" : "justify-start")}
-          >
-            <div
-              className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
-                m.role === "USER"
-                  ? "bg-primary text-primary-foreground"
-                  : m.failed
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-secondary text-secondary-foreground"
-              )}
-            >
-              {m.pending && m.content.length === 0 ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <>
-                  {m.content}
-                  {m.role === "ASSISTANT" && m.audioUrl && (
-                    <button
-                      type="button"
-                      onClick={() => new Audio(m.audioUrl).play().catch(() => {})}
-                      className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <Play className="size-3" />
-                      {t.playAudio}
-                    </button>
-                  )}
-                </>
-              )}
+        {messages.map((m) =>
+          m.role === "ASSISTANT" && m.pending && m.content.length === 0 ? (
+            <div key={m.id} className="flex items-center gap-2">
+              <MindMark size="sm" thinking />
+              <span className="text-xs text-muted-foreground">{t.thinking}</span>
             </div>
-          </div>
-        ))}
+          ) : (
+            <div
+              key={m.id}
+              className={cn("flex items-end gap-2", m.role === "USER" ? "justify-end" : "justify-start")}
+            >
+              {m.role === "ASSISTANT" && <MindMark size="sm" />}
+              <div
+                className={cn(
+                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
+                  m.role === "USER"
+                    ? "bg-primary text-primary-foreground"
+                    : m.failed
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-secondary text-secondary-foreground"
+                )}
+              >
+                {m.content}
+                {m.role === "ASSISTANT" && m.audioUrl && (
+                  <button
+                    type="button"
+                    onClick={() => new Audio(m.audioUrl).play().catch(() => {})}
+                    className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <Play className="size-3" />
+                    {t.playAudio}
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        )}
       </div>
 
       {lastFailedContent && (

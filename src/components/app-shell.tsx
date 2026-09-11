@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Home, Flag, Brain, Users, User } from "lucide-react";
+import { Home, Flag, Users } from "lucide-react";
 import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { MindMark } from "@/components/mind-mark";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function AppShell({
@@ -17,13 +18,13 @@ export function AppShell({
   // Navegación reducida a lo esencial (brief: "menos opciones = mejor").
   // Coach sigue accesible desde la tarjeta "Aprender" del dashboard;
   // Admin vive aparte, enlazado solo para administradores desde /perfil —
-  // nunca en la navegación de un usuario normal.
+  // nunca en la navegación de un usuario normal. Perfil se abre tocando el
+  // avatar de la cabecera (patrón estándar), no ocupa un hueco fijo aquí.
   const navLinks = [
     { href: "/dashboard", label: t.home, icon: Home },
     { href: "/play", label: t.play, icon: Flag },
-    { href: "/mind", label: t.coach, icon: Brain },
+    { href: "/mind", label: t.coach, icon: null },
     { href: "/community", label: t.community, icon: Users },
-    { href: "/perfil", label: t.perfil, icon: User },
   ];
 
   return (
@@ -48,26 +49,28 @@ export function AppShell({
                 href={link.href}
                 className={buttonVariants({ variant: "ghost", size: "sm", className: "gap-2 text-sm whitespace-nowrap" })}
               >
-                <link.icon className="size-4" />
+                {link.icon ? <link.icon className="size-4" /> : <MindMark size="sm" className="size-4 bg-transparent text-current" />}
                 {link.label}
               </Link>
             ))}
           </nav>
 
           <div className="flex shrink-0 items-center gap-3">
-            {user.image ? (
-              <Image
-                src={user.image}
-                alt={user.name ?? t.perfil}
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
-            ) : (
-              <div className="flex size-8 items-center justify-center rounded-full bg-secondary text-sm text-secondary-foreground">
-                {user.name?.[0] ?? "?"}
-              </div>
-            )}
+            <Link href="/perfil" aria-label={t.perfil}>
+              {user.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name ?? t.perfil}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                />
+              ) : (
+                <div className="flex size-8 items-center justify-center rounded-full bg-secondary text-sm text-secondary-foreground">
+                  {user.name?.[0] ?? "?"}
+                </div>
+              )}
+            </Link>
             <form action={signOutAction} className="hidden lg:block">
               <Button type="submit" variant="outline" size="sm">
                 {t.cerrarSesion}
@@ -89,7 +92,7 @@ export function AppShell({
               href={link.href}
               className="flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
-              <link.icon className="size-5" />
+              {link.icon ? <link.icon className="size-5" /> : <MindMark size="sm" />}
               {link.label}
             </Link>
           ))}
