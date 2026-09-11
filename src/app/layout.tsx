@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { PwaRegister } from "@/components/pwa-register";
+import { NativeAppInit } from "@/components/native-app-init";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import "./globals.css";
 
@@ -43,6 +44,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = {
   themeColor: "#1F3D2B",
+  // "cover" deja que el contenido se extienda bajo el notch/Dynamic
+  // Island — necesario para que env(safe-area-inset-*) tenga valores
+  // reales en vez de 0 dentro del WebView nativo de Capacitor.
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -57,6 +62,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <Toaster />
         <PwaRegister />
+        <NativeAppInit />
       </body>
     </html>
   );

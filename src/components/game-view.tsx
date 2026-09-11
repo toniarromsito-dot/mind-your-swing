@@ -79,8 +79,13 @@ export function GameView({
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
-      <div className="flex items-center justify-between px-1 pt-2">
+    // Focus Mode se pinta por encima de TODO (fixed inset-0, z por delante
+    // del header/bottom nav de AppShell): "durante la vuelta, la app
+    // desaparece" — nada de navegación inferior ni cabecera de la app
+    // visibles ni pulsables mientras se juega. pt/pb con env(safe-area-*)
+    // porque esta pantalla ya no hereda el padding del <main> de AppShell.
+    <div className="fixed inset-0 z-40 flex flex-col bg-background pt-[calc(0.5rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-center justify-between px-3">
         <button
           type="button"
           onClick={() => setHoleIndex((i) => Math.max(0, i - 1))}

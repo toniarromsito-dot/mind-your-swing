@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mind Your Swing</string>
+    <string name="title_activity_main">Mind Your Swing</string>
+    <string name="package_name">com.mindyourswing.app</string>
+    <string name="custom_url_scheme">com.mindyourswing.app</string>
+</resources>
