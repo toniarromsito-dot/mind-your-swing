@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
+import { hasProAccess } from "@/lib/plan";
 import { getCurrentLocale } from "@/lib/i18n/current-locale";
 import { computeSwingMetrics, InsufficientPoseDataError, type PoseFrame } from "@/lib/swing/scoring";
 import { generateSwingFeedback } from "@/lib/swing/feedback";
@@ -26,7 +27,7 @@ export async function submitSwingVideo(input: {
   if (!session?.user?.id) return { error: "No autenticado" };
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
-  if (user.plan !== "PRO") {
+  if (!hasProAccess(user)) {
     return { error: "Esta función está disponible con el plan Pro." };
   }
 

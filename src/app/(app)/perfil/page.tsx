@@ -7,7 +7,7 @@ import { ProfileForm } from "@/components/profile-form";
 import { signOutAction } from "@/actions/profile";
 import { createCheckoutSession, createPortalSession } from "@/actions/stripe";
 import { isStripeConfigured } from "@/lib/stripe";
-import { isAdminEmail } from "@/lib/admin";
+import { isAdminEmail, isOwnerEmail } from "@/lib/admin";
 import { getVoiceMinutesUsedThisPeriod, INCLUDED_VOICE_MINUTES } from "@/lib/billing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ export default async function ProfilePage({
   const { t } = await getDictionary();
   const { checkout } = await searchParams;
 
+  const owner = isOwnerEmail(user.email);
   const minutesUsed = await getVoiceMinutesUsedThisPeriod(userId);
   const minutesIncluded = INCLUDED_VOICE_MINUTES[user.plan];
 
@@ -57,14 +58,16 @@ export default async function ProfilePage({
         <CardContent className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">
-              {user.plan === "PRO" ? t.perfil.proPlan : t.perfil.freePlan}
+              {owner ? t.perfil.ownerPlan : user.plan === "PRO" ? t.perfil.proPlan : t.perfil.freePlan}
             </span>
             <span className="text-xs text-muted-foreground">
-              {fmt(t.perfil.minutesUsed, { used: Math.round(minutesUsed), included: minutesIncluded })}
+              {owner
+                ? t.perfil.ownerAccess
+                : fmt(t.perfil.minutesUsed, { used: Math.round(minutesUsed), included: minutesIncluded })}
             </span>
           </div>
 
-          {isStripeConfigured() ? (
+          {owner ? null : isStripeConfigured() ? (
             user.plan === "PRO" ? (
               <form action={createPortalSession}>
                 <Button type="submit" variant="outline" size="sm">

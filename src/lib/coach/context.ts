@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { hasProAccess } from "@/lib/plan";
 import { computeRoundBreakdown, formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
 import type { CoachContext, CoachPhase } from "./types";
 
@@ -92,7 +93,7 @@ export async function getCoachContext(params: {
 
   const historySummary = await buildHistorySummary(userId, gameId ?? undefined);
 
-  const mindMemory = user.plan === "PRO" ? (user.mindMemory ?? null) : null;
+  const mindMemory = hasProAccess(user) ? (user.mindMemory ?? null) : null;
 
   if (!gameId) {
     return {

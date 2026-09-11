@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getCoachContext } from "@/lib/coach/context";
 import { buildDynamicVariables } from "@/lib/coach/voice-variables";
 import { canStartVoiceCall } from "@/lib/billing";
+import { isOwnerEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
 
@@ -48,17 +49,19 @@ export async function POST(req: Request) {
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
-  const usage = await canStartVoiceCall(session.user.id, user.plan);
-  if (!usage.allowed) {
-    return NextResponse.json(
-      {
-        error: "Has usado todos los minutos de llamada de este mes.",
-        code: "VOICE_LIMIT_REACHED",
-        minutesUsed: usage.minutesUsed,
-        minutesIncluded: usage.minutesIncluded,
-      },
-      { status: 402 }
-    );
+  if (!isOwnerEmail(user.email)) {
+    const usage = await canStartVoiceCall(session.user.id, user.plan);
+    if (!usage.allowed) {
+      return NextResponse.json(
+        {
+          error: "Has usado todos los minutos de llamada de este mes.",
+          code: "VOICE_LIMIT_REACHED",
+          minutesUsed: usage.minutesUsed,
+          minutesIncluded: usage.minutesIncluded,
+        },
+        { status: 402 }
+      );
+    }
   }
 
   let dynamicVariables: Record<string, string>;

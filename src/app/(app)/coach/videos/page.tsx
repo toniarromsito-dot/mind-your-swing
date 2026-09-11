@@ -4,13 +4,14 @@ import { listMySwingVideos } from "@/lib/data/swing-videos";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { SwingVideosSection } from "@/components/swing-videos-section";
 import { ProUpsell } from "@/components/pro-upsell";
+import { hasProAccess } from "@/lib/plan";
 
 export default async function SwingVideosPage() {
   const userId = await requireUserId();
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true } });
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true, email: true } });
   const { t } = await getDictionary();
 
-  if (user.plan !== "PRO") {
+  if (!hasProAccess(user)) {
     return (
       <div className="mx-auto max-w-lg py-8">
         <ProUpsell t={t.landing} />

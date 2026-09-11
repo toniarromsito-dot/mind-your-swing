@@ -218,6 +218,8 @@ Un jugador Pro puede subir un vídeo de su swing y recibir, al instante, una pun
 
 **Revisión manual (`/admin/videos`)**: solo accesible para los emails listados en `ADMIN_EMAILS` (separados por comas). Sin esta variable, nadie puede entrar a esa página.
 
+**Cuenta propietaria (`OWNER_EMAILS`)**: los emails listados ahí (separados por comas, mismo formato que `ADMIN_EMAILS`) obtienen acceso Pro completo en toda la app —Analizador de Swing, Mind, multijugador, todas las modalidades— sin pasar por Stripe ni depender de `plan` en base de datos (ver `src/lib/plan.ts` → `hasProAccess`). Pensada para desarrollar y enseñar el producto. Un owner es también admin automáticamente (no hace falta repetir el email en `ADMIN_EMAILS`). Los usuarios normales (Free/Pro vía Stripe) no cambian.
+
 ### 4.8. Resumen de variables (`.env.example`)
 
 ```
@@ -237,6 +239,7 @@ STRIPE_SECRET_KEY=
 STRIPE_PRO_PRICE_ID=
 STRIPE_WEBHOOK_SECRET=
 ADMIN_EMAILS=
+OWNER_EMAILS=
 ```
 
 (`BLOB_READ_WRITE_TOKEN` no va en `.env.example`: lo provisiona automáticamente Vercel al enlazar un store de Vercel Blob — ver 6.2.)
@@ -282,6 +285,7 @@ Crea una base de datos Postgres en [Neon](https://neon.tech) o [Supabase](https:
    - `ELEVENLABS_AGENT_ID`, `ELEVENLABS_CUSTOM_LLM_SECRET` (opcionales, solo para la llamada de voz en tiempo real — ver 4.5; el agente debe apuntar a este mismo dominio de producción).
    - `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET` (opcionales, solo para cobrar el plan Pro — ver 4.6; usa las claves `sk_live_...` cuando actives el modo Live en Stripe).
    - `ADMIN_EMAILS` (opcional, solo para poder acceder a `/admin/videos` — ver 4.7).
+   - `OWNER_EMAILS` (opcional, acceso Pro completo sin Stripe para la cuenta propietaria — ver 4.7).
    - `BLOB_READ_WRITE_TOKEN`: se provisiona solo al crear/enlazar un store de [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (`npx vercel blob create-store <nombre>` o desde el dashboard, pestaña Storage) — necesario para que funcione la subida de vídeos de swing.
 3. Despliega.
 

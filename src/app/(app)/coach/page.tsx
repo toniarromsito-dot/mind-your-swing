@@ -19,15 +19,16 @@ import { buttonVariants } from "@/components/ui/button";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
+import { hasProAccess } from "@/lib/plan";
 
 const TOPIC_ICONS = [Hand, PersonStanding, Move, Target, AlertTriangle, Sparkles, MapPinned, BookOpen, FlagIcon];
 const AI_STEP_ICONS = [Camera, ScanEye, Bot];
 
 export default async function LearnPage() {
   const userId = await requireUserId();
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true } });
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true, email: true } });
   const { t } = await getDictionary();
-  const isPro = user.plan === "PRO";
+  const isPro = hasProAccess(user);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
