@@ -95,7 +95,7 @@ const es = {
     premiumTitle: "Mind Your Swing Pro",
     premiumTagline: "Tu compañero y mentor de golf.",
     premiumBody: "Compañero avanzado con voz, memoria completa, análisis de vídeo, academia y comunidad al completo.",
-    premiumPrice: "24,99€/mes",
+    premiumPrice: "7,99€/mes",
     premiumCta: "Empezar Pro",
     freePlanTitle: "Free",
     freePlanFeatures: [
@@ -363,7 +363,7 @@ const es = {
     checkoutSuccess: "¡Bienvenido al plan Pro!",
     checkoutCancelled: "Suscripción cancelada, no se ha realizado ningún cobro.",
     billingUnavailable: "Los pagos no están configurados todavía.",
-    proPrice: "24,99€/mes",
+    proPrice: "7,99€/mes",
   },
   coach: {
     title: "Aprende los fundamentos",
@@ -576,7 +576,7 @@ const en: typeof es = {
     premiumTitle: "Mind Your Swing Pro",
     premiumTagline: "Your golf companion and mentor.",
     premiumBody: "Advanced companion with voice, full memory, video analysis, and the full academy and community.",
-    premiumPrice: "€24.99/month",
+    premiumPrice: "€7.99/month",
     premiumCta: "Start Pro",
     freePlanTitle: "Free",
     freePlanFeatures: [
@@ -843,7 +843,7 @@ const en: typeof es = {
     checkoutSuccess: "Welcome to the Pro plan!",
     checkoutCancelled: "Subscription cancelled, you haven't been charged.",
     billingUnavailable: "Payments aren't configured yet.",
-    proPrice: "€24.99/month",
+    proPrice: "€7.99/month",
   },
   coach: {
     title: "Learn the fundamentals",
