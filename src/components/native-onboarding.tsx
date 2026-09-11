@@ -83,7 +83,7 @@ export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
         onScroll={handleScroll}
         className="flex h-svh snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
       >
-        <Slide photo={DASHBOARD_PHOTOS.coach}>
+        <Slide photo="/onboarding-hero.png" objectPosition="20% center">
           <p className="font-heading text-3xl font-semibold tracking-[0.2em] text-white">{t.wordmark}</p>
           <p className="mt-1 text-xs font-medium tracking-[0.35em] text-white/85">{t.fullName}</p>
         </Slide>
@@ -116,7 +116,15 @@ export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
   );
 }
 
-function Slide({ photo, children }: { photo?: string; children: React.ReactNode }) {
+function Slide({
+  photo,
+  objectPosition = "center",
+  children,
+}: {
+  photo?: string;
+  objectPosition?: string;
+  children: React.ReactNode;
+}) {
   if (!photo) {
     return (
       <div className="flex h-svh w-full shrink-0 snap-start flex-col items-center justify-center bg-background px-8 text-center">
@@ -126,7 +134,15 @@ function Slide({ photo, children }: { photo?: string; children: React.ReactNode 
   }
   return (
     <div className="relative flex h-svh w-full shrink-0 snap-start flex-col items-center justify-end bg-background px-8 pb-24 text-center">
-      <Image src={photo} alt="" fill sizes="100vw" className="object-cover" priority />
+      <Image
+        src={photo}
+        alt=""
+        fill
+        sizes="100vw"
+        className="object-cover"
+        style={{ objectPosition }}
+        priority
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
       <div className="relative">{children}</div>
     </div>
