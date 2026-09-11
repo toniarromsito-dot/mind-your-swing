@@ -426,6 +426,24 @@ const es = {
       { title: "Drills de putt", description: "Ejercicios concretos para mejorar la lectura y el ritmo.", url: null },
       { title: "Análisis de swing", description: "Qué mirar cuando revisas tu propio swing en vídeo.", url: null },
     ],
+    aiExplainer: {
+      title: "Cómo analiza tu swing la IA",
+      subtitle: "Dos tecnologías distintas, cada una haciendo lo que mejor sabe hacer.",
+      steps: [
+        {
+          title: "Grabas tu swing",
+          body: "Grabas un vídeo corto con el móvil desde el lateral. Para este análisis, el vídeo no sale de tu dispositivo.",
+        },
+        {
+          title: "Visión por ordenador detecta tu postura",
+          body: "MediaPipe (de Google) localiza en el propio teléfono 33 puntos de tu cuerpo fotograma a fotograma —hombros, caderas, rodillas, muñecas— y con ellos calculamos cinco métricas: estabilidad de la cabeza, ángulo de columna, rotación de caderas, transferencia de peso y tempo.",
+        },
+        {
+          title: "Claude traduce los números en consejos",
+          body: "Solo esas métricas (nunca el vídeo) se envían a Claude, el modelo de IA de Anthropic, que las convierte en un consejo breve y motivador: qué haces bien y qué mejorar.",
+        },
+      ],
+    },
   },
   swingVideos: {
     navLink: "Sube tu swing",
@@ -880,6 +898,24 @@ const en: typeof es = {
       { title: "Putting drills", description: "Concrete exercises for reading greens and tempo.", url: null },
       { title: "Swing analysis", description: "What to look for when reviewing your own swing on video.", url: null },
     ],
+    aiExplainer: {
+      title: "How AI analyzes your swing",
+      subtitle: "Two different technologies, each doing what it does best.",
+      steps: [
+        {
+          title: "You record your swing",
+          body: "Record a short video with your phone from the side. For this analysis, the video never leaves your device.",
+        },
+        {
+          title: "Computer vision detects your posture",
+          body: "MediaPipe (from Google) locates 33 points on your body frame by frame, right on your phone — shoulders, hips, knees, wrists — and uses them to compute five metrics: head stability, spine angle, hip rotation, weight transfer, and tempo.",
+        },
+        {
+          title: "Claude turns the numbers into advice",
+          body: "Only those metrics (never the video) are sent to Claude, Anthropic's AI model, which turns them into brief, motivating advice: what you're doing well and what to improve.",
+        },
+      ],
+    },
   },
   swingVideos: {
     navLink: "Upload your swing",
