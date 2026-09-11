@@ -12,13 +12,5 @@ export default async function NewGamePage() {
   ]);
   const { t } = await getDictionary();
 
-  return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="font-heading text-2xl">{t.newGame.title}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{t.newGame.subtitle}</p>
-      <div className="mt-6">
-        <GameWizard courses={courses} t={t.newGame} isPro={user.plan === "PRO"} />
-      </div>
-    </div>
-  );
+  return <GameWizard courses={courses} t={t.newGame} isPro={user.plan === "PRO"} />;
 }

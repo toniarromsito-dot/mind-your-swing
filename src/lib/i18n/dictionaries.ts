@@ -124,7 +124,7 @@ const es = {
     footerRights: "Todos los derechos reservados.",
   },
   home: {
-    prompt: "¿Qué quieres hacer hoy?",
+    prompt: "¿Jugamos?",
     playCard: "Jugar",
     playCardBody: "Crea una partida y juega con tus amigos.",
     coachCard: "Mind",
@@ -273,6 +273,7 @@ const es = {
     noResult: "—",
     viewHistory: "Ver historial completo",
     noMoodData: "No se registraron check-ins de ánimo en esta partida.",
+    viewDetails: "Ver detalle de la vuelta",
     bestHole: "Mejor hoyo",
     worstHole: "Peor hoyo",
     winner: "Gana",
@@ -605,7 +606,7 @@ const en: typeof es = {
     footerRights: "All rights reserved.",
   },
   home: {
-    prompt: "What do you want to do today?",
+    prompt: "Shall we play?",
     playCard: "Play",
     playCardBody: "Create a game and play with your friends.",
     coachCard: "Mind",
@@ -754,6 +755,7 @@ const en: typeof es = {
     noResult: "—",
     viewHistory: "View full history",
     noMoodData: "No mood check-ins were recorded in this game.",
+    viewDetails: "View round details",
     bestHole: "Best hole",
     worstHole: "Worst hole",
     winner: "Wins",

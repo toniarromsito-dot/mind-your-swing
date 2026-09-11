@@ -73,18 +73,39 @@ export function GameWizard({ courses, t, isPro }: { courses: DemoCourse[]; t: Di
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {step !== "count" && (
-        <button
-          type="button"
-          onClick={back}
-          className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="size-4" />
-          {t.back}
-        </button>
-      )}
+    // Pantalla completa, por encima del header/bottom nav de AppShell —
+    // mismo tratamiento que Focus Mode (game-view.tsx): "nueva partida" es
+    // un flujo de pantallas dedicado, no un formulario dentro de una
+    // página con scroll y navegación de fondo.
+    <div className="fixed inset-0 z-40 flex flex-col bg-background pt-[calc(0.5rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-center gap-3 px-4 pb-1">
+        {step !== "count" ? (
+          <button
+            type="button"
+            onClick={back}
+            aria-label={t.back}
+            className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+        ) : (
+          <span className="size-8" />
+        )}
+        <p className="flex-1 text-center text-sm font-medium text-muted-foreground">{t.title}</p>
+        <span className="size-8" />
+      </div>
 
+      <div
+        key={step}
+        className={cn(
+          "flex flex-1 flex-col gap-6 overflow-y-auto px-6 pt-6 pb-4 duration-200 animate-in fade-in slide-in-from-right-4",
+          // "count" y "mode" son siempre cortos (unos botones) — centrarlos
+          // se ve mejor. "course" y "confirm" pueden crecer (buscador +
+          // lista, grid de hoyos) y necesitan quedarse arriba para poder
+          // scrollear sin el problema de recorte de flexbox+justify-center.
+          (step === "count" || step === "mode") && "justify-center"
+        )}
+      >
       {step === "count" && (
         <div className="flex flex-col gap-4">
           <h2 className="font-heading text-xl">{t.howManyPlayers}</h2>
@@ -262,6 +283,7 @@ export function GameWizard({ courses, t, isPro }: { courses: DemoCourse[]; t: Di
           </Button>
         </form>
       )}
+      </div>
     </div>
   );
 }

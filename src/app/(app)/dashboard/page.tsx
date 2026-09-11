@@ -38,7 +38,7 @@ export default async function HomePage() {
             cuatro iguales — "esta es mi app de golf", no "un panel de 4
             funciones". */}
         <Link href="/play/new" className="group">
-          <Card className="relative h-60 overflow-hidden border-none shadow-md transition-transform group-hover:-translate-y-0.5 sm:h-72">
+          <Card className="relative h-72 overflow-hidden border-none shadow-md transition-transform group-hover:-translate-y-0.5 sm:h-80">
             <Image src={DASHBOARD_PHOTOS.play} alt="" fill sizes="100vw" className="object-cover" priority />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
             <CardContent className="relative flex h-full flex-col justify-between p-5">
@@ -46,31 +46,31 @@ export default async function HomePage() {
                 <ArrowRight className="size-4" />
               </span>
               <div>
-                <p className="font-heading text-2xl font-semibold text-white">{h.playCard}</p>
+                <p className="font-heading text-3xl font-semibold text-white">{h.playCard}</p>
                 <p className="mt-1 text-sm text-white/80">{h.playCardBody}</p>
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        <div className="grid grid-cols-3 gap-3">
+        {/* Segundo plano deliberado: mismo trío, pero claramente más
+            pequeño y sin texto de cuerpo — Jugar es LA acción, esto es
+            "lo demás que también puedes hacer". */}
+        <div className="grid grid-cols-3 gap-2">
           {secondaryCards.map((c) => (
             <Link key={c.href} href={c.href} className="group">
-              <Card className="relative h-32 overflow-hidden border-none shadow-none transition-transform group-hover:-translate-y-0.5 sm:h-36">
-                <Image src={c.photo} alt="" fill sizes="(min-width: 640px) 200px, 33vw" className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                <CardContent className="relative flex h-full flex-col justify-between p-3">
+              <Card className="relative h-20 overflow-hidden border-none shadow-none transition-transform group-hover:-translate-y-0.5">
+                <Image src={c.photo} alt="" fill sizes="(min-width: 640px) 150px, 33vw" className="object-cover" />
+                <div className="absolute inset-0 bg-black/45" />
+                <CardContent className="relative flex h-full flex-col items-center justify-center gap-1 p-2">
                   {c.isMind ? (
-                    <MindMark size="sm" className="ml-auto" />
+                    <MindMark size="sm" />
                   ) : (
-                    <span className="ml-auto flex size-6 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
                       <ArrowRight className="size-3" />
                     </span>
                   )}
-                  <div>
-                    <p className="font-heading text-sm font-semibold text-white">{c.title}</p>
-                    <p className="mt-0.5 truncate text-[11px] text-white/75">{c.body}</p>
-                  </div>
+                  <p className="font-heading text-xs font-semibold text-white">{c.title}</p>
                 </CardContent>
               </Card>
             </Link>

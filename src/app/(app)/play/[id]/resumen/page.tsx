@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { MoodCheckin } from "@/components/mood-checkin";
 import { MindInsightReveal } from "@/components/mind-insight-reveal";
+import { DetailsDrawer } from "@/components/details-drawer";
 import { toStandingsInput } from "@/lib/games/adapt";
 import { GAME_MODE_META } from "@/lib/games/modes";
 import { computeBestBallStandings, computeStrokeStandings, computeTeamStrokeStandings } from "@/lib/games/standings";
@@ -137,51 +138,6 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         </p>
       )}
 
-      {headToHead && headToHead.totalGamesTogether > 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-1 py-4 text-center text-sm text-muted-foreground">
-            <p>{fmt(t.summary.headToHeadTotal, { n: headToHead.totalGamesTogether })}</p>
-            {game.players.length === 2 &&
-              game.players.map((p) => (
-                <p key={p.id}>
-                  {fmt(t.summary.headToHeadWinsTemplate, {
-                    name: p.user.name ?? "—",
-                    wins: headToHead.winsByUserId[p.userId] ?? 0,
-                  })}
-                </p>
-              ))}
-            <p className="mt-1 font-medium text-foreground">
-              {winnerUserId && headToHead.lastWinnerUserId === winnerUserId
-                ? fmt(t.summary.rematchWonTemplate, { name: winnerPlayer?.name ?? "" })
-                : t.summary.rematchPending}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {(bestHole || worstHole) && (
-        <div className="grid grid-cols-2 gap-3">
-          {bestHole && (
-            <Card>
-              <CardContent className="flex flex-col items-center py-5">
-                <span className="text-xs text-muted-foreground">{t.summary.bestHole}</span>
-                <span className="font-heading text-xl">{holeResultLabel(bestHole.par, bestHole.strokes!, t.golfResult)}</span>
-                <span className="text-xs text-muted-foreground">{t.summary.holeLabel(bestHole.number, bestHole.par)}</span>
-              </CardContent>
-            </Card>
-          )}
-          {worstHole && (
-            <Card>
-              <CardContent className="flex flex-col items-center py-5">
-                <span className="text-xs text-muted-foreground">{t.summary.worstHole}</span>
-                <span className="font-heading text-xl">{holeResultLabel(worstHole.par, worstHole.strokes!, t.golfResult)}</span>
-                <span className="text-xs text-muted-foreground">{t.summary.holeLabel(worstHole.number, worstHole.par)}</span>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
       {game.insight && (
         <MindInsightReveal
           insight={game.insight}
@@ -189,7 +145,59 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         />
       )}
 
-      <MoodCheckin gameId={game.id} t={t.moodCheckin} moodLabels={t.mood} />
+      {/* Todo lo secundario (mejor/peor hoyo, historial cara-a-cara,
+          check-in de humor) vive detrás de un toque, no apilado en la
+          pantalla principal — mismo patrón que MindSettingsDrawer en
+          /mind: la pantalla de resultado enseña lo esencial de un
+          vistazo, el detalle está a un toque de distancia. */}
+      <DetailsDrawer label={t.summary.viewDetails}>
+        {headToHead && headToHead.totalGamesTogether > 0 && (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-1 py-4 text-center text-sm text-muted-foreground">
+              <p>{fmt(t.summary.headToHeadTotal, { n: headToHead.totalGamesTogether })}</p>
+              {game.players.length === 2 &&
+                game.players.map((p) => (
+                  <p key={p.id}>
+                    {fmt(t.summary.headToHeadWinsTemplate, {
+                      name: p.user.name ?? "—",
+                      wins: headToHead.winsByUserId[p.userId] ?? 0,
+                    })}
+                  </p>
+                ))}
+              <p className="mt-1 font-medium text-foreground">
+                {winnerUserId && headToHead.lastWinnerUserId === winnerUserId
+                  ? fmt(t.summary.rematchWonTemplate, { name: winnerPlayer?.name ?? "" })
+                  : t.summary.rematchPending}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {(bestHole || worstHole) && (
+          <div className="grid grid-cols-2 gap-3">
+            {bestHole && (
+              <Card>
+                <CardContent className="flex flex-col items-center py-5">
+                  <span className="text-xs text-muted-foreground">{t.summary.bestHole}</span>
+                  <span className="font-heading text-xl">{holeResultLabel(bestHole.par, bestHole.strokes!, t.golfResult)}</span>
+                  <span className="text-xs text-muted-foreground">{t.summary.holeLabel(bestHole.number, bestHole.par)}</span>
+                </CardContent>
+              </Card>
+            )}
+            {worstHole && (
+              <Card>
+                <CardContent className="flex flex-col items-center py-5">
+                  <span className="text-xs text-muted-foreground">{t.summary.worstHole}</span>
+                  <span className="font-heading text-xl">{holeResultLabel(worstHole.par, worstHole.strokes!, t.golfResult)}</span>
+                  <span className="text-xs text-muted-foreground">{t.summary.holeLabel(worstHole.number, worstHole.par)}</span>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        <MoodCheckin gameId={game.id} t={t.moodCheckin} moodLabels={t.mood} />
+      </DetailsDrawer>
 
       <div className="flex gap-3">
         <form action={createRematch.bind(null, game.id)} className="flex-1">
