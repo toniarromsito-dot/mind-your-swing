@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
 import { hasProAccess } from "@/lib/plan";
 import { getCurrentLocale } from "@/lib/i18n/current-locale";
+import { dictionaries } from "@/lib/i18n/dictionaries";
 import { computeSwingMetrics, InsufficientPoseDataError, type PoseFrame } from "@/lib/swing/scoring";
 import { generateSwingFeedback } from "@/lib/swing/feedback";
 
@@ -23,12 +24,15 @@ export async function submitSwingVideo(input: {
   note?: string;
   poseFrames: PoseFrame[];
 }): Promise<SubmitSwingVideoResult> {
+  const locale = await getCurrentLocale();
+  const t = dictionaries[locale].swingVideos;
+
   const session = await auth();
   if (!session?.user?.id) return { error: "No autenticado" };
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
   if (!hasProAccess(user)) {
-    return { error: "Esta función está disponible con el plan Pro." };
+    return { error: t.proRequiredError };
   }
 
   let metrics;
@@ -36,10 +40,8 @@ export async function submitSwingVideo(input: {
     metrics = computeSwingMetrics(input.poseFrames);
   } catch (err) {
     if (err instanceof InsufficientPoseDataError) return { error: err.message };
-    return { error: "No se ha podido analizar el vídeo." };
+    return { error: t.genericError };
   }
-
-  const locale = await getCurrentLocale();
 
   let aiFeedback: string;
   try {

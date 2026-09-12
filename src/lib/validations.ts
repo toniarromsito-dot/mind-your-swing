@@ -79,7 +79,7 @@ export const profileSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
   handicap: z.coerce.number().min(-10).max(54).optional().nullable(),
   coachTone: coachToneEnum.optional(),
-  language: z.enum(["es", "en"]).optional(),
+  language: z.enum(["es", "en", "de"]).optional(),
 });
 
 export const storySchema = z.object({

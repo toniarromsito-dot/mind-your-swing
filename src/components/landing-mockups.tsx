@@ -1,10 +1,17 @@
 import { ChevronLeft, Minus, Plus, Trophy, Users } from "lucide-react";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { fmt } from "@/lib/i18n/format";
+
+type Mockups = Dictionary["landing"]["mockups"];
 
 /**
  * Representaciones ilustrativas de la propia interfaz (no interactivas) —
  * capturas de pantalla "falsas" con el mismo look real de la app (misma
  * paleta, mismos componentes), en vez de fotografía, para el hero y la
- * sección de pasos de la landing.
+ * sección de pasos de la landing. Los textos vienen de landing.mockups en
+ * el diccionario: son parte de lo que ve el usuario, así que cambian de
+ * idioma igual que el resto de la landing (los nombres de jugadores son
+ * nombres propios y no se traducen).
  */
 
 function DemoTag() {
@@ -30,22 +37,22 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function LobbyMockup() {
+export function LobbyMockup({ t }: { t: Mockups["lobby"] }) {
   return (
     <PhoneFrame>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <ChevronLeft className="size-3.5" />
-        Crear partida
+        {t.createGame}
       </div>
       <div className="rounded-2xl bg-secondary p-3.5">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-semibold">Son Muntaner</p>
+          <p className="text-sm font-semibold">{t.courseName}</p>
           <DemoTag />
         </div>
-        <p className="text-xs text-muted-foreground">Palma, Mallorca</p>
+        <p className="text-xs text-muted-foreground">{t.courseLocation}</p>
       </div>
       <div>
-        <p className="mb-1.5 text-xs font-medium text-muted-foreground">Jugadores</p>
+        <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t.players}</p>
         <div className="flex -space-x-2">
           {["A", "J", "P", "M"].map((initial) => (
             <span
@@ -64,35 +71,33 @@ export function LobbyMockup() {
         <div className="flex items-center gap-2 px-3.5 py-2.5">
           <Users className="size-3.5 text-muted-foreground" />
           <div>
-            <p className="text-xs font-medium">Modo de juego</p>
-            <p className="text-[11px] text-muted-foreground">2 vs 2</p>
+            <p className="text-xs font-medium">{t.gameMode}</p>
+            <p className="text-[11px] text-muted-foreground">{t.gameModeValue}</p>
           </div>
         </div>
         <div className="px-3.5 py-2.5">
-          <p className="text-xs font-medium">Apuesta (opcional)</p>
-          <p className="text-[11px] text-muted-foreground">El perdedor invita a una cerveza 🍺</p>
+          <p className="text-xs font-medium">{t.bet}</p>
+          <p className="text-[11px] text-muted-foreground">{t.betValue}</p>
         </div>
       </div>
       <div className="rounded-xl bg-primary py-2.5 text-center text-sm font-medium text-primary-foreground">
-        Comenzar partida
+        {t.start}
       </div>
     </PhoneFrame>
   );
 }
 
-export function ScorecardMockup({ holeNumber = 7 }: { holeNumber?: number }) {
+export function ScorecardMockup({ t, holeNumber = 7 }: { t: Mockups["scorecard"]; holeNumber?: number }) {
   return (
     <PhoneFrame>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <ChevronLeft className="size-3.5" />
-        Salir
+        {t.exit}
       </div>
       <div className="text-center">
-        <p className="font-heading text-2xl tracking-tight">
-          Hoyo {holeNumber} / 18
-        </p>
+        <p className="font-heading text-2xl tracking-tight">{fmt(t.hole, { n: holeNumber })}</p>
         <p className="mt-0.5 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-          Par 4 · Son Muntaner <DemoTag />
+          {t.parCourse} <DemoTag />
         </p>
       </div>
       <div className="flex flex-col gap-3">
@@ -119,25 +124,25 @@ export function ScorecardMockup({ holeNumber = 7 }: { holeNumber?: number }) {
         ))}
       </div>
       <div className="rounded-xl bg-primary py-2.5 text-center text-sm font-medium text-primary-foreground">
-        Guardar hoyo
+        {t.save}
       </div>
     </PhoneFrame>
   );
 }
 
-export function MindAnalysisMockup() {
+export function MindAnalysisMockup({ t }: { t: Mockups["analysis"] }) {
   return (
     <PhoneFrame>
-      <p className="font-heading text-base font-semibold">Análisis de tu vuelta</p>
+      <p className="font-heading text-base font-semibold">{t.title}</p>
       <div className="mr-auto max-w-[92%] rounded-2xl rounded-bl-sm bg-secondary px-3.5 py-2.5 text-xs text-secondary-foreground">
-        He revisado tu vuelta, Antonio. Entre los hoyos 11 y 14 perdiste 5 golpes. La próxima vez, un respiro antes de cada tee ahí.
+        {t.message}
       </div>
       <div className="grid grid-cols-4 gap-1.5 text-center">
         {[
-          { label: "Resultado", value: "87" },
-          { label: "Par", value: "4" },
-          { label: "Bogeys", value: "8" },
-          { label: "Birdies", value: "3" },
+          { label: t.statResult, value: "87" },
+          { label: t.statPar, value: "4" },
+          { label: t.statBogeys, value: "8" },
+          { label: t.statBirdies, value: "3" },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border py-2">
             <p className="font-heading text-sm font-semibold">{stat.value}</p>
@@ -146,26 +151,24 @@ export function MindAnalysisMockup() {
         ))}
       </div>
       <div className="rounded-2xl bg-accent p-3">
-        <p className="text-[10px] font-medium text-accent-foreground">Tu principal aprendizaje</p>
-        <p className="mt-1 text-xs text-accent-foreground">
-          Después de un error, tu reacción influye en los siguientes hoyos. Vamos a trabajarlo en la próxima vuelta.
-        </p>
+        <p className="text-[10px] font-medium text-accent-foreground">{t.learningLabel}</p>
+        <p className="mt-1 text-xs text-accent-foreground">{t.learningBody}</p>
       </div>
     </PhoneFrame>
   );
 }
 
-export function ResultMockup() {
+export function ResultMockup({ t }: { t: Mockups["result"] }) {
   return (
     <PhoneFrame>
-      <p className="text-center font-heading text-base font-semibold">¡Vuelta terminada!</p>
+      <p className="text-center font-heading text-base font-semibold">{t.finished}</p>
       <p className="-mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
-        Son Muntaner · 18 hoyos · Par 72 <DemoTag />
+        {t.courseSummary} <DemoTag />
       </p>
       <div className="flex flex-col items-center gap-1 text-center">
         <Trophy className="size-6 text-primary" />
         <p className="font-heading text-xl">Antonio</p>
-        <p className="text-sm text-muted-foreground">87 golpes</p>
+        <p className="text-sm text-muted-foreground">87 {t.strokesSuffix}</p>
       </div>
       <div className="flex flex-col gap-1.5 text-sm text-muted-foreground">
         <div className="flex items-center justify-between">
@@ -182,17 +185,17 @@ export function ResultMockup() {
         </div>
       </div>
       <div className="rounded-xl bg-secondary py-2 text-center text-xs font-medium text-secondary-foreground">
-        😅 Juan invita a comer
+        {t.betResult}
       </div>
       <div className="rounded-xl bg-primary py-2.5 text-center text-sm font-medium text-primary-foreground">
-        Ver análisis con Mind
+        {t.viewAnalysis}
       </div>
-      <p className="text-center text-xs font-medium text-muted-foreground">¿Revancha?</p>
+      <p className="text-center text-xs font-medium text-muted-foreground">{t.rematch}</p>
     </PhoneFrame>
   );
 }
 
-export function RivalryCard() {
+export function RivalryCard({ t }: { t: Mockups["rivalry"] }) {
   return (
     <div className="mx-auto w-full max-w-[240px] rounded-2xl border border-border bg-card p-5 shadow-sm">
       <p className="text-center text-xs font-medium text-muted-foreground">Antonio vs Juan</p>
@@ -203,14 +206,16 @@ export function RivalryCard() {
         </div>
         <div className="text-center text-muted-foreground">
           <p className="font-heading text-lg">8</p>
-          <p className="text-[10px]">partidas</p>
+          <p className="text-[10px]">{t.games}</p>
         </div>
         <div className="text-center">
           <p className="font-heading text-2xl font-semibold">3</p>
           <p className="text-[11px] text-muted-foreground">Juan</p>
         </div>
       </div>
-      <div className="mt-4 rounded-xl bg-primary py-2 text-center text-xs font-medium text-primary-foreground">¿Revancha?</div>
+      <div className="mt-4 rounded-xl bg-primary py-2 text-center text-xs font-medium text-primary-foreground">
+        {t.rematch}
+      </div>
     </div>
   );
 }

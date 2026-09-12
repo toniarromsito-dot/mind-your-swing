@@ -48,6 +48,7 @@ export function ProfileForm({
         >
           <option value="es">{t.langEs}</option>
           <option value="en">{t.langEn}</option>
+          <option value="de">{t.langDe}</option>
         </select>
       </div>
 

@@ -22,12 +22,13 @@ export default async function LandingPage() {
 
   const { locale, t } = await getDictionary();
   const l = t.landing;
+  const m = l.mockups;
   const modeLabels = t.newGame.modeLabels;
 
   const steps = [
-    { number: "01", title: l.step1Title, body: l.step1Body, mockup: <LobbyMockup /> },
-    { number: "02", title: l.step2Title, body: l.step2Body, mockup: <ScorecardMockup holeNumber={8} /> },
-    { number: "03", title: l.step3Title, body: l.step3Body, mockup: <MindAnalysisMockup /> },
+    { number: "01", title: l.step1Title, body: l.step1Body, mockup: <LobbyMockup t={m.lobby} /> },
+    { number: "02", title: l.step2Title, body: l.step2Body, mockup: <ScorecardMockup t={m.scorecard} holeNumber={8} /> },
+    { number: "03", title: l.step3Title, body: l.step3Body, mockup: <MindAnalysisMockup t={m.analysis} /> },
   ];
 
   const friendGroups = [
@@ -131,13 +132,13 @@ export default async function LandingPage() {
 
           <div className="relative flex items-center justify-center">
             <div className="hidden -mr-12 rotate-[-6deg] opacity-90 sm:block">
-              <LobbyMockup />
+              <LobbyMockup t={m.lobby} />
             </div>
             <div className="relative z-10 scale-100 sm:scale-110">
-              <ScorecardMockup />
+              <ScorecardMockup t={m.scorecard} />
             </div>
             <div className="hidden -ml-12 rotate-[6deg] opacity-90 sm:block">
-              <MindAnalysisMockup />
+              <MindAnalysisMockup t={m.analysis} />
             </div>
           </div>
         </div>
@@ -209,7 +210,7 @@ export default async function LandingPage() {
             <p className="mt-4 max-w-md text-muted-foreground">{l.focusBody}</p>
           </div>
           <div className="order-1 sm:order-2">
-            <ScorecardMockup holeNumber={11} />
+            <ScorecardMockup t={m.scorecard} holeNumber={11} />
           </div>
         </Reveal>
       </section>
@@ -223,7 +224,7 @@ export default async function LandingPage() {
             <p className="mt-4 max-w-md text-muted-foreground">{l.afterRoundBody}</p>
           </div>
           <div className="order-1 sm:order-2">
-            <ResultMockup />
+            <ResultMockup t={m.result} />
           </div>
         </Reveal>
       </section>
@@ -231,7 +232,7 @@ export default async function LandingPage() {
       {/* Mentoría post-vuelta + memoria + revancha */}
       <section className="bg-secondary/40 px-6 py-20 sm:py-28">
         <Reveal className="mx-auto grid max-w-5xl items-center gap-12 sm:grid-cols-2">
-          <MindAnalysisMockup />
+          <MindAnalysisMockup t={m.analysis} />
           <div>
             <p className="text-xs font-medium tracking-wide text-primary uppercase">{l.mentorEyebrow}</p>
             <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">{l.mentorTitle}</h2>
@@ -246,7 +247,7 @@ export default async function LandingPage() {
               <h3 className="font-heading text-xl font-semibold">{l.revengeTitle}</h3>
               <p className="mt-2 max-w-md text-sm text-muted-foreground">{l.revengeBody}</p>
               <div className="mt-5">
-                <RivalryCard />
+                <RivalryCard t={m.rivalry} />
               </div>
             </div>
           </div>
