@@ -5,7 +5,11 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Mind Your Swing",
     short_name: "MYS",
     description: "Tu coach mental de golf: calma antes del golpe, foco durante la ronda.",
-    start_url: "/dashboard",
+    // /app-entry decide él mismo: sesión activa -> /dashboard directo; si
+    // no, muestra el onboarding (NativeOnboarding) antes de pedir login, en
+    // vez de aterrizar en la landing pública de marketing. Así abrir la PWA
+    // instalada se siente como abrir una app, no como abrir una pestaña.
+    start_url: "/app-entry",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

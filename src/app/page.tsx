@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { GoogleIcon } from "@/components/google-icon";
 import { LanguageToggle } from "@/components/language-toggle";
 import { LandingMobileNav } from "@/components/landing-mobile-nav";
+import { InstallAppButton } from "@/components/install-app-button";
 import { LogoMark } from "@/components/logo-mark";
 import { HeroIllustration } from "@/components/hero-illustration";
 import { LobbyMockup, ScorecardMockup, MindAnalysisMockup, ResultMockup, RivalryCard } from "@/components/landing-mockups";
@@ -114,6 +115,7 @@ export default async function LandingPage() {
                 </span>
                 {l.ctaSecondary}
               </a>
+              <InstallAppButton t={l.install} />
             </div>
 
             <div className="mt-7 flex flex-wrap gap-2">

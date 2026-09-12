@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { MindMark } from "@/components/mind-mark";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
+import { signInWithGoogle } from "@/actions/auth";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const ONBOARDED_KEY = "mys_onboarded";
@@ -22,20 +24,23 @@ const CTA_INDEX = SLIDE_COUNT;
  */
 export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
   const [alreadyOnboarded, setAlreadyOnboarded] = useState<boolean | null>(null);
+  const [isNative, setIsNative] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // localStorage no existe durante el render en servidor — leerlo aquí
-    // (no en el cuerpo del componente) evita un mismatch de hidratación.
+    // localStorage y Capacitor.isNativePlatform() no existen/no son
+    // fiables durante el render en servidor — leerlos aquí (no en el
+    // cuerpo del componente) evita un mismatch de hidratación.
     let onboarded = false;
     try {
       onboarded = localStorage.getItem(ONBOARDED_KEY) === "1";
     } catch {
       // localStorage no disponible: se comporta como si fuera la primera vez
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con localStorage, no re-deriva estado de React
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con localStorage/Capacitor, no re-deriva estado de React
     setAlreadyOnboarded(onboarded);
+    setIsNative(Capacitor.isNativePlatform());
   }, []);
 
   useEffect(() => {
@@ -57,12 +62,12 @@ export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
     scrollerRef.current?.scrollTo({ left: CTA_INDEX * (scrollerRef.current.clientWidth ?? 0), behavior: "smooth" });
   }
 
-  function signIn() {
+  function signInNative() {
     Browser.open({ url: "https://mind-your-swing.vercel.app/mobile-login" });
   }
 
   if (alreadyOnboarded) {
-    return <CtaScreen t={t} onSignIn={signIn} />;
+    return <CtaScreen t={t} isNative={isNative} onSignInNative={signInNative} />;
   }
   if (alreadyOnboarded === null) return null; // evita el parpadeo del carrusel antes de leer localStorage
 
@@ -98,7 +103,7 @@ export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
           <SlideCopy title={t.slide4Title} body={t.slide4Body} light={false} />
         </Slide>
         <div className="flex h-svh w-full shrink-0 snap-start items-center justify-center bg-background">
-          <CtaScreen t={t} onSignIn={signIn} />
+          <CtaScreen t={t} isNative={isNative} onSignInNative={signInNative} />
         </div>
       </div>
 
@@ -158,22 +163,53 @@ function SlideCopy({ title, body, light = true }: { title: string; body: string;
   );
 }
 
-function CtaScreen({ t, onSignIn }: { t: Dictionary["onboarding"]; onSignIn: () => void }) {
+function CtaScreen({
+  t,
+  isNative,
+  onSignInNative,
+}: {
+  t: Dictionary["onboarding"];
+  isNative: boolean;
+  onSignInNative: () => void;
+}) {
   return (
     <div className="flex min-h-svh w-full flex-col items-center justify-center gap-6 px-8 text-center">
       <MindMark size="lg" />
       <p className="font-heading text-2xl font-semibold tracking-tight">{t.ctaTitle}</p>
       <div className="flex w-full max-w-xs flex-col items-center gap-3">
-        <button
-          type="button"
-          onClick={onSignIn}
-          className="w-full rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
-        >
-          {t.continueWithGoogle}
-        </button>
-        <button type="button" onClick={onSignIn} className="text-sm text-muted-foreground underline">
-          {t.alreadyHaveAccount}
-        </button>
+        {isNative ? (
+          <>
+            <button
+              type="button"
+              onClick={onSignInNative}
+              className="w-full rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+            >
+              {t.continueWithGoogle}
+            </button>
+            <button type="button" onClick={onSignInNative} className="text-sm text-muted-foreground underline">
+              {t.alreadyHaveAccount}
+            </button>
+          </>
+        ) : (
+          <>
+            {/* PWA/navegador normal (no WebView de Capacitor): login web de
+                toda la vida, sin la Custom Tab que solo hace falta para
+                esquivar el bloqueo de Google a WebViews. */}
+            <form action={signInWithGoogle} className="w-full">
+              <button
+                type="submit"
+                className="w-full rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+              >
+                {t.continueWithGoogle}
+              </button>
+            </form>
+            <form action={signInWithGoogle}>
+              <button type="submit" className="text-sm text-muted-foreground underline">
+                {t.alreadyHaveAccount}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
