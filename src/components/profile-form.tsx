@@ -5,6 +5,7 @@ import { updateProfile } from "@/actions/profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function ProfileForm({
@@ -40,16 +41,24 @@ export function ProfileForm({
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="language">{t.language}</Label>
-        <select
-          id="language"
+        {/* Select propio (no el <select> nativo del sistema): en Safari/iOS,
+            dentro de una PWA instalada en modo standalone, el picker nativo
+            a veces no responde al tocarlo (bug conocido de WebKit). Este
+            componente no depende de esa UI nativa. */}
+        <Select
           name="language"
           defaultValue={defaultLanguage}
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs"
+          items={{ es: t.langEs, en: t.langEn, de: t.langDe }}
         >
-          <option value="es">{t.langEs}</option>
-          <option value="en">{t.langEn}</option>
-          <option value="de">{t.langDe}</option>
-        </select>
+          <SelectTrigger id="language" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="es">{t.langEs}</SelectItem>
+            <SelectItem value="en">{t.langEn}</SelectItem>
+            <SelectItem value="de">{t.langDe}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
