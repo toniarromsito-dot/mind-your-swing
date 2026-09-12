@@ -32,6 +32,15 @@ export async function generateMetadata(): Promise<Metadata> {
       statusBarStyle: "black-translucent",
       title: "Mind Your Swing",
     },
+    // La metadata API de Next.js con appleWebApp.capable solo emite la
+    // etiqueta genérica "mobile-web-app-capable" — iOS Safari sigue
+    // comprobando específicamente la etiqueta con el prefijo "apple-" para
+    // decidir si abrir en pantalla completa (sin su barra) al lanzar desde
+    // el icono de la pantalla de inicio. Sin ella, Safari puede abrir la
+    // PWA instalada como una pestaña normal en vez de standalone.
+    other: {
+      "apple-mobile-web-app-capable": "yes",
+    },
     icons: {
       icon: [
         { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
