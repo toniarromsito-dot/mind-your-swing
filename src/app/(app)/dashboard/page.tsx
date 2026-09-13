@@ -5,9 +5,14 @@ import { requireUserId } from "@/lib/require-user";
 import { getActiveGamesForUser } from "@/lib/data/games";
 import { Card, CardContent } from "@/components/ui/card";
 import { MindMark } from "@/components/mind-mark";
-import { ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
+import { prisma } from "@/lib/prisma";
+import { computeMentalScore } from "@/lib/mood";
+
+const MENTAL_SCORE_SAMPLE_SIZE = 14;
+const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus } as const;
 
 export default async function HomePage() {
   const userId = await requireUserId();
@@ -15,8 +20,25 @@ export default async function HomePage() {
   const { t } = await getDictionary();
   const h = t.home;
 
-  const activeGames = await getActiveGamesForUser(userId);
+  const [activeGames, recentMoods] = await Promise.all([
+    getActiveGamesForUser(userId),
+    prisma.moodEntry.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: MENTAL_SCORE_SAMPLE_SIZE,
+      select: { mood: true },
+    }),
+  ]);
   const activeGame = activeGames[0] ?? null;
+  const mentalScore = computeMentalScore(recentMoods);
+  const MentalTrendIcon = mentalScore ? TREND_ICON[mentalScore.trend] : null;
+  const mentalTrendLabel = mentalScore
+    ? mentalScore.trend === "up"
+      ? h.mentalTrendUp
+      : mentalScore.trend === "down"
+        ? h.mentalTrendDown
+        : h.mentalTrendFlat
+    : null;
 
   const secondaryCards = [
     { href: "/mind", title: h.coachCard, body: h.coachCardBody, photo: DASHBOARD_PHOTOS.coach, isMind: true },
@@ -77,6 +99,24 @@ export default async function HomePage() {
           ))}
         </div>
       </div>
+
+      {mentalScore && MentalTrendIcon && (
+        <Card>
+          <CardContent className="flex items-center gap-4 py-5">
+            <div>
+              <p className="font-heading text-4xl font-semibold tracking-tight">{mentalScore.score}</p>
+              <p className="text-xs text-muted-foreground uppercase">/ 100</p>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{h.mentalGameTitle}</p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <MentalTrendIcon className="size-3.5" />
+                {mentalTrendLabel}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {activeGame && (
         <Link href={`/play/${activeGame.id}`}>

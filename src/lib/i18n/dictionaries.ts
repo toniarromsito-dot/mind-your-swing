@@ -192,6 +192,10 @@ const es = {
     communityCardBody: "Comparte tu swing y habla con otros golfistas.",
     nextRoundTitle: "Tu próxima vuelta",
     continue: "Continuar",
+    mentalGameTitle: "Tu juego mental",
+    mentalTrendUp: "Mejorando",
+    mentalTrendDown: "A vigilar",
+    mentalTrendFlat: "Estable",
   },
   dashboard: {
     greeting: (name: string) => `Hola, ${name}`,
@@ -810,6 +814,10 @@ const en: typeof es = {
     communityCardBody: "Share your swing and talk with other golfers.",
     nextRoundTitle: "Your next round",
     continue: "Continue",
+    mentalGameTitle: "Your mental game",
+    mentalTrendUp: "Improving",
+    mentalTrendDown: "Watch this",
+    mentalTrendFlat: "Steady",
   },
   dashboard: {
     greeting: (name: string) => `Hi, ${name}`,
@@ -1386,6 +1394,10 @@ const de: typeof es = {
     communityCardBody: "Teile deinen Schwung und tausch dich mit anderen Golfern aus.",
     nextRoundTitle: "Deine nächste Runde",
     continue: "Weiter",
+    mentalGameTitle: "Dein mentales Spiel",
+    mentalTrendUp: "Verbessert sich",
+    mentalTrendDown: "Beobachten",
+    mentalTrendFlat: "Stabil",
   },
   dashboard: {
     greeting: (name: string) => `Hallo, ${name}`,
