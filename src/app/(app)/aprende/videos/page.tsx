@@ -121,6 +121,7 @@ export default async function SwingVideosPage() {
               feedback: v.feedback,
               status: v.status,
               createdAt: v.createdAt.toISOString(),
+              metrics: v.metrics,
             }))}
             t={t.swingVideos}
             dateLocale={t.dateLocale}

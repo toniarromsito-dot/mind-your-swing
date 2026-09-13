@@ -133,4 +133,26 @@ describe("computeSwingMetrics", () => {
     const none = computeSwingMetrics(buildSyntheticSwing({ weightShift: 0 }));
     expect(shifted.weightTransfer.score).toBeGreaterThan(none.weightTransfer.score);
   });
+
+  it("derives a 3-phase timeline (backswing/downswing/follow-through) from the same tempo detection", () => {
+    const result = computeSwingMetrics(buildSyntheticSwing({ frameCount: 90, fps: 60 }));
+    expect(result.tempo.available).toBe(true);
+    expect(result.phases).not.toBeNull();
+    const phases = result.phases!;
+    expect(phases.map((p) => p.key)).toEqual(["backswing", "downswing", "followThrough"]);
+    // Cada fase empieza donde termina la anterior y cubre tiempo real (nunca 0ms).
+    expect(phases[0].startMs).toBe(0);
+    expect(phases[1].startMs).toBe(phases[0].endMs);
+    expect(phases[2].startMs).toBe(phases[1].endMs);
+    for (const phase of phases) {
+      expect(phase.endMs).toBeGreaterThan(phase.startMs);
+    }
+  });
+
+  it("only returns a phase timeline when tempo detection itself succeeded (never fabricates phases otherwise)", () => {
+    for (const opts of [{}, { frameCount: 30 }, { frameCount: 12, fps: 30 }, { rotationAmount: 0.02 }]) {
+      const result = computeSwingMetrics(buildSyntheticSwing(opts));
+      expect(result.phases !== null).toBe(result.tempo.available);
+    }
+  });
 });

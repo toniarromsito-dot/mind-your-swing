@@ -39,6 +39,8 @@ const LM = {
 const MIN_VISIBILITY = 0.4;
 const MIN_FRAMES = 10;
 
+export type SwingPhase = { key: "backswing" | "downswing" | "followThrough"; startMs: number; endMs: number };
+
 export type SwingMetrics = {
   frameCount: number;
   durationMs: number;
@@ -47,6 +49,15 @@ export type SwingMetrics = {
   hipRotation: { rotationRatio: number; score: number };
   weightTransfer: { shiftRatio: number; score: number };
   tempo: { ratio: number | null; score: number; available: boolean };
+  /**
+   * Línea de tiempo real del swing (address→top→impacto→final), derivada
+   * de los mismos timestamps que ya detecta el cálculo de tempo (pico de
+   * velocidad de muñeca = impacto, valle previo = top de backswing). Solo
+   * 3 fases porque son las únicas que este método realmente detecta —
+   * null cuando el tempo no es fiable, en vez de inventar más fases de
+   * las que los datos permiten.
+   */
+  phases: SwingPhase[] | null;
   overallScore: number;
 };
 
@@ -191,6 +202,14 @@ export function computeSwingMetrics(rawFrames: PoseFrame[]): SwingMetrics {
   }
   const tempoScore = tempoAvailable && tempoRatio !== null ? clamp(100 - Math.abs(tempoRatio - 3) * 20, 0, 100) : 60;
 
+  const phases: SwingPhase[] | null = tempoAvailable
+    ? [
+        { key: "backswing", startMs: frames[0].t, endMs: frames[topIdx].t },
+        { key: "downswing", startMs: frames[topIdx].t, endMs: frames[peakIdx].t },
+        { key: "followThrough", startMs: frames[peakIdx].t, endMs: frames[frames.length - 1].t },
+      ]
+    : null;
+
   const weights = {
     headStability: 0.2,
     spineAngle: 0.2,
@@ -223,6 +242,7 @@ export function computeSwingMetrics(rawFrames: PoseFrame[]): SwingMetrics {
       score: Math.round(tempoScore),
       available: tempoAvailable,
     },
+    phases,
     overallScore: clamp(overallScore, 0, 100),
   };
 }

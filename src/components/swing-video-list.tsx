@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Play, Loader2, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { MindMark } from "@/components/mind-mark";
+import { cn } from "@/lib/utils";
+import type { SwingMetrics } from "@/lib/swing/scoring";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export type SwingVideoItem = {
@@ -16,7 +18,80 @@ export type SwingVideoItem = {
   feedback: string | null;
   status: "PENDING" | "REVIEWED";
   createdAt: string;
+  /** JSON tal cual sale de Prisma — se valida su forma antes de leerla, nunca se asume. */
+  metrics: unknown;
 };
+
+/** Comprobación mínima de forma antes de confiar en el JSON guardado — nunca se asume que coincide con el tipo actual. */
+function isSwingMetrics(value: unknown): value is SwingMetrics {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.hipRotation === "object" &&
+    typeof v.tempo === "object" &&
+    typeof v.weightTransfer === "object" &&
+    (v.phases === null || Array.isArray(v.phases))
+  );
+}
+
+/**
+ * Línea de tiempo real del swing: solo 3 fases porque son las únicas que
+ * el análisis detecta de verdad (ver scoring.ts) — nada de Setup/
+ * Takeaway/Transition/Impact inventados. Cada segmento tiene un ancho
+ * proporcional a su duración real y muestra la métrica ya calculada más
+ * relacionada con esa fase.
+ */
+function SwingPhaseTimeline({ metrics, t }: { metrics: SwingMetrics; t: Dictionary["swingVideos"] }) {
+  if (!metrics.phases) return null;
+  const totalMs = metrics.phases[metrics.phases.length - 1].endMs - metrics.phases[0].startMs;
+  if (totalMs <= 0) return null;
+
+  const segments = [
+    {
+      phase: metrics.phases[0],
+      label: t.phaseBackswing,
+      metricLabel: t.phaseHipRotation,
+      metricValue: `${metrics.hipRotation.score}/100`,
+    },
+    {
+      phase: metrics.phases[1],
+      label: t.phaseDownswing,
+      metricLabel: t.phaseTempo,
+      metricValue: metrics.tempo.ratio != null ? `${metrics.tempo.ratio}:1` : "—",
+    },
+    {
+      phase: metrics.phases[2],
+      label: t.phaseFollowThrough,
+      metricLabel: t.phaseWeightTransfer,
+      metricValue: `${metrics.weightTransfer.score}/100`,
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-medium text-muted-foreground">{t.phasesTitle}</p>
+      <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
+        {segments.map((s, i) => (
+          <div
+            key={s.label}
+            className={cn("h-full", i === 0 ? "bg-primary/40" : i === 1 ? "bg-primary/70" : "bg-primary")}
+            style={{ width: `${((s.phase.endMs - s.phase.startMs) / totalMs) * 100}%` }}
+          />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {segments.map((s) => (
+          <div key={s.label} className="flex flex-col">
+            <span className="text-[11px] font-medium">{s.label}</span>
+            <span className="text-[10px] text-muted-foreground">
+              {s.metricLabel} {s.metricValue}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
@@ -93,6 +168,8 @@ export function SwingVideoList({ videos, t, dateLocale }: { videos: SwingVideoIt
             </div>
 
             <video src={video.videoUrl} controls className="max-h-72 w-full rounded-lg bg-black" />
+
+            {isSwingMetrics(video.metrics) && <SwingPhaseTimeline metrics={video.metrics} t={t} />}
 
             {video.note && <p className="text-sm text-muted-foreground italic">&ldquo;{video.note}&rdquo;</p>}
 
