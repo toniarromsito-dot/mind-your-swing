@@ -5,10 +5,14 @@ import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { saveHoleScores } from "@/actions/games";
 import { holeResultLabel } from "@/lib/golf";
+import { strokesReceivedOnHole } from "@/lib/games/handicap";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { fmt } from "@/lib/i18n/format";
+import { cn } from "@/lib/utils";
 
-export type ScorecardPlayer = { id: string; name: string; strokes: number | null };
+export type ScorecardPlayer = { id: string; name: string; handicap: number | null; strokes: number | null };
+type Club = "driver" | "iron" | "approach" | "putter";
+const CLUBS: Club[] = ["driver", "iron", "approach", "putter"];
 
 const STROKE_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1);
 
@@ -16,7 +20,8 @@ const STROKE_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1);
  * El scorecard durante la vuelta (Focus Mode): un jugador con el móvil en
  * la mano toca el número de golpes de cada compañero, uno detrás de otro,
  * y guarda al instante — nada de steppers ni botón "Guardar" aparte, ver
- * brief "Miro → toco → guardado → siguiente hoyo".
+ * brief "Miro → toco → guardado → siguiente hoyo". El palo es la única
+ * entrada opcional: unos chips que no bloquean ni requieren nada.
  */
 export function SharedScorecard({
   gameId,
@@ -28,7 +33,7 @@ export function SharedScorecard({
   golfResult,
 }: {
   gameId: string;
-  hole: { id: string; number: number; par: number };
+  hole: { id: string; number: number; par: number; distance: number | null; index: number | null };
   totalHoles: number;
   players: ScorecardPlayer[];
   onSaved: () => void;
@@ -41,18 +46,22 @@ export function SharedScorecard({
   });
   const [confirmation, setConfirmation] = useState<{ strokes: number; label: string } | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
 
   const player = players[playerIndex];
+  const strokesReceived =
+    hole.index != null && player.handicap != null ? strokesReceivedOnHole(player.handicap, hole.index) : 0;
 
   function pick(strokes: number) {
     if (isBusy) return;
     setIsBusy(true);
-    saveHoleScores({ gameId, holeId: hole.id, entries: [{ playerId: player.id, strokes, putts: null }] })
+    saveHoleScores({ gameId, holeId: hole.id, entries: [{ playerId: player.id, strokes, putts: null, club: selectedClub }] })
       .then(() => {
         setConfirmation({ strokes, label: holeResultLabel(hole.par, strokes, golfResult) });
         setTimeout(() => {
           setConfirmation(null);
           setIsBusy(false);
+          setSelectedClub(null);
           if (playerIndex + 1 < players.length) {
             setPlayerIndex((i) => i + 1);
           } else {
@@ -80,14 +89,33 @@ export function SharedScorecard({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-8 px-6 py-8 text-center">
+    <div className="flex flex-1 flex-col items-center gap-6 px-6 py-6 text-center">
       <div>
         <h1 className="font-heading text-3xl font-semibold tracking-tight">
           {fmt(t.hole, { n: hole.number, total: totalHoles })}
         </h1>
-        <p className="mt-1 text-lg text-muted-foreground">
-          {t.par} {hole.par}
+        <p className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-lg text-muted-foreground">
+          <span>
+            {t.par} {hole.par}
+          </span>
+          {hole.distance != null && (
+            <>
+              <span className="text-border">·</span>
+              <span>{fmt(t.distanceMeters, { n: hole.distance })}</span>
+            </>
+          )}
+          {hole.index != null && (
+            <>
+              <span className="text-border">·</span>
+              <span>{fmt(t.strokeIndexShort, { n: hole.index })}</span>
+            </>
+          )}
         </p>
+        {strokesReceived > 0 && (
+          <span className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            {strokesReceived === 1 ? t.strokesReceivedOne : fmt(t.strokesReceivedMany, { n: strokesReceived })}
+          </span>
+        )}
       </div>
 
       <div>
@@ -107,6 +135,27 @@ export function SharedScorecard({
             {n}
           </button>
         ))}
+      </div>
+
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-xs text-muted-foreground">{t.clubPrompt}</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {CLUBS.map((club) => (
+            <button
+              key={club}
+              type="button"
+              onClick={() => setSelectedClub((c) => (c === club ? null : club))}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                selectedClub === club
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground hover:bg-secondary/60"
+              )}
+            >
+              {t.clubs[club]}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { formatRelativeToPar, relativeToPar, totalStrokes } from "@/lib/golf";
+import { computeNetResult } from "@/lib/games/handicap";
 
 /**
  * Cálculo de clasificaciones para cada modo de juego. Funciones puras
@@ -15,6 +16,8 @@ export type StandingsPlayer = {
 export type StandingsHoleScore = {
   holeNumber: number;
   par: number;
+  /** Stroke Index del hoyo (1-18); null si el campo no tiene ese dato (partida sin plantilla de campo). */
+  holeIndex: number | null;
   playerId: string;
   strokes: number | null;
 };
@@ -52,6 +55,41 @@ export function computeStrokeStandings(
       };
     })
     .sort((a, b) => a.total - b.total);
+}
+
+export type NetStrokeStanding = {
+  playerId: string;
+  net: number;
+  netRelativeToPar: string;
+};
+
+/**
+ * Resultado neto (bruto - golpes de hándicap recibidos) por jugador, solo
+ * para quienes tienen hándicap declarado Y al menos un hoyo jugado con
+ * Stroke Index conocido — si falta cualquiera de los dos, ese jugador
+ * simplemente no aparece en el resultado en vez de mostrar un neto
+ * fabricado. Ver `computeNetResult` en `handicap.ts` para la simplificación
+ * documentada del cálculo (usa el hándicap declarado tal cual).
+ */
+export function computeNetStrokeStandings(
+  players: StandingsPlayer[],
+  scores: StandingsHoleScore[],
+  handicapsByPlayerId: Record<string, number | null | undefined>
+): NetStrokeStanding[] {
+  const results: NetStrokeStanding[] = [];
+  for (const p of players) {
+    const holes = scores
+      .filter((s) => s.playerId === p.playerId)
+      .map((s) => ({ par: s.par, index: s.holeIndex, strokes: s.strokes }));
+    const net = computeNetResult(holes, handicapsByPlayerId[p.playerId] ?? null);
+    if (!net) continue;
+    results.push({
+      playerId: p.playerId,
+      net: net.net,
+      netRelativeToPar: formatRelativeToPar(net.net - net.parPlayed),
+    });
+  }
+  return results.sort((a, b) => a.net - b.net);
 }
 
 export type MatchPlayStanding = {

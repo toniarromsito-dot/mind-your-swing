@@ -3,7 +3,7 @@ import { toStandingsInput } from "@/lib/games/adapt";
 import { computeStrokeStandings } from "@/lib/games/standings";
 
 const gameWithPlayersInclude = {
-  players: { include: { user: { select: { id: true, name: true, image: true } }, scores: true } },
+  players: { include: { user: { select: { id: true, name: true, image: true, handicap: true } }, scores: true } },
   holes: { orderBy: { number: "asc" as const } },
   golfCourse: true,
 };

@@ -1,7 +1,7 @@
 import type { StandingsHoleScore, StandingsPlayer } from "./standings";
 
 type AdaptableGame = {
-  holes: { id: string; number: number; par: number }[];
+  holes: { id: string; number: number; par: number; index?: number | null }[];
   players: {
     id: string;
     team: "A" | "B" | null;
@@ -28,7 +28,7 @@ export function toStandingsInput(game: AdaptableGame): {
       .map((s) => {
         const hole = holeById.get(s.holeId);
         if (!hole) return null;
-        return { holeNumber: hole.number, par: hole.par, playerId: p.id, strokes: s.strokes };
+        return { holeNumber: hole.number, par: hole.par, holeIndex: hole.index ?? null, playerId: p.id, strokes: s.strokes };
       })
       .filter((s): s is StandingsHoleScore => s !== null)
   );

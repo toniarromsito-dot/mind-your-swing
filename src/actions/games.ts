@@ -179,8 +179,8 @@ export async function saveHoleScores(input: unknown) {
       .map((e) =>
         prisma.score.upsert({
           where: { holeId_playerId: { holeId, playerId: e.playerId } },
-          update: { strokes: e.strokes, putts: e.putts },
-          create: { holeId, playerId: e.playerId, strokes: e.strokes, putts: e.putts },
+          update: { strokes: e.strokes, putts: e.putts, club: e.club },
+          create: { holeId, playerId: e.playerId, strokes: e.strokes, putts: e.putts, club: e.club },
         })
       )
   );

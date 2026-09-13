@@ -13,10 +13,10 @@ type GameForView = {
   id: string;
   course: string;
   totalHoles: number;
-  holes: { id: string; number: number; par: number }[];
+  holes: { id: string; number: number; par: number; distance: number | null; index: number | null }[];
   players: {
     id: string;
-    user: { name: string | null };
+    user: { name: string | null; handicap: number | null };
     scores: { holeId: string; strokes: number | null }[];
   }[];
 };
@@ -55,6 +55,7 @@ export function GameView({
       game.players.map((p) => ({
         id: p.id,
         name: p.user.name ?? "Jugador",
+        handicap: p.user.handicap,
         strokes: p.scores.find((s) => s.holeId === hole.id)?.strokes ?? null,
       })),
     [game.players, hole.id]

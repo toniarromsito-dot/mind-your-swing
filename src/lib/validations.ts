@@ -43,6 +43,7 @@ export const saveHoleScoresSchema = z.object({
         playerId: z.string().min(1),
         strokes: z.coerce.number().int().min(1).max(15).optional().nullable(),
         putts: z.coerce.number().int().min(0).max(10).optional().nullable(),
+        club: z.enum(["driver", "iron", "approach", "putter"]).optional().nullable(),
       })
     )
     .min(1),

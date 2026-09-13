@@ -3,6 +3,7 @@ import {
   computeBestBallStandings,
   computeChallengeTally,
   computeMatchPlayStandings,
+  computeNetStrokeStandings,
   computePointsStandings,
   computeStrokeStandings,
   computeTeamStrokeStandings,
@@ -15,8 +16,14 @@ const juan: StandingsPlayer = { playerId: "p2", name: "Juan", team: "A" };
 const pablo: StandingsPlayer = { playerId: "p3", name: "Pablo", team: "B" };
 const miguel: StandingsPlayer = { playerId: "p4", name: "Miguel", team: "B" };
 
-function hole(number: number, par: number, playerId: string, strokes: number | null): StandingsHoleScore {
-  return { holeNumber: number, par, playerId, strokes };
+function hole(
+  number: number,
+  par: number,
+  playerId: string,
+  strokes: number | null,
+  holeIndex: number | null = null
+): StandingsHoleScore {
+  return { holeNumber: number, par, holeIndex, playerId, strokes };
 }
 
 describe("computeStrokeStandings", () => {
@@ -33,6 +40,31 @@ describe("computeStrokeStandings", () => {
     const result = computeStrokeStandings([antonio], scores);
     expect(result[0].total).toBe(4);
     expect(result[0].holesPlayed).toBe(1);
+  });
+});
+
+describe("computeNetStrokeStandings", () => {
+  it("ranks players by net total using their declared handicap and each hole's stroke index", () => {
+    const scores = [
+      hole(1, 4, antonio.playerId, 5, 3), // hcp 14 -> receives 1 -> net 4
+      hole(1, 4, juan.playerId, 5, 15), // hcp 2 -> receives 0 -> net 5
+    ];
+    const result = computeNetStrokeStandings([antonio, juan], scores, { p1: 14, p2: 2 });
+    expect(result[0].playerId).toBe(antonio.playerId);
+    expect(result[0].net).toBe(4);
+    expect(result[1].net).toBe(5);
+  });
+
+  it("omits a player with no declared handicap instead of guessing a net score", () => {
+    const scores = [hole(1, 4, antonio.playerId, 5, 3)];
+    const result = computeNetStrokeStandings([antonio], scores, { p1: null });
+    expect(result).toHaveLength(0);
+  });
+
+  it("omits a player whose played holes have no stroke-index data", () => {
+    const scores = [hole(1, 4, antonio.playerId, 5, null)];
+    const result = computeNetStrokeStandings([antonio], scores, { p1: 14 });
+    expect(result).toHaveLength(0);
   });
 });
 

@@ -10,11 +10,17 @@ import { MindInsightReveal } from "@/components/mind-insight-reveal";
 import { DetailsDrawer } from "@/components/details-drawer";
 import { toStandingsInput } from "@/lib/games/adapt";
 import { GAME_MODE_META } from "@/lib/games/modes";
-import { computeBestBallStandings, computeStrokeStandings, computeTeamStrokeStandings } from "@/lib/games/standings";
+import {
+  computeBestBallStandings,
+  computeNetStrokeStandings,
+  computeStrokeStandings,
+  computeTeamStrokeStandings,
+} from "@/lib/games/standings";
 import { holeResultLabel } from "@/lib/golf";
 import { createRematch } from "@/actions/games";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { fmt } from "@/lib/i18n/format";
+import { cn } from "@/lib/utils";
 
 export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/resumen">) {
   const { id } = await params;
@@ -33,6 +39,9 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
   const teamStandings =
     kind === "best-ball" ? computeBestBallStandings(players, scores) : computeTeamStrokeStandings(players, scores);
   const individualStandings = computeStrokeStandings(players, scores);
+  const handicapsByPlayerId = Object.fromEntries(game.players.map((p) => [p.id, p.user.handicap]));
+  const netStandings = usesTeams ? [] : computeNetStrokeStandings(players, scores, handicapsByPlayerId);
+  const netByPlayerId = new Map(netStandings.map((s) => [s.playerId, s]));
 
   const winnerTeam = usesTeams ? [...teamStandings].sort((a, b) => a.total - b.total)[0] : null;
   const winnerPlayer = !usesTeams ? individualStandings[0] : null;
@@ -58,6 +67,7 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
   const winnerUserId = winnerPlayer ? userIdByPlayerId.get(winnerPlayer.playerId) : null;
 
   const myStanding = individualStandings.find((s) => s.playerId === myPlayer.id);
+  const myNet = netByPlayerId.get(myPlayer.id);
   const holesPlayedCount = myPlayedHoles.length;
   const playedFewerHoles = holesPlayedCount > 0 && holesPlayedCount < game.totalHoles;
 
@@ -69,6 +79,11 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
           <div className="mt-2">
             <p className="font-heading text-6xl font-semibold tracking-tight">{myStanding.total}</p>
             <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">{t.summary.strokes}</p>
+            {myNet && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t.summary.grossLabel} {myStanding.total} · {t.summary.netLabel} {myNet.net}
+              </p>
+            )}
           </div>
         )}
         <h1 className="mt-4 font-heading text-xl font-semibold tracking-tight">{game.course}</h1>
@@ -121,7 +136,14 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
                     </span>
                     <span className={i === 0 ? "font-medium" : ""}>{s.name}</span>
                   </span>
-                  <span className={i === 0 ? "font-heading font-semibold" : "text-muted-foreground"}>{s.total}</span>
+                  <span className="flex items-baseline gap-1.5">
+                    <span className={i === 0 ? "font-heading font-semibold" : "text-muted-foreground"}>{s.total}</span>
+                    {netByPlayerId.get(s.playerId) && (
+                      <span className={cn("text-xs", i === 0 ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
+                        ({t.summary.netLabel.toLowerCase()} {netByPlayerId.get(s.playerId)!.net})
+                      </span>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
