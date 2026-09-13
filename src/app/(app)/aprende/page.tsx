@@ -96,18 +96,18 @@ export default async function LearnPage() {
         <TabsContent value="videos" className="mt-4 flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">{t.coach.mentalGameBody}</p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-3">
             {mentalTopics.map((topic, i) => {
               const href = i === PRE_SHOT_ROUTINE_INDEX_IN_MENTAL ? "/aprende/rutina" : undefined;
               const photo = MENTAL_MODULE_PHOTOS[i % MENTAL_MODULE_PHOTOS.length];
               const content = (
-                <Card className="h-full overflow-hidden border-border/70 py-0 shadow-none transition-transform hover:-translate-y-0.5">
-                  <div className="relative h-24 w-full">
-                    <Image src={photo} alt="" fill sizes="200px" className="object-cover" />
+                <Card className="h-full flex-row items-stretch overflow-hidden border-border/70 gap-0 py-0 shadow-none transition-transform hover:-translate-y-0.5">
+                  <div className="relative size-24 shrink-0">
+                    <Image src={photo} alt="" fill sizes="96px" className="object-cover" />
                   </div>
-                  <CardContent className="flex flex-col gap-1 p-3">
-                    <p className="font-heading text-sm font-semibold">{topic.title}</p>
-                    <p className="text-xs text-muted-foreground">{topic.body}</p>
+                  <CardContent className="flex flex-1 flex-col justify-center gap-1 p-4">
+                    <p className="font-heading text-base font-semibold">{topic.title}</p>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">{topic.body}</p>
                   </CardContent>
                 </Card>
               );
