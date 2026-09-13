@@ -13,16 +13,26 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 const TOPIC_ICONS = [Hand, PersonStanding, Move, Target, AlertTriangle, Sparkles, MapPinned, BookOpen, FlagIcon];
 
 // Agrupación visual de los temas de fundamentos en las 5 categorías de la
-// Academia. Por índice (no por texto) para no depender de traducciones;
-// "campo" toma todo lo que quede al final, así funciona igual con los 9
-// temas del español o los 10 del inglés sin tener que sincronizar listas.
+// Academia. Por índice (no por texto) para no depender de traducciones.
+// El número de temas de fundamentos NO es el mismo en todos los idiomas
+// (el inglés tiene uno más, "How to practice") — los 6 últimos del array
+// SIEMPRE son los de juego mental añadidos después (presión, rutina
+// pre-golpe, errores, confianza, enfoque, visualización), en ese orden,
+// así que su posición se calcula desde el final, no con un índice fijo.
+const MENTAL_TOPICS_COUNT = 6;
+const PRE_SHOT_ROUTINE_OFFSET_FROM_END = 5; // 2º de los 6 últimos → length - 6 + 1
+
 type CategoryKey = keyof Dictionary["coach"]["categoryLabels"];
-const CATEGORY_RANGES: { key: CategoryKey; start: number; end: number | null }[] = [
-  { key: "fundamentos", start: 0, end: 3 },
-  { key: "swing", start: 3, end: 5 },
-  { key: "golpes", start: 5, end: 7 },
-  { key: "campo", start: 7, end: null },
-];
+function categoryRanges(topicCount: number): { key: CategoryKey; start: number; end: number | null }[] {
+  const mentalStart = topicCount - MENTAL_TOPICS_COUNT;
+  return [
+    { key: "fundamentos", start: 0, end: 3 },
+    { key: "swing", start: 3, end: 5 },
+    { key: "golpes", start: 5, end: 7 },
+    { key: "campo", start: 7, end: mentalStart },
+    { key: "mental", start: mentalStart, end: null },
+  ];
+}
 
 export default async function LearnPage() {
   const userId = await requireUserId();
@@ -67,13 +77,15 @@ export default async function LearnPage() {
       <div className="flex flex-col gap-5">
         <h2 className="font-heading text-xl">{t.coach.academyTitle}</h2>
 
-        {CATEGORY_RANGES.map(({ key, start, end }) => {
+        {categoryRanges(t.coach.topics.length).map(({ key, start, end }) => {
           const topics = t.coach.topics.slice(start, end ?? t.coach.topics.length);
+          const preShotRoutineIndex = t.coach.topics.length - PRE_SHOT_ROUTINE_OFFSET_FROM_END;
           return (
             <div key={key} className="flex flex-col gap-2">
               <h3 className="text-sm font-medium text-muted-foreground">{t.coach.categoryLabels[key]}</h3>
               {topics.map((topic, i) => {
-                const Icon = TOPIC_ICONS[(start + i) % TOPIC_ICONS.length];
+                const globalIndex = start + i;
+                const Icon = TOPIC_ICONS[globalIndex % TOPIC_ICONS.length];
                 return (
                   <details
                     key={topic.title}
@@ -86,7 +98,18 @@ export default async function LearnPage() {
                       <span className="flex-1 text-sm font-medium">{topic.title}</span>
                       <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
                     </summary>
-                    <p className="px-4 pb-4 pl-[3.25rem] text-sm text-muted-foreground">{topic.body}</p>
+                    <div className="px-4 pb-4 pl-[3.25rem]">
+                      <p className="text-sm text-muted-foreground">{topic.body}</p>
+                      {globalIndex === preShotRoutineIndex && (
+                        <Link
+                          href="/coach/rutina"
+                          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                        >
+                          {t.preShotRoutine.practiceCta}
+                          <ChevronRight className="size-3.5" />
+                        </Link>
+                      )}
+                    </div>
                   </details>
                 );
               })}
