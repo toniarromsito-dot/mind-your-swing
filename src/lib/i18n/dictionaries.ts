@@ -692,6 +692,11 @@ const es = {
     emptyTitle: "Todavía no hay suficientes datos",
     emptyBody:
       "Insights analiza tus partidas y tu ánimo a lo largo del tiempo para contarte qué está pasando de verdad en tu juego mental — no gráficas, frases concretas. Sigue jugando y registrando cómo te sientes: en cuanto haya un patrón real, aparecerá aquí.",
+    mentalTrendUp: "Tu rendimiento mental está mejorando en las últimas partidas.",
+    mentalTrendDown: "Tu rendimiento mental ha bajado un poco últimamente — forma parte del proceso.",
+    recoveryUp: "Te recuperas más rápido después de un mal golpe que antes.",
+    recoveryDown: "Últimamente te cuesta un poco más recuperarte después de un mal golpe.",
+    closingPressure: "Tu presión aumenta cuando llegas a los últimos hoyos de la vuelta.",
   },
   community: {
     title: "Comunidad",
@@ -1347,6 +1352,11 @@ const en: typeof es = {
     emptyTitle: "Not enough data yet",
     emptyBody:
       "Insights analyzes your rounds and mood over time to tell you what's really happening in your mental game — real sentences, not charts. Keep playing and logging how you feel: once there's a real pattern, it'll show up here.",
+    mentalTrendUp: "Your mental performance is improving over your last few rounds.",
+    mentalTrendDown: "Your mental performance has dipped a bit lately — that's part of the process.",
+    recoveryUp: "You're recovering faster after a bad shot than before.",
+    recoveryDown: "Lately it's taking you a bit longer to recover after a bad shot.",
+    closingPressure: "Your pressure rises when you reach the closing holes of a round.",
   },
   community: {
     title: "Community",
@@ -2057,6 +2067,11 @@ const de: typeof es = {
     emptyTitle: "Noch nicht genug Daten",
     emptyBody:
       "Insights analysiert deine Runden und deine Stimmung über die Zeit, um dir zu sagen, was in deinem mentalen Spiel wirklich passiert — konkrete Sätze, keine Diagramme. Spiel weiter und erfasse, wie du dich fühlst: Sobald es ein echtes Muster gibt, erscheint es hier.",
+    mentalTrendUp: "Deine mentale Leistung verbessert sich in den letzten Runden.",
+    mentalTrendDown: "Deine mentale Leistung ist zuletzt etwas gesunken — das gehört zum Prozess dazu.",
+    recoveryUp: "Du erholst dich nach einem schlechten Schlag schneller als vorher.",
+    recoveryDown: "Zuletzt dauert es etwas länger, dich nach einem schlechten Schlag zu erholen.",
+    closingPressure: "Dein Druck steigt, wenn du die letzten Löcher einer Runde erreichst.",
   },
   community: {
     title: "Community",
