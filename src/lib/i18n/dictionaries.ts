@@ -338,9 +338,10 @@ const es = {
   },
   quickPrompts: [
     "Estoy nervioso",
-    "Acabo de fallar un golpe importante",
-    "Necesito concentrarme",
-    "Rutina antes de un putt",
+    "He tenido un mal hoyo",
+    "Estoy sobrepensando",
+    "Necesito recuperar confianza",
+    "Tengo un torneo",
   ],
   summary: {
     roundFinished: "¡Vuelta terminada!",
@@ -990,9 +991,10 @@ const en: typeof es = {
   },
   quickPrompts: [
     "I'm nervous",
-    "I just missed an important shot",
-    "I need to focus",
-    "Routine before a putt",
+    "I had a bad hole",
+    "I'm overthinking it",
+    "I need to recover my confidence",
+    "I have a tournament coming up",
   ],
   summary: {
     roundFinished: "Round complete!",
@@ -1600,9 +1602,10 @@ const de: typeof es = {
   },
   quickPrompts: [
     "Ich bin nervös",
-    "Ich habe gerade einen wichtigen Schlag vermasselt",
-    "Ich muss mich konzentrieren",
-    "Routine vor einem Putt",
+    "Ich hatte ein schlechtes Loch",
+    "Ich denke zu viel nach",
+    "Ich muss mein Selbstvertrauen zurückgewinnen",
+    "Ich habe ein Turnier vor mir",
   ],
   summary: {
     roundFinished: "Runde beendet!",

@@ -14,7 +14,7 @@ export type CoachContext = {
   playerName: string;
   tone: CoachTone;
   language: string;
-  /** null cuando el jugador habla con su compañero fuera de una partida activa (ver /mind). */
+  /** null cuando el jugador habla con su compañero fuera de una partida activa (ver /coach). */
   game: {
     course: string;
     totalHoles: number;
@@ -39,4 +39,11 @@ export type CoachContext = {
   historySummary: string | null;
   /** Memoria persistente de Mind entre partidas — solo para jugadores Pro (ver context.ts). */
   mindMemory: string | null;
+  /**
+   * Señal real de uso de Aprende: cuántos análisis de swing (IA Swing) ha
+   * hecho el jugador y la puntuación del más reciente. No hay progreso de
+   * vídeos/ejercicios que trackear todavía, así que solo se rellena esto
+   * — nunca se inventa un "progreso de Aprende" que no existe.
+   */
+  swingAnalysis: { count: number; latestScore: number | null } | null;
 };

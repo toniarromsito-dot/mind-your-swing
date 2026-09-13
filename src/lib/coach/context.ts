@@ -95,6 +95,14 @@ export async function getCoachContext(params: {
 
   const mindMemory = hasProAccess(user) ? (user.mindMemory ?? null) : null;
 
+  const swingVideos = await prisma.swingVideo.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { score: true },
+  });
+  const swingAnalysis =
+    swingVideos.length > 0 ? { count: swingVideos.length, latestScore: swingVideos[0].score } : null;
+
   if (!gameId) {
     return {
       phase: "standalone",
@@ -107,6 +115,7 @@ export async function getCoachContext(params: {
       recentMood,
       historySummary,
       mindMemory,
+      swingAnalysis,
     };
   }
 
@@ -163,5 +172,6 @@ export async function getCoachContext(params: {
     recentMood,
     historySummary,
     mindMemory,
+    swingAnalysis,
   };
 }

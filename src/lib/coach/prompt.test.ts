@@ -13,6 +13,7 @@ const baseContext: CoachContext = {
   recentMood: [{ mood: "NERVIOSO", note: "manos frías", holeNumber: 6 }],
   historySummary: "Suele registrar nerviosismo en hoyos par 3.",
   mindMemory: null,
+  swingAnalysis: null,
 };
 
 describe("buildSystemPrompt", () => {
@@ -80,5 +81,25 @@ describe("buildSystemPrompt", () => {
       mindMemory: "La semana pasada trabajamos la reacción tras un doble bogey.",
     });
     expect(prompt).toContain("La semana pasada trabajamos la reacción tras un doble bogey.");
+  });
+
+  it("incluye el uso real de IA Swing cuando existe, sin inventar un progreso de Aprende", () => {
+    const prompt = buildSystemPrompt({
+      ...baseContext,
+      swingAnalysis: { count: 3, latestScore: 82 },
+    });
+    expect(prompt).toContain("IA Swing");
+    expect(prompt).toContain("3 vez(veces)");
+    expect(prompt).toContain("82/100");
+  });
+
+  it("no menciona IA Swing cuando el jugador nunca la ha usado", () => {
+    const prompt = buildSystemPrompt(baseContext);
+    expect(prompt).not.toContain("IA Swing");
+  });
+
+  it("responde en alemán cuando el idioma del jugador es de", () => {
+    const prompt = buildSystemPrompt({ ...baseContext, language: "de" });
+    expect(prompt).toContain("Responde siempre en alemán.");
   });
 });

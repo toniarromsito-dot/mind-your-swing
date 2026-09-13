@@ -92,6 +92,11 @@ function renderContextBlock(ctx: CoachContext): string {
     lines.push(`Patrón histórico relevante: ${ctx.historySummary}`);
   }
 
+  if (ctx.swingAnalysis) {
+    const scorePart = ctx.swingAnalysis.latestScore != null ? `, la más reciente con puntuación ${ctx.swingAnalysis.latestScore}/100` : "";
+    lines.push(`Ha usado el análisis de swing (IA Swing) de Aprende ${ctx.swingAnalysis.count} vez(veces)${scorePart}.`);
+  }
+
   lines.push(`</contexto>`);
   return lines.join("\n");
 }
@@ -105,7 +110,9 @@ export function buildSystemPrompt(ctx: CoachContext): string {
   const languageNote =
     ctx.language === "en"
       ? "Responde siempre en inglés."
-      : "Responde siempre en español.";
+      : ctx.language === "de"
+        ? "Responde siempre en alemán."
+        : "Responde siempre en español.";
 
   return [
     BASE_PERSONA,
