@@ -104,3 +104,13 @@ export function computeMentalScore(entries: { mood: Mood }[]): MentalScore | nul
 
   return { score, trend, confidence, focus, pressure };
 }
+
+export type MentalState = "rough" | "uneven" | "composed" | "strong";
+
+/** Etiqueta cualitativa a partir del propio score 0-100 — no un dato nuevo, solo una lectura en palabras del mismo número. */
+export function mentalStateFromScore(score: number): MentalState {
+  if (score >= 75) return "strong";
+  if (score >= 55) return "composed";
+  if (score >= 35) return "uneven";
+  return "rough";
+}

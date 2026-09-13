@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageMoodScore, moodTrend } from "./mood";
+import { averageMoodScore, mentalStateFromScore, moodTrend } from "./mood";
 
 const labels = {
   hole: (n: number) => `Hoyo ${n}`,
@@ -29,5 +29,15 @@ describe("averageMoodScore", () => {
   it("promedia la puntuación heurística de las entradas", () => {
     const avg = averageMoodScore([{ mood: "CONFIADO" }, { mood: "FRUSTRADO" }]);
     expect(avg).toBe(0);
+  });
+});
+
+describe("mentalStateFromScore", () => {
+  it("mapea el score a un estado cualitativo por umbrales", () => {
+    expect(mentalStateFromScore(80)).toBe("strong");
+    expect(mentalStateFromScore(75)).toBe("strong");
+    expect(mentalStateFromScore(60)).toBe("composed");
+    expect(mentalStateFromScore(40)).toBe("uneven");
+    expect(mentalStateFromScore(10)).toBe("rough");
   });
 });
