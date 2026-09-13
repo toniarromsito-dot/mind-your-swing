@@ -261,6 +261,12 @@ const es = {
     keepPlaying: "Continuar jugando",
     finishEarly: "Finalizar partida",
     finishEarlyConfirm: "¿Terminar la partida ahora? Los hoyos que falten no contarán.",
+    quickCoach: {
+      initialPrompt: "Dame un apoyo breve para este momento de la partida.",
+      chips: ["Ayúdame con este golpe", "Le estoy dando demasiadas vueltas", "Necesito resetear"],
+      talkToCoach: "Hablar con mi coach",
+      errorFallback: "No he podido responder. Inténtalo de nuevo.",
+    },
   },
   lobby: {
     subtitle: "Prepárate antes de empezar.",
@@ -873,6 +879,12 @@ const en: typeof es = {
     keepPlaying: "Keep playing",
     finishEarly: "Finish game",
     finishEarlyConfirm: "End the round now? The remaining holes won't count.",
+    quickCoach: {
+      initialPrompt: "Give me brief support for this moment in the round.",
+      chips: ["Help me with this shot", "I'm overthinking it", "I need to reset"],
+      talkToCoach: "Talk to my coach",
+      errorFallback: "Couldn't respond. Please try again.",
+    },
   },
   lobby: {
     subtitle: "Get ready before you start.",
@@ -1443,6 +1455,12 @@ const de: typeof es = {
     keepPlaying: "Weiterspielen",
     finishEarly: "Partie beenden",
     finishEarlyConfirm: "Partie jetzt beenden? Die restlichen Löcher zählen dann nicht.",
+    quickCoach: {
+      initialPrompt: "Gib mir kurze Unterstützung für diesen Moment der Runde.",
+      chips: ["Hilf mir bei diesem Schlag", "Ich denke zu viel nach", "Ich brauche einen Reset"],
+      talkToCoach: "Mit meinem Coach sprechen",
+      errorFallback: "Konnte nicht antworten. Versuch es noch einmal.",
+    },
   },
   lobby: {
     subtitle: "Bereite dich vor dem Start vor.",

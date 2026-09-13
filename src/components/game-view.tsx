@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Loader2, MoreHorizontal } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
-import { MindMark } from "@/components/mind-mark";
+import { MindQuickCard } from "@/components/mind-quick-card";
 import { finishGame } from "@/actions/games";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -25,11 +24,12 @@ type GameForView = {
 /**
  * Focus Mode: durante la vuelta la app no muestra nada más que el
  * scorecard — sin standings, sin retos, sin chat con el compañero. Ver
- * brief: "durante la vuelta, Mind desaparece." El único acceso a Mind es
- * el icono pequeño de la cabecera, que navega fuera y nunca interrumpe
- * solo. Al volver, la vuelta reanuda exactamente donde estaba porque la
- * posición del hoyo se recalcula siempre a partir de lo ya guardado en
- * base de datos, no de estado local.
+ * brief: "durante la vuelta, Mind desaparece." El icono de Mind en la
+ * cabecera abre una tarjeta corta en el sitio (MindQuickCard), nunca el
+ * chat completo — Mind nunca interrumpe solo. Al volver, la vuelta
+ * reanuda exactamente donde estaba porque la posición del hoyo se
+ * recalcula siempre a partir de lo ya guardado en base de datos, no de
+ * estado local.
  */
 export function GameView({
   game,
@@ -98,9 +98,7 @@ export function GameView({
         </button>
         <p className="truncate px-2 text-sm font-medium text-muted-foreground">{game.course}</p>
         <div className="flex shrink-0 items-center gap-1.5">
-          <Link href="/mind" aria-label={t.mindButtonLabel} className="transition-opacity hover:opacity-80">
-            <MindMark size="sm" />
-          </Link>
+          <MindQuickCard gameId={game.id} holeId={hole.id} t={t.quickCoach} />
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label={t.moreOptionsLabel}
