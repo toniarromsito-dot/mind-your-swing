@@ -35,11 +35,14 @@ function isSwingMetrics(value: unknown): value is SwingMetrics {
 }
 
 /**
- * Línea de tiempo real del swing: solo 3 fases porque son las únicas que
- * el análisis detecta de verdad (ver scoring.ts) — nada de Setup/
- * Takeaway/Transition/Impact inventados. Cada segmento tiene un ancho
- * proporcional a su duración real y muestra la métrica ya calculada más
- * relacionada con esa fase.
+ * Línea de tiempo real del swing: el análisis solo detecta con fiabilidad
+ * 3 tramos + los 2 instantes que los separan (ver scoring.ts) — Setup y
+ * Finish se etiquetan como los puntos de inicio/fin real del vídeo (no
+ * segmentos medidos aparte), y cada tramo intermedio lleva las dos
+ * etiquetas profesionales que cubre (p. ej. "Takeaway · Backswing")
+ * en vez de inventar un límite exacto entre ellas que no medimos. Cada
+ * segmento tiene un ancho proporcional a su duración real y muestra la
+ * métrica ya calculada más relacionada.
  */
 function SwingPhaseTimeline({ metrics, t }: { metrics: SwingMetrics; t: Dictionary["swingVideos"] }) {
   if (!metrics.phases) return null;
@@ -70,14 +73,18 @@ function SwingPhaseTimeline({ metrics, t }: { metrics: SwingMetrics; t: Dictiona
   return (
     <div className="flex flex-col gap-2">
       <p className="text-xs font-medium text-muted-foreground">{t.phasesTitle}</p>
-      <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
-        {segments.map((s, i) => (
-          <div
-            key={s.label}
-            className={cn("h-full", i === 0 ? "bg-primary/40" : i === 1 ? "bg-primary/70" : "bg-primary")}
-            style={{ width: `${((s.phase.endMs - s.phase.startMs) / totalMs) * 100}%` }}
-          />
-        ))}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase">{t.phaseSetup}</span>
+        <div className="flex h-2 flex-1 gap-0.5 overflow-hidden rounded-full">
+          {segments.map((s, i) => (
+            <div
+              key={s.label}
+              className={cn("h-full", i === 0 ? "bg-primary/40" : i === 1 ? "bg-primary/70" : "bg-primary")}
+              style={{ width: `${((s.phase.endMs - s.phase.startMs) / totalMs) * 100}%` }}
+            />
+          ))}
+        </div>
+        <span className="text-[10px] font-medium text-muted-foreground uppercase">{t.phaseFinish}</span>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {segments.map((s) => (
