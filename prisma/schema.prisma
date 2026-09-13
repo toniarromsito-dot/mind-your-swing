@@ -133,6 +133,10 @@ model User {
   image         String?
 
   handicap  Float?
+  /// Club autodeclarado por el jugador — distinto de PlayerProfile.club
+  /// (competitivo, solo se crea vía el futuro importador de torneos). Este
+  /// campo es el que usa Comunidad para la pestaña "Club".
+  club      String?
   coachTone CoachTone @default(FRIEND)
   language  String    @default("es")
 

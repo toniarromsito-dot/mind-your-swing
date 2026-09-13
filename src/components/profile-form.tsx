@@ -12,11 +12,13 @@ export function ProfileForm({
   t,
   defaultName,
   defaultHandicap,
+  defaultClub,
   defaultLanguage,
 }: {
   t: Dictionary["perfil"];
   defaultName: string;
   defaultHandicap: number | null;
+  defaultClub: string | null;
   defaultLanguage: string;
 }) {
   const [state, formAction, pending] = useActionState(updateProfile, undefined);
@@ -37,6 +39,11 @@ export function ProfileForm({
           step="0.1"
           defaultValue={defaultHandicap ?? ""}
         />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="club">{t.club}</Label>
+        <Input id="club" name="club" defaultValue={defaultClub ?? ""} placeholder={t.clubPlaceholder} />
       </div>
 
       <div className="flex flex-col gap-2">

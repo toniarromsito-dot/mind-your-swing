@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Trophy, ChevronRight } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
+import { prisma } from "@/lib/prisma";
 import { listFollowingIds, listStoriesForFeed } from "@/lib/data/social";
 import { StoryForm } from "@/components/story-form";
 import { StoryCard, type StoryForCard } from "@/components/story-card";
@@ -20,13 +21,15 @@ export default async function CommunityPage() {
   const userId = await requireUserId();
   const { t } = await getDictionary();
 
-  const [feed, friends, club, followingIds] = await Promise.all([
+  const [feed, friends, club, followingIds, me] = await Promise.all([
     listStoriesForFeed("feed", userId),
     listStoriesForFeed("friends", userId),
     listStoriesForFeed("club", userId),
     listFollowingIds(userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { club: true } }),
   ]);
   const followingSet = new Set(followingIds);
+  const emptyClubText = me?.club ? t.community.emptyClubNoStories : t.community.emptyClub;
 
   function renderStories(stories: StoryForCard[], emptyText: string) {
     if (stories.length === 0) {
@@ -89,7 +92,7 @@ export default async function CommunityPage() {
           {renderStories(serialize(friends), t.community.emptyFriends)}
         </TabsContent>
         <TabsContent value="club" className="mt-4">
-          {renderStories(serialize(club), t.community.emptyClub)}
+          {renderStories(serialize(club), emptyClubText)}
         </TabsContent>
       </Tabs>
     </div>

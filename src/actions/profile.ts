@@ -14,6 +14,7 @@ export async function updateProfile(_prev: ActionState, formData: FormData): Pro
   const raw: Record<string, unknown> = {
     name: formData.get("name") ?? undefined,
     handicap: formData.get("handicap") || undefined,
+    club: formData.get("club") || undefined,
     coachTone: formData.get("coachTone") ?? undefined,
     language: formData.get("language") ?? undefined,
   };
@@ -31,8 +32,10 @@ export async function updateProfile(_prev: ActionState, formData: FormData): Pro
   });
 
   // Revalida todo el árbol (no solo /perfil): un cambio de idioma afecta al
-  // <html lang> y a los textos de todas las páginas, no solo a esta.
+  // <html lang> y a los textos de todas las páginas, no solo a esta. El
+  // club también afecta a la pestaña "Club" de Comunidad.
   revalidatePath("/", "layout");
+  revalidatePath("/community");
   return undefined;
 }
 

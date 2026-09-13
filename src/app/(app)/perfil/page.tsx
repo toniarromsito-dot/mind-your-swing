@@ -1,154 +1,128 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { ChevronRight, History, Settings, Trophy, Users } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
-import { ProfileForm } from "@/components/profile-form";
-import { signOutAction } from "@/actions/profile";
-import { createCheckoutSession, createPortalSession } from "@/actions/stripe";
-import { isStripeConfigured } from "@/lib/stripe";
-import { isAdminEmail, isOwnerEmail } from "@/lib/admin";
-import { getVoiceMinutesUsedThisPeriod, INCLUDED_VOICE_MINUTES } from "@/lib/billing";
-import { getCompletedGamesCountForUser } from "@/lib/data/games";
+import { listGamesForUser } from "@/lib/data/games";
+import { toStandingsInput } from "@/lib/games/adapt";
+import { computeStrokeStandings } from "@/lib/games/standings";
 import { computeMentalScore } from "@/lib/mood";
-import { MentalScoreCard } from "@/components/mental-score-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/lib/i18n/current-locale";
-import { fmt } from "@/lib/i18n/format";
 
-const MENTAL_SCORE_SAMPLE_SIZE = 14;
-
-export default async function ProfilePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ checkout?: string }>;
-}) {
+/**
+ * Perfil = la identidad del golfista (se ve), separado de /settings
+ * (se configura). Estadísticas y navegación a Historial/Torneos/Amigos,
+ * todo con datos ya calculados en otras fases — nada nuevo fabricado.
+ */
+export default async function ProfilePage() {
   const userId = await requireUserId();
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   const { t } = await getDictionary();
-  const { checkout } = await searchParams;
 
-  const owner = isOwnerEmail(user.email);
-  const minutesUsed = await getVoiceMinutesUsedThisPeriod(userId);
-  const minutesIncluded = INCLUDED_VOICE_MINUTES[user.plan];
-
-  const [roundsPlayed, recentMoods] = await Promise.all([
-    getCompletedGamesCountForUser(userId),
+  const [user, games, recentMoods] = await Promise.all([
+    prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+    listGamesForUser(userId),
     prisma.moodEntry.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      take: MENTAL_SCORE_SAMPLE_SIZE,
+      take: 14,
       select: { mood: true },
     }),
   ]);
+
+  const completedGames = games.filter((g) => g.status === "COMPLETED");
   const mentalScore = computeMentalScore(recentMoods);
+
+  let bestRoundGross: number | null = null;
+  let bestRoundCourse: string | null = null;
+  for (const game of completedGames) {
+    const { players, scores } = toStandingsInput(game);
+    const myPlayer = game.players.find((p) => p.user.id === userId);
+    if (!myPlayer) continue;
+    const standing = computeStrokeStandings(players, scores).find((s) => s.playerId === myPlayer.id);
+    if (standing && (bestRoundGross == null || standing.total < bestRoundGross)) {
+      bestRoundGross = standing.total;
+      bestRoundCourse = game.course;
+    }
+  }
+
+  const navItems = [
+    { href: "/play", icon: History, label: t.perfil.navHistory },
+    { href: "/community/tournaments", icon: Trophy, label: t.perfil.navTournaments },
+    { href: "/community/friends", icon: Users, label: t.perfil.navFriends },
+  ];
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
-      <div className="flex items-center gap-4">
-        {user.image && (
-          <Image src={user.image} alt={user.name ?? ""} width={56} height={56} className="rounded-full" />
-        )}
-        <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">{user.name}</h1>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+      <div className="flex items-start justify-between">
+        <div className="flex flex-1 flex-col items-center gap-2 text-center">
+          {user.image ? (
+            <Image src={user.image} alt={user.name ?? ""} width={88} height={88} className="rounded-full" />
+          ) : (
+            <div className="flex size-[88px] items-center justify-center rounded-full bg-secondary text-2xl text-secondary-foreground">
+              {user.name?.[0] ?? "?"}
+            </div>
+          )}
+          <div>
+            <h1 className="font-heading text-2xl font-semibold tracking-tight">{user.name}</h1>
+            {user.club && <p className="text-sm text-muted-foreground">{user.club}</p>}
+          </div>
+        </div>
+        <Link
+          href="/settings"
+          aria-label={t.perfil.settingsLabel}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground/70"
+        >
+          <Settings className="size-4" strokeWidth={1.5} />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-3 divide-x divide-border rounded-2xl border border-border/70 py-4">
+        <div className="flex flex-col items-center gap-0.5">
+          <p className="font-heading text-2xl font-semibold">{completedGames.length}</p>
+          <p className="text-xs text-muted-foreground uppercase">{t.perfil.roundsLabel}</p>
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <p className="font-heading text-2xl font-semibold">{mentalScore?.score ?? "—"}</p>
+          <p className="text-xs text-muted-foreground uppercase">{t.perfil.mentalLabel}</p>
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <p className="font-heading text-2xl font-semibold">{user.handicap ?? "—"}</p>
+          <p className="text-xs text-muted-foreground uppercase">{t.perfil.handicapShortLabel}</p>
         </div>
       </div>
 
       <div className="flex flex-col gap-3">
-        <div>
-          <h2 className="font-heading text-lg font-semibold">{t.perfil.yourGameTitle}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {roundsPlayed === 1 ? t.perfil.roundsPlayedOne : fmt(t.perfil.roundsPlayedMany, { n: roundsPlayed })}
-          </p>
-        </div>
-        {mentalScore && (
-          <MentalScoreCard
-            score={mentalScore}
-            labels={{ confidence: t.home.confidenceLabel, focus: t.home.focusLabel, pressure: t.home.pressureLabel }}
-          />
+        <h2 className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
+          {t.perfil.achievementsTitle}
+        </h2>
+        {bestRoundGross != null ? (
+          <div className="flex items-center justify-between rounded-2xl border border-border/70 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">{t.perfil.bestRoundLabel}</p>
+              <p className="text-xs text-muted-foreground">{bestRoundCourse}</p>
+            </div>
+            <p className="font-heading text-2xl font-semibold">{bestRoundGross}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t.perfil.noBestRound}</p>
         )}
       </div>
 
-      {checkout === "success" && (
-        <p className="rounded-xl border border-primary/30 bg-secondary/40 p-3 text-sm">
-          {t.perfil.checkoutSuccess}
-        </p>
-      )}
-      {checkout === "cancel" && (
-        <p className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
-          {t.perfil.checkoutCancelled}
-        </p>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-heading text-lg">{t.perfil.billingTitle}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">
-              {owner ? t.perfil.ownerPlan : user.plan === "PRO" ? t.perfil.proPlan : t.perfil.freePlan}
+      <div className="flex flex-col gap-2">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-secondary/40"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <item.icon className="size-4" />
             </span>
-            <span className="text-xs text-muted-foreground">
-              {owner
-                ? t.perfil.ownerAccess
-                : fmt(t.perfil.minutesUsed, { used: Math.round(minutesUsed), included: minutesIncluded })}
-            </span>
-          </div>
-
-          {owner ? null : isStripeConfigured() ? (
-            user.plan === "PRO" ? (
-              <form action={createPortalSession}>
-                <Button type="submit" variant="outline" size="sm">
-                  {t.perfil.manageSubscription}
-                </Button>
-              </form>
-            ) : (
-              <div className="flex flex-col gap-3 border-t border-border pt-3">
-                <div>
-                  <p className="text-sm font-medium text-primary">{t.landing.premiumTagline}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.landing.premiumBody}</p>
-                </div>
-                <form action={createCheckoutSession} className="flex flex-col items-start gap-1.5">
-                  <Button type="submit" size="sm">
-                    {t.perfil.upgrade}
-                  </Button>
-                  <span className="text-xs text-muted-foreground">{t.perfil.proPrice}</span>
-                </form>
-              </div>
-            )
-          ) : (
-            <p className="text-xs text-muted-foreground">{t.perfil.billingUnavailable}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <ProfileForm
-        t={t.perfil}
-        defaultName={user.name ?? ""}
-        defaultHandicap={user.handicap}
-        defaultLanguage={user.language}
-      />
-
-      <p className="text-xs text-muted-foreground">{t.perfil.disclaimer}</p>
-
-      {isAdminEmail(user.email) && (
-        <Link
-          href="/admin/videos"
-          className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ShieldCheck className="size-4" />
-          Admin
-        </Link>
-      )}
-
-      <form action={signOutAction} className="lg:hidden">
-        <Button type="submit" variant="outline" className="w-full">
-          {t.perfil.signOut}
-        </Button>
-      </form>
+            <span className="flex-1 text-sm font-medium">{item.label}</span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

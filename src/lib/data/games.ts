@@ -44,11 +44,6 @@ export function getLastCompletedGameForUser(userId: string) {
   });
 }
 
-/** Para la tarjeta "Tu juego" del perfil — cuántas vueltas ha terminado el jugador en total. */
-export function getCompletedGamesCountForUser(userId: string) {
-  return prisma.game.count({ where: { status: "COMPLETED", players: { some: { userId } } } });
-}
-
 export function listGamesForUser(userId: string) {
   return prisma.game.findMany({
     where: { players: { some: { userId } } },

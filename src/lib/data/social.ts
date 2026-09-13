@@ -33,9 +33,9 @@ const storyInclude = {
  * Feed / Amigos / Club — 3 pestañas honestas, no 4: un "Feed" y un
  * "Global" idénticos sin un algoritmo real de relevancia solo duplicarían
  * la misma lista con otro nombre, así que no se construye esa cuarta
- * pestaña. "Club" depende de que el jugador tenga un PlayerProfile con
- * club relleno — si no lo tiene, la pestaña sale vacía en vez de
- * inventar compañeros de club.
+ * pestaña. "Club" depende de que el jugador tenga rellenado su
+ * `User.club` autodeclarado — si no lo tiene, la pestaña sale vacía en
+ * vez de inventar compañeros de club.
  */
 export async function listStoriesForFeed(scope: "feed" | "friends" | "club", viewerId: string) {
   if (scope === "feed") {
@@ -52,16 +52,10 @@ export async function listStoriesForFeed(scope: "feed" | "friends" | "club", vie
     });
   }
 
-  const myProfile = await prisma.playerProfile.findUnique({ where: { userId: viewerId }, select: { club: true } });
-  if (!myProfile?.club) return [];
-  const clubmates = await prisma.playerProfile.findMany({
-    where: { club: myProfile.club, userId: { not: null } },
-    select: { userId: true },
-  });
-  const clubUserIds = clubmates.map((p) => p.userId).filter((id): id is string => id != null);
-  if (clubUserIds.length === 0) return [];
+  const me = await prisma.user.findUnique({ where: { id: viewerId }, select: { club: true } });
+  if (!me?.club) return [];
   return prisma.story.findMany({
-    where: { userId: { in: clubUserIds } },
+    where: { user: { club: me.club } },
     orderBy: { createdAt: "desc" },
     take: 50,
     include: storyInclude,
