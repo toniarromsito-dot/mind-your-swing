@@ -9,6 +9,8 @@ import { finishGame } from "@/actions/games";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
+export type ShotForView = { id: string; club: string; distanceMeters: number | null; sequence: number };
+
 type GameForView = {
   id: string;
   course: string;
@@ -17,7 +19,7 @@ type GameForView = {
   players: {
     id: string;
     user: { name: string | null; handicap: number | null };
-    scores: { holeId: string; strokes: number | null }[];
+    scores: { holeId: string; strokes: number | null; shots: ShotForView[] }[];
   }[];
 };
 
@@ -52,12 +54,16 @@ export function GameView({
 
   const players = useMemo(
     () =>
-      game.players.map((p) => ({
-        id: p.id,
-        name: p.user.name ?? "Jugador",
-        handicap: p.user.handicap,
-        strokes: p.scores.find((s) => s.holeId === hole.id)?.strokes ?? null,
-      })),
+      game.players.map((p) => {
+        const score = p.scores.find((s) => s.holeId === hole.id);
+        return {
+          id: p.id,
+          name: p.user.name ?? "Jugador",
+          handicap: p.user.handicap,
+          strokes: score?.strokes ?? null,
+          shots: score?.shots ?? [],
+        };
+      }),
     [game.players, hole.id]
   );
 

@@ -395,8 +395,30 @@ model Score {
 
   hole   Hole       @relation(fields: [holeId], references: [id], onDelete: Cascade)
   player GamePlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  shots  Shot[]
 
   @@unique([holeId, playerId])
+}
+
+/**
+ * Golpe individual dentro de un hoyo (Drive 248m, Hierro 7 132m...) — capa
+ * de detalle opcional sobre Score. Score.strokes se mantiene en sync como
+ * el recuento de Shot de ese Score (ver actions/games.ts addShot/removeShot),
+ * así que todo lo que ya lee Score.strokes (standings, resumen, hándicap)
+ * sigue funcionando sin cambios.
+ */
+model Shot {
+  id             String  @id @default(cuid())
+  scoreId        String
+  club           String
+  distanceMeters Int?
+  sequence       Int
+
+  createdAt DateTime @default(now())
+
+  score Score @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+
+  @@index([scoreId])
 }
 
 // Reto opcional marcado manualmente durante la partida (más cercano a

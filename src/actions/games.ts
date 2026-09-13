@@ -6,8 +6,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
+  addShotSchema,
   createGameSchema,
   markChallengeWinSchema,
+  removeShotSchema,
   saveHoleScoresSchema,
   setBetSchema,
 } from "@/lib/validations";
@@ -184,6 +186,69 @@ export async function saveHoleScores(input: unknown) {
         })
       )
   );
+
+  revalidatePath(`/play/${gameId}`);
+}
+
+/**
+ * Registra un golpe individual (Drive 248m, Hierro 7 132m...) — capa de
+ * detalle opcional sobre saveHoleScores. Score.strokes se mantiene en
+ * sync como el recuento de Shot de ese hoyo/jugador, así que standings,
+ * resumen y el motor de hándicap siguen leyendo el mismo campo de
+ * siempre sin ningún cambio.
+ */
+export async function addShot(input: unknown) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("No autenticado");
+
+  const parsed = addShotSchema.safeParse(input);
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  const { gameId, holeId, playerId, club, distanceMeters } = parsed.data;
+
+  const me = await prisma.gamePlayer.findFirst({ where: { gameId, userId: session.user.id } });
+  if (!me) throw new Error("No perteneces a esta partida");
+
+  const hole = await prisma.hole.findFirst({ where: { id: holeId, gameId } });
+  if (!hole) throw new Error("Hoyo no encontrado");
+
+  const player = await prisma.gamePlayer.findFirst({ where: { id: playerId, gameId } });
+  if (!player) throw new Error("Jugador no encontrado en esta partida");
+
+  const score = await prisma.score.upsert({
+    where: { holeId_playerId: { holeId, playerId } },
+    update: {},
+    create: { holeId, playerId },
+    include: { shots: true },
+  });
+
+  await prisma.shot.create({
+    data: { scoreId: score.id, club, distanceMeters, sequence: score.shots.length + 1 },
+  });
+  await prisma.score.update({ where: { id: score.id }, data: { strokes: score.shots.length + 1 } });
+
+  revalidatePath(`/play/${gameId}`);
+}
+
+export async function removeShot(input: unknown) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("No autenticado");
+
+  const parsed = removeShotSchema.safeParse(input);
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  const { gameId, shotId } = parsed.data;
+
+  const me = await prisma.gamePlayer.findFirst({ where: { gameId, userId: session.user.id } });
+  if (!me) throw new Error("No perteneces a esta partida");
+
+  const shot = await prisma.shot.findFirst({
+    where: { id: shotId },
+    include: { score: { include: { hole: true, shots: true } } },
+  });
+  if (!shot || shot.score.hole.gameId !== gameId) throw new Error("Golpe no encontrado");
+
+  await prisma.shot.delete({ where: { id: shotId } });
+  const remaining = shot.score.shots.length - 1;
+  await prisma.score.update({ where: { id: shot.score.id }, data: { strokes: remaining > 0 ? remaining : null } });
 
   revalidatePath(`/play/${gameId}`);
 }

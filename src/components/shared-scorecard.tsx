@@ -1,27 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
-import { saveHoleScores } from "@/actions/games";
-import { holeResultLabel } from "@/lib/golf";
+import { X } from "lucide-react";
+import { addShot, removeShot } from "@/actions/games";
 import { strokesReceivedOnHole } from "@/lib/games/handicap";
+import { holeResultLabel } from "@/lib/golf";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { fmt } from "@/lib/i18n/format";
 import { cn } from "@/lib/utils";
 
-export type ScorecardPlayer = { id: string; name: string; handicap: number | null; strokes: number | null };
-type Club = "driver" | "iron" | "approach" | "putter";
-const CLUBS: Club[] = ["driver", "iron", "approach", "putter"];
+export type Shot = { id: string; club: string; distanceMeters: number | null; sequence: number };
+export type ScorecardPlayer = { id: string; name: string; handicap: number | null; strokes: number | null; shots: Shot[] };
 
-const STROKE_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1);
+const CLUBS = ["driver", "wood", "iron", "wedge", "putter", "other"] as const;
+type Club = (typeof CLUBS)[number];
 
 /**
- * El scorecard durante la vuelta (Focus Mode): un jugador con el móvil en
- * la mano toca el número de golpes de cada compañero, uno detrás de otro,
- * y guarda al instante — nada de steppers ni botón "Guardar" aparte, ver
- * brief "Miro → toco → guardado → siguiente hoyo". El palo es la única
- * entrada opcional: unos chips que no bloquean ni requieren nada.
+ * PLAY se aparta: el jugador registra cada golpe en cuanto lo da (Drive,
+ * Hierro 7, Chip, Putt...) en vez de teclear un total al final — más
+ * rápido y usable con una mano, y Score.strokes se mantiene en sync como
+ * el recuento de golpes real (ver addShot/removeShot en actions/games.ts).
+ * Nada de feed social, Insights ni contenido de Aprende aquí, y el Coach
+ * solo aparece si el jugador lo pide (MindQuickCard en game-view.tsx).
  */
 export function SharedScorecard({
   gameId,
@@ -41,122 +42,166 @@ export function SharedScorecard({
   golfResult: Dictionary["golfResult"];
 }) {
   const [playerIndex, setPlayerIndex] = useState(() => {
-    const firstUnset = players.findIndex((p) => p.strokes == null);
+    const firstUnset = players.findIndex((p) => p.shots.length === 0);
     return firstUnset === -1 ? 0 : firstUnset;
   });
-  const [confirmation, setConfirmation] = useState<{ strokes: number; label: string } | null>(null);
-  const [isBusy, setIsBusy] = useState(false);
-  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const player = players[playerIndex];
   const strokesReceived =
     hole.index != null && player.handicap != null ? strokesReceivedOnHole(player.handicap, hole.index) : 0;
 
-  function pick(strokes: number) {
-    if (isBusy) return;
-    setIsBusy(true);
-    saveHoleScores({ gameId, holeId: hole.id, entries: [{ playerId: player.id, strokes, putts: null, club: selectedClub }] })
-      .then(() => {
-        setConfirmation({ strokes, label: holeResultLabel(hole.par, strokes, golfResult) });
-        setTimeout(() => {
-          setConfirmation(null);
-          setIsBusy(false);
-          setSelectedClub(null);
-          if (playerIndex + 1 < players.length) {
-            setPlayerIndex((i) => i + 1);
-          } else {
-            onSaved();
-          }
-        }, 1100);
-      })
-      .catch((err) => {
-        setIsBusy(false);
+  function pickClub(club: Club) {
+    if (isPending) return;
+    startTransition(async () => {
+      try {
+        await addShot({ gameId, holeId: hole.id, playerId: player.id, club });
+        setPickerOpen(false);
+      } catch (err) {
         toast.error(err instanceof Error ? err.message : t.saveError);
-      });
+      }
+    });
   }
 
-  if (confirmation) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-        <span className="flex size-20 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Check className="size-9" />
-        </span>
-        <p className="font-heading text-3xl font-semibold">{fmt(t.strokesCount, { n: confirmation.strokes })}</p>
-        <p className="text-lg text-muted-foreground">{confirmation.label}</p>
-        <p className="mt-2 text-sm text-muted-foreground">{t.nextHolePrompt}</p>
-      </div>
-    );
+  function deleteShot(shotId: string) {
+    if (isPending) return;
+    startTransition(async () => {
+      try {
+        await removeShot({ gameId, shotId });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t.saveError);
+      }
+    });
+  }
+
+  function goNext() {
+    if (playerIndex + 1 < players.length) {
+      setPlayerIndex((i) => i + 1);
+    } else {
+      onSaved();
+    }
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-6 px-6 py-6 text-center">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">
-          {fmt(t.hole, { n: hole.number, total: totalHoles })}
-        </h1>
-        <p className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-lg text-muted-foreground">
-          <span>
-            {t.par} {hole.par}
-          </span>
-          {hole.distance != null && (
-            <>
-              <span className="text-border">·</span>
-              <span>{fmt(t.distanceMeters, { n: hole.distance })}</span>
-            </>
-          )}
-          {hole.index != null && (
-            <>
-              <span className="text-border">·</span>
-              <span>{fmt(t.strokeIndexShort, { n: hole.index })}</span>
-            </>
-          )}
-        </p>
-        {strokesReceived > 0 && (
-          <span className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            {strokesReceived === 1 ? t.strokesReceivedOne : fmt(t.strokesReceivedMany, { n: strokesReceived })}
-          </span>
+    <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-6">
+      <div className="text-center">
+        <h1 className="font-heading text-4xl font-bold tracking-tight">{fmt(t.hole, { n: hole.number, total: totalHoles })}</h1>
+        {players.length > 1 && <p className="mt-1 text-sm font-medium text-muted-foreground">{player.name}</p>}
+      </div>
+
+      <div className="flex items-start justify-center gap-8">
+        <div className="text-center">
+          <p className="font-heading text-2xl font-semibold">{hole.par}</p>
+          <p className="text-xs tracking-wide text-muted-foreground uppercase">{t.par}</p>
+        </div>
+        {hole.distance != null && (
+          <div className="text-center">
+            <p className="font-heading text-2xl font-semibold">{hole.distance}</p>
+            <p className="text-xs tracking-wide text-muted-foreground uppercase">m</p>
+          </div>
+        )}
+        {hole.index != null && (
+          <div className="text-center">
+            <p className="font-heading text-2xl font-semibold">{hole.index}</p>
+            <p className="text-xs tracking-wide text-muted-foreground uppercase">SI</p>
+          </div>
         )}
       </div>
 
-      <div>
-        {players.length > 1 && <p className="text-sm font-medium text-muted-foreground">{player.name}</p>}
-        <p className="mt-1 font-heading text-xl font-semibold">{t.howManyStrokes}</p>
-      </div>
+      {strokesReceived > 0 && (
+        <span className="mx-auto rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+          {fmt(t.hcpBadge, { n: strokesReceived })}
+        </span>
+      )}
 
-      <div className="grid w-full max-w-sm grid-cols-4 gap-3">
-        {STROKE_OPTIONS.map((n) => (
-          <button
-            key={n}
-            type="button"
-            disabled={isBusy}
-            onClick={() => pick(n)}
-            className="flex aspect-square items-center justify-center rounded-2xl bg-secondary font-heading text-2xl font-semibold text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-col items-center gap-2">
-        <p className="text-xs text-muted-foreground">{t.clubPrompt}</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {CLUBS.map((club) => (
-            <button
-              key={club}
-              type="button"
-              onClick={() => setSelectedClub((c) => (c === club ? null : club))}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                selectedClub === club
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground hover:bg-secondary/60"
-              )}
-            >
-              {t.clubs[club]}
-            </button>
-          ))}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between">
+          <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">{t.shotsTitle}</p>
+          {player.shots.length > 0 && (
+            <p className="text-xs font-medium text-primary">
+              {holeResultLabel(hole.par, player.shots.length, golfResult)}
+            </p>
+          )}
         </div>
+        {player.shots.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
+            {t.noShotsYet}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {player.shots.map((shot) => (
+              <div key={shot.id} className="flex items-center justify-between rounded-xl bg-secondary/50 px-4 py-3">
+                <span className="font-medium">{t.clubs[shot.club as Club] ?? shot.club}</span>
+                <span className="flex items-center gap-3 text-sm text-muted-foreground">
+                  {shot.distanceMeters != null && fmt(t.distanceMeters, { n: shot.distanceMeters })}
+                  <button
+                    type="button"
+                    onClick={() => deleteShot(shot.id)}
+                    disabled={isPending}
+                    aria-label="Remove shot"
+                    className="text-muted-foreground/60 hover:text-destructive disabled:opacity-50"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        className="rounded-2xl border border-primary/40 bg-primary/5 py-3.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+      >
+        + {t.addShotCta}
+      </button>
+
+      <div className="flex-1" />
+
+      {player.shots.length > 0 && (
+        <button
+          type="button"
+          onClick={goNext}
+          className="w-full rounded-full bg-primary py-4 text-base font-semibold text-primary-foreground transition-transform hover:scale-[1.01]"
+        >
+          {t.nextHoleCta}
+        </button>
+      )}
+
+      {pickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={() => setPickerOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl bg-card p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-4 text-center text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+              {t.clubPrompt}
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {CLUBS.map((club) => (
+                <button
+                  key={club}
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => pickClub(club)}
+                  className={cn(
+                    "flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl bg-secondary text-sm font-medium transition-colors",
+                    "hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+                  )}
+                >
+                  {t.clubs[club]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

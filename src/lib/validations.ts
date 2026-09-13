@@ -34,6 +34,8 @@ export const createGameSchema = z.object({
 
 // Scorecard compartido: cualquier jugador de la partida puede anotar el
 // hoyo por todo el grupo en un solo guardado (ver saveHoleScores).
+export const CLUB_VALUES = ["driver", "wood", "iron", "wedge", "putter", "other"] as const;
+
 export const saveHoleScoresSchema = z.object({
   gameId: z.string().min(1),
   holeId: z.string().min(1),
@@ -43,10 +45,23 @@ export const saveHoleScoresSchema = z.object({
         playerId: z.string().min(1),
         strokes: z.coerce.number().int().min(1).max(15).optional().nullable(),
         putts: z.coerce.number().int().min(0).max(10).optional().nullable(),
-        club: z.enum(["driver", "iron", "approach", "putter"]).optional().nullable(),
+        club: z.enum(CLUB_VALUES).optional().nullable(),
       })
     )
     .min(1),
+});
+
+export const addShotSchema = z.object({
+  gameId: z.string().min(1),
+  holeId: z.string().min(1),
+  playerId: z.string().min(1),
+  club: z.enum(CLUB_VALUES),
+  distanceMeters: z.coerce.number().int().min(0).max(400).optional().nullable(),
+});
+
+export const removeShotSchema = z.object({
+  gameId: z.string().min(1),
+  shotId: z.string().min(1),
 });
 
 export const setBetSchema = z.object({
