@@ -1,6 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, Clock, Flag as FlagIcon, Gauge, ChevronRight, CalendarDays, TrendingUp } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Flag as FlagIcon,
+  Gauge,
+  ChevronRight,
+  CalendarDays,
+  TrendingUp,
+  Sun,
+  Target,
+  Activity,
+} from "lucide-react";
 import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/require-user";
 import { getLastCompletedGameForUser, getActiveGamesForUser, getMonthlyRelativeToPar } from "@/lib/data/games";
@@ -150,7 +161,7 @@ export default async function HomePage() {
             WebkitMaskImage: "linear-gradient(to left, black 45%, transparent 100%)",
           }}
         >
-          <Image src={DASHBOARD_PHOTOS.play} alt="" fill sizes="220px" className="object-cover opacity-90" />
+          <Image src={DASHBOARD_PHOTOS.coach} alt="" fill sizes="220px" className="object-cover opacity-90" />
         </div>
 
         <div className="mt-8 flex items-center gap-3">
@@ -167,7 +178,7 @@ export default async function HomePage() {
         <div className="relative overflow-hidden rounded-[28px] shadow-md transition-transform group-hover:-translate-y-0.5">
           <div className="relative h-72 w-full sm:h-80">
             <Image
-              src={DASHBOARD_PHOTOS.play}
+              src={DASHBOARD_PHOTOS.coach}
               alt=""
               fill
               sizes="(min-width: 640px) 600px, 100vw"
@@ -234,39 +245,52 @@ export default async function HomePage() {
             href="/insights"
             className="flex flex-col gap-3 rounded-2xl border border-border/70 p-4 transition-colors hover:border-primary/40"
           >
-            <p className="text-[10.5px] font-semibold tracking-[0.15em] text-muted-foreground uppercase">
-              {h.mentalGameTitle}
-            </p>
-            <div className="relative mx-auto flex size-[84px] items-center justify-center">
-              <MentalScoreRing score={mentalScore.score} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-heading text-2xl leading-none font-semibold">{mentalScore.score}</span>
-                <span className="text-[9px] text-muted-foreground">/100</span>
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] font-medium">{h.mentalGameTitle}</p>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative flex size-[72px] shrink-0 items-center justify-center">
+                <MentalScoreRing score={mentalScore.score} size={72} strokeWidth={6} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-heading text-xl leading-none font-semibold">{mentalScore.score}</span>
+                  <span className="text-[8px] text-muted-foreground">/100</span>
+                </div>
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-[10.5px] text-muted-foreground">
+                <span className="flex items-center justify-between gap-1">
+                  <span className="flex items-center gap-1">
+                    <Sun className="size-3 shrink-0" strokeWidth={1.5} />
+                    {h.confidenceLabel}
+                  </span>
+                  <TrendArrow trend={mentalScore.confidence} />
+                </span>
+                <span className="flex items-center justify-between gap-1">
+                  <span className="flex items-center gap-1">
+                    <Target className="size-3 shrink-0" strokeWidth={1.5} />
+                    {h.focusLabel}
+                  </span>
+                  <TrendArrow trend={mentalScore.focus} />
+                </span>
+                <span className="flex items-center justify-between gap-1">
+                  <span className="flex items-center gap-1">
+                    <Activity className="size-3 shrink-0" strokeWidth={1.5} />
+                    {h.pressureLabel}
+                  </span>
+                  <TrendArrow trend={mentalScore.pressure} />
+                </span>
               </div>
             </div>
-            <div className="text-center">
+            <div>
               <p className="text-sm font-medium text-primary">{h[`state${capitalize(mentalState)}` as const]}</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
                 {h[`stateBody${capitalize(mentalState)}` as const]}
               </p>
             </div>
-            <div className="flex flex-col gap-1.5 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
-              <span className="flex items-center justify-between">
-                {h.confidenceLabel} <TrendArrow trend={mentalScore.confidence} />
-              </span>
-              <span className="flex items-center justify-between">
-                {h.focusLabel} <TrendArrow trend={mentalScore.focus} />
-              </span>
-              <span className="flex items-center justify-between">
-                {h.pressureLabel} <TrendArrow trend={mentalScore.pressure} />
-              </span>
-            </div>
           </Link>
         ) : (
           <div className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border/70 p-4 text-center">
-            <p className="text-[10.5px] font-semibold tracking-[0.15em] text-muted-foreground uppercase">
-              {h.mentalGameTitle}
-            </p>
+            <p className="text-[13px] font-medium">{h.mentalGameTitle}</p>
             <p className="mt-2 text-[11px] text-muted-foreground">{h.evolutionEmpty}</p>
           </div>
         )}
@@ -274,86 +298,79 @@ export default async function HomePage() {
         {lastGame ? (
           <Link
             href={`/play/${lastGame.id}/resumen`}
-            className="flex flex-col overflow-hidden rounded-2xl border border-border/70 transition-colors hover:border-primary/40"
+            className="flex flex-col gap-3 rounded-2xl border border-border/70 p-4 transition-colors hover:border-primary/40"
           >
-            <div className="relative h-20 w-full">
-              <Image src={DASHBOARD_PHOTOS.learn} alt="" fill sizes="200px" className="object-cover" />
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] font-medium">{h.lastRoundTitle}</p>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
             </div>
-            <div className="flex flex-1 flex-col gap-2 p-3">
-              <div>
-                <p className="truncate text-[10.5px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-                  {h.lastRoundTitle}
-                </p>
+            <div className="flex items-center gap-2">
+              <div className="relative size-10 shrink-0 overflow-hidden rounded-lg">
+                <Image src={DASHBOARD_PHOTOS.learn} alt="" fill sizes="40px" className="object-cover" />
+              </div>
+              <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{lastGame.course}</p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="truncate text-[10.5px] text-muted-foreground">
                   {new Date(lastGame.date).toLocaleDateString(t.dateLocale, { day: "numeric", month: "short" })}
                   {" · "}
                   {fmt(t.summary.holesTotal, { total: lastGame.holes.length })}
                 </p>
               </div>
-              {lastGameGross != null && (
-                <div className="flex items-baseline gap-2">
-                  <span className="font-heading text-2xl leading-none font-semibold">{lastGameGross}</span>
-                  {lastGameRelative && (
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                      {lastGameRelative}
-                    </span>
-                  )}
-                </div>
-              )}
-              {(lastGamePutts != null || lastGameMentalScore != null || lastGameNet != null) && (
-                <div className="mt-auto flex flex-wrap gap-x-3 gap-y-1 border-t border-border/60 pt-2 text-[10.5px] text-muted-foreground">
-                  {lastGameNet != null && (
-                    <span>
-                      {t.summary.netLabel} {lastGameNet}
-                    </span>
-                  )}
-                  {lastGamePutts != null && (
-                    <span>
-                      {lastGamePutts} {h.puttsLabel}
-                    </span>
-                  )}
-                  {lastGameMentalScore != null && (
-                    <span>
-                      {lastGameMentalScore} {h.mentalShortLabel}
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
+            {lastGameGross != null && (
+              <div className="flex items-baseline gap-2">
+                <span className="font-heading text-2xl leading-none font-semibold">{lastGameGross}</span>
+                {lastGameRelative && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                    {lastGameRelative}
+                  </span>
+                )}
+              </div>
+            )}
+            {(lastGamePutts != null || lastGameMentalScore != null || lastGameNet != null) && (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-border/60 pt-2 text-[10.5px] text-muted-foreground">
+                {lastGameNet != null && (
+                  <span>
+                    {t.summary.netLabel} {lastGameNet}
+                  </span>
+                )}
+                {lastGamePutts != null && (
+                  <span>
+                    {lastGamePutts} {h.puttsLabel}
+                  </span>
+                )}
+                {lastGameMentalScore != null && (
+                  <span>
+                    {lastGameMentalScore} {h.mentalShortLabel}
+                  </span>
+                )}
+              </div>
+            )}
           </Link>
         ) : (
           <div className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border/70 p-4 text-center">
-            <p className="text-[10.5px] font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-              {h.lastRoundTitle}
-            </p>
+            <p className="text-[13px] font-medium">{h.lastRoundTitle}</p>
             <p className="mt-2 text-[11px] text-muted-foreground">{h.lastRoundInsightFallback}</p>
           </div>
         )}
       </div>
 
-      {/* 4. Tu juego este mes — lista editorial, no cuatro tarjetas grandes. */}
-      <div className="flex flex-col gap-1 border-t border-border/70 pt-6">
+      {/* 4. Tu juego este mes — cuadrícula editorial compacta, no cuatro tarjetas grandes. */}
+      <div className="flex flex-col gap-4 border-t border-border/70 pt-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            {h.monthlyTitle}
-          </h2>
+          <h2 className="text-base font-medium">{h.monthlyTitle}</h2>
           <Link href="/insights" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
             {h.viewAllInsights}
             <ChevronRight className="size-3" />
           </Link>
         </div>
-        <div className="flex flex-col divide-y divide-border/60">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5">
           {monthlyTiles.map((tile) => (
-            <div key={tile.key} className="flex items-start gap-3 py-3.5">
-              <tile.icon className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={1.5} />
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  {tile.title}
-                </p>
-                <p className="mt-0.5 text-sm font-medium">{tile.state}</p>
-                <p className="text-xs text-muted-foreground">{tile.description}</p>
-              </div>
+            <div key={tile.key} className="flex flex-col gap-1.5">
+              <tile.icon className="size-4 shrink-0 text-primary" strokeWidth={1.5} />
+              <p className="text-xs leading-tight text-muted-foreground">{tile.title}</p>
+              <p className="text-sm leading-tight font-medium">{tile.state}</p>
+              <p className="text-[11px] leading-snug text-muted-foreground">{tile.description}</p>
             </div>
           ))}
         </div>
