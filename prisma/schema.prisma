@@ -159,6 +159,79 @@ model User {
   stories       Story[]
   voiceCallLogs VoiceCallLog[]
   swingVideos   SwingVideo[]
+  playerProfile PlayerProfile?
+}
+
+// Identidad competitiva de un jugador — deliberadamente separada de User:
+// una partida casual de Mind Your Swing (Game/GamePlayer/Score) NUNCA
+// crea ni modifica un PlayerProfile. Solo lo hace la futura integración
+// de torneos (ver TournamentResult, y src/lib/data/players.ts). userId es
+// opcional y único: permite que un PlayerProfile exista antes de que esa
+// persona tenga cuenta en la app (importado de un torneo), y que más
+// adelante se enlace a su User cuando se identifique / inicie sesión.
+model PlayerProfile {
+  id        String  @id @default(cuid()) // el "playerId" estable
+  firstName String
+  lastName  String
+  club      String?
+  handicap  Float? // hándicap oficial/competitivo actual — distinto del
+  // User.handicap autodeclarado que ya existe para el juego casual
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  results         TournamentResult[]
+  handicapHistory HandicapEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Heurística de emparejamiento para una futura importación (nombre +
+  // apellidos + club) mientras no exista un identificador federativo real.
+  @@index([lastName, firstName])
+}
+
+model Tournament {
+  id     String   @id @default(cuid())
+  name   String
+  course String
+  date   DateTime
+
+  results   TournamentResult[]
+  createdAt DateTime           @default(now())
+}
+
+// Un resultado real de un jugador en un torneo — esto es lo único que
+// construye "historial competitivo oficial". Nunca se crea desde
+// actions/games.ts (partidas casuales).
+model TournamentResult {
+  id           String @id @default(cuid())
+  tournamentId String
+  playerId     String
+
+  position      Int?
+  strokes       Int?
+  stablefordPts Int?
+  resultLabel   String? // texto libre para modalidades que no sean stroke/stableford
+
+  tournament Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tournamentId, playerId])
+}
+
+// Evolución del hándicap oficial a lo largo del tiempo, un punto por
+// actualización real (normalmente tras un torneo).
+model HandicapEntry {
+  id         String   @id @default(cuid())
+  playerId   String
+  handicap   Float
+  recordedAt DateTime @default(now())
+  source     String? // p. ej. "torneo:<id>", "federación", "manual"
+
+  player PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }
 
 // Vídeo de swing subido por un jugador (plan Pro). Recibe una puntuación
