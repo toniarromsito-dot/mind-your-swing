@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trophy, ChevronRight } from "lucide-react";
+import { Trophy, ListOrdered, ChevronRight } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { listFollowingIds, listStoriesForFeed } from "@/lib/data/social";
@@ -57,19 +57,29 @@ export default async function CommunityPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.community.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t.community.subtitle}</p>
         </div>
-        <Link
-          href="/community/tournaments"
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-secondary/40"
-        >
-          <Trophy className="size-4 text-primary" />
-          {t.community.viewTournaments}
-          <ChevronRight className="size-3.5 text-muted-foreground" />
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/community/tournaments"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-secondary/40"
+          >
+            <Trophy className="size-4 text-primary" />
+            {t.community.viewTournaments}
+            <ChevronRight className="size-3.5 text-muted-foreground" />
+          </Link>
+          <Link
+            href="/community/ranking"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-secondary/40"
+          >
+            <ListOrdered className="size-4 text-primary" />
+            {t.community.viewRanking}
+            <ChevronRight className="size-3.5 text-muted-foreground" />
+          </Link>
+        </div>
       </div>
 
       <Card>
