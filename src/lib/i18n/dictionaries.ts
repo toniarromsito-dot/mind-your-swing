@@ -186,7 +186,7 @@ const es = {
     prompt: "¿Jugamos?",
     playCard: "Jugar",
     playCardBody: "Crea una partida y juega con tus amigos.",
-    coachCard: "Mind",
+    coachCard: "Coach",
     coachCardBody: "¿Preparamos tu próxima vuelta?",
     learnCard: "Aprender",
     learnCardBody: "Aprende golf desde cero y mejora tus conocimientos.",
@@ -415,8 +415,8 @@ const es = {
     join: "Unirme a la partida",
   },
   mind: {
-    title: "Mind",
-    subtitle: "Tu compañero mental, siempre disponible cuando lo necesites.",
+    title: "Coach",
+    subtitle: "Tu entrenador mental de golf. Siempre contigo.",
     settingsLabel: "Personalidad y estado de ánimo",
     personalityTitle: "¿Cómo quieres que te hable?",
     personalities: {
@@ -934,7 +934,7 @@ const en: typeof es = {
     prompt: "Shall we play?",
     playCard: "Play",
     playCardBody: "Create a game and play with your friends.",
-    coachCard: "Mind",
+    coachCard: "Coach",
     coachCardBody: "Ready for your next round?",
     learnCard: "Learn",
     learnCardBody: "Learn golf from scratch and build your knowledge.",
@@ -1163,8 +1163,8 @@ const en: typeof es = {
     join: "Join game",
   },
   mind: {
-    title: "Mind",
-    subtitle: "Your mental companion, always available when you need it.",
+    title: "Coach",
+    subtitle: "Your mental golf coach. Always with you.",
     settingsLabel: "Personality and mood",
     personalityTitle: "How do you want it to talk to you?",
     personalities: {
@@ -1619,7 +1619,7 @@ const de: typeof es = {
     prompt: "Spielen wir?",
     playCard: "Spielen",
     playCardBody: "Erstelle eine Partie und spiele mit deinen Freunden.",
-    coachCard: "Mind",
+    coachCard: "Coach",
     coachCardBody: "Bereiten wir deine nächste Runde vor?",
     learnCard: "Lernen",
     learnCardBody: "Lerne Golf von Grund auf und erweitere dein Wissen.",
@@ -1848,8 +1848,8 @@ const de: typeof es = {
     join: "Partie beitreten",
   },
   mind: {
-    title: "Mind",
-    subtitle: "Dein mentaler Begleiter, immer da, wenn du ihn brauchst.",
+    title: "Coach",
+    subtitle: "Dein mentaler Golf-Coach. Immer an deiner Seite.",
     settingsLabel: "Persönlichkeit und Stimmung",
     personalityTitle: "Wie soll Mind mit dir sprechen?",
     personalities: {

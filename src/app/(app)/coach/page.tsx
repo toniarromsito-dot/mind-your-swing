@@ -37,10 +37,10 @@ export default async function MindPage() {
     <div className="mx-auto flex h-[calc(100dvh-11.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-lg flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <MindMark size="md" />
+          <MindMark size="lg" />
           <div>
-            <h1 className="font-heading text-xl font-semibold tracking-tight">{t.mind.title}</h1>
-            <p className="text-xs text-muted-foreground">{t.mind.subtitle}</p>
+            <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.mind.title}</h1>
+            <p className="text-sm text-muted-foreground">{t.mind.subtitle}</p>
           </div>
         </div>
         <MindSettingsDrawer
