@@ -4,13 +4,17 @@ import type { RecoveryEvent } from "@/lib/insights";
 const MOOD_SAMPLE_SIZE = 30;
 const RECOVERY_SAMPLE_SIZE = 50;
 
-/** Últimos check-ins de ánimo del jugador — misma fuente que "Tu juego mental". */
+/**
+ * Últimos check-ins de ánimo del jugador — misma fuente que "Tu juego
+ * mental" (computeMentalScore) y que la gráfica de tendencia de
+ * Insights (moodTrend), de más reciente a más antiguo.
+ */
 export function getMentalTrendData(userId: string) {
   return prisma.moodEntry.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
     take: MOOD_SAMPLE_SIZE,
-    select: { mood: true },
+    select: { mood: true, hole: { select: { number: true } } },
   });
 }
 

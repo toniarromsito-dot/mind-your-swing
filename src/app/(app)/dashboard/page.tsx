@@ -10,6 +10,7 @@ import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 import { prisma } from "@/lib/prisma";
 import { computeMentalScore, mentalStateFromScore } from "@/lib/mood";
 import { computeMentalTrendInsight } from "@/lib/insights";
+import { TrendArrow } from "@/components/trend-arrow";
 import { toStandingsInput } from "@/lib/games/adapt";
 import { computeNetStrokeStandings, computeStrokeStandings } from "@/lib/games/standings";
 import { fmt } from "@/lib/i18n/format";
@@ -204,8 +205,4 @@ export default async function HomePage() {
 
 function capitalize<T extends string>(s: T): Capitalize<T> {
   return (s.charAt(0).toUpperCase() + s.slice(1)) as Capitalize<T>;
-}
-
-function TrendArrow({ trend }: { trend: "up" | "down" | "flat" }) {
-  return <span className="font-medium text-foreground">{trend === "up" ? "↑" : trend === "down" ? "↓" : "→"}</span>;
 }
