@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { toStandingsInput } from "@/lib/games/adapt";
 import { computeStrokeStandings } from "@/lib/games/standings";
+import { relativeToPar } from "@/lib/golf";
 
 const gameWithPlayersInclude = {
   players: {
@@ -33,6 +34,41 @@ export function getActiveGamesForUser(userId: string) {
     orderBy: { date: "desc" },
     include: gameWithPlayersInclude,
   });
+}
+
+/**
+ * Resultado (relativo al par) de cada ronda completada del jugador en el
+ * mes natural en curso y en el anterior — para "Tu juego este mes" del
+ * Home (ver computeMonthlyScoringTrend en insights.ts). Se apoya en
+ * Game.date, no en createdAt, para que el mes sea el de cuándo se jugó.
+ */
+export async function getMonthlyRelativeToPar(userId: string): Promise<{ current: number[]; previous: number[] }> {
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const games = await prisma.game.findMany({
+    where: { status: "COMPLETED", players: { some: { userId } }, date: { gte: startOfPreviousMonth } },
+    include: gameWithPlayersInclude,
+  });
+
+  const current: number[] = [];
+  const previous: number[] = [];
+  for (const game of games) {
+    const myPlayer = game.players.find((p) => p.user.id === userId);
+    if (!myPlayer) continue;
+
+    const { scores } = toStandingsInput(game);
+    const myHoles = scores
+      .filter((s) => s.playerId === myPlayer.id)
+      .map((s) => ({ number: s.holeNumber, par: s.par, strokes: s.strokes }));
+    const relative = relativeToPar(myHoles);
+
+    if (game.date >= startOfCurrentMonth) current.push(relative);
+    else previous.push(relative);
+  }
+
+  return { current, previous };
 }
 
 /** Para la tarjeta "Última vuelta" del dashboard — la partida terminada más reciente del jugador. */

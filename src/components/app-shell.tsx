@@ -14,7 +14,6 @@ type NavLink = {
   href: string;
   label: string;
   icon: typeof Home | null;
-  primary?: boolean;
 };
 
 export function AppShell({
@@ -29,17 +28,15 @@ export function AppShell({
   const pathname = usePathname();
 
   // Las 6 áreas del producto, ninguna oculta (brief: "no elimines ninguna
-  // de estas áreas"). Play es la acción más frecuente ("vamos a jugar"),
-  // así que en móvil se separa del resto como botón elevado en el centro
-  // de la barra — patrón de apps deportivas premium para 5-6 destinos —
-  // en vez de competir en igualdad de tamaño con las otras 5. En desktop
-  // no hace falta ese tratamiento especial, cabe de sobra como texto.
-  // Admin vive aparte, enlazado solo para administradores desde /perfil —
-  // nunca aquí. Perfil se abre tocando el avatar de la cabecera.
+  // de estas áreas"), como una barra plana de peso igual — sin botón
+  // elevado — con el activo tratado con la píldora verde bosque (ref.
+  // visual del Home). Admin vive aparte, enlazado solo para
+  // administradores desde /perfil — nunca aquí. Perfil se abre tocando
+  // el avatar de la cabecera.
   const navLinks: NavLink[] = [
     { href: "/dashboard", label: t.home, icon: Home },
     { href: "/aprende", label: t.learn, icon: BookOpen },
-    { href: "/play", label: t.play, icon: Flag, primary: true },
+    { href: "/play", label: t.play, icon: Flag },
     { href: "/coach", label: t.coach, icon: null },
     { href: "/insights", label: t.insights, icon: LineChart },
     { href: "/community", label: t.community, icon: Users },
@@ -49,23 +46,29 @@ export function AppShell({
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
-  const primaryIndex = navLinks.findIndex((link) => link.primary);
-  const leftLinks = navLinks.slice(0, primaryIndex);
-  const primaryLink = navLinks[primaryIndex];
-  const rightLinks = navLinks.slice(primaryIndex + 1);
-
   function MobileTab({ link }: { link: NavLink }) {
     const active = isActive(link.href);
     return (
       <Link
         href={link.href}
         className={cn(
-          "flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[10.5px] transition-colors",
+          "flex flex-1 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10.5px] transition-colors",
           active ? "text-primary" : "text-muted-foreground hover:text-foreground"
         )}
       >
-        {link.icon ? <link.icon className="size-5" /> : <MindMark size="sm" />}
-        {link.label}
+        <span
+          className={cn(
+            "flex size-8 items-center justify-center rounded-full transition-colors",
+            active && "bg-primary/10"
+          )}
+        >
+          {link.icon ? (
+            <link.icon className="size-[18px]" strokeWidth={active ? 2 : 1.5} />
+          ) : (
+            <MindMark size="sm" className="size-[18px] bg-transparent text-current" />
+          )}
+        </span>
+        <span className={cn(active && "font-medium")}>{link.label}</span>
       </Link>
     );
   }
@@ -82,7 +85,9 @@ export function AppShell({
               height={32}
               className="rounded-[9px]"
             />
-            <span className="font-heading text-lg font-semibold tracking-tight whitespace-nowrap">MYS</span>
+            <span className="font-sans text-[11px] font-semibold tracking-[0.18em] whitespace-nowrap text-foreground/80 uppercase">
+              Mind Your Swing
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex">
@@ -134,19 +139,9 @@ export function AppShell({
         {children}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-5xl items-center justify-around px-1 py-2">
-          {leftLinks.map((link) => (
-            <MobileTab key={link.href} link={link} />
-          ))}
-
-          <Link href={primaryLink.href} aria-label={primaryLink.label} className="-mt-7 flex flex-col items-center">
-            <span className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background">
-              {primaryLink.icon && <primaryLink.icon className="size-6" />}
-            </span>
-          </Link>
-
-          {rightLinks.map((link) => (
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-5xl items-center px-1 py-1.5">
+          {navLinks.map((link) => (
             <MobileTab key={link.href} link={link} />
           ))}
         </div>

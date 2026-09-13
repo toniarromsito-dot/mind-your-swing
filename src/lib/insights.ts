@@ -73,3 +73,24 @@ export function computeClosingPressureInsight(
   return { closeFrequency, restFrequency };
 }
 
+export type ScoringTrendInsight = { diff: number; trend: "up" | "down" };
+
+/**
+ * Compara el resultado medio respecto al par de este mes natural contra el
+ * mes anterior — para "Tu juego este mes" del Home. Requiere al menos una
+ * ronda completada en CADA mes; si falta cualquiera, no hay nada honesto
+ * que comparar y se devuelve null en vez de fabricar una tendencia.
+ */
+export function computeMonthlyScoringTrend(
+  currentMonthRelatives: number[],
+  previousMonthRelatives: number[]
+): ScoringTrendInsight | null {
+  if (currentMonthRelatives.length === 0 || previousMonthRelatives.length === 0) return null;
+
+  const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const diff = Math.round((avg(currentMonthRelatives) - avg(previousMonthRelatives)) * 10) / 10;
+  if (diff === 0) return null;
+
+  return { diff, trend: diff < 0 ? "up" : "down" };
+}
+
