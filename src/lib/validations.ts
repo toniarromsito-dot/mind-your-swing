@@ -103,6 +103,10 @@ export const storySchema = z.object({
   content: z.string().trim().min(20, "Cuenta un poco más").max(4000),
 });
 
+export const commentSchema = z.object({
+  content: z.string().trim().min(1, "Escribe algo").max(500),
+});
+
 export type CreateGameInput = z.infer<typeof createGameSchema>;
 export type SaveHoleScoresInput = z.infer<typeof saveHoleScoresSchema>;
 export type SetBetInput = z.infer<typeof setBetSchema>;

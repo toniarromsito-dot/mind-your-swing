@@ -1,15 +1,54 @@
-import Image from "next/image";
 import { requireUserId } from "@/lib/require-user";
-import { listStories } from "@/lib/data/stories";
+import { listFollowingIds, listStoriesForFeed } from "@/lib/data/social";
 import { StoryForm } from "@/components/story-form";
-import { StoryDeleteButton } from "@/components/story-delete-button";
+import { StoryCard, type StoryForCard } from "@/components/story-card";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
-export default async function StoriesPage() {
+function serialize(stories: Awaited<ReturnType<typeof listStoriesForFeed>>): StoryForCard[] {
+  return stories.map((s) => ({
+    ...s,
+    createdAt: s.createdAt.toISOString(),
+    comments: s.comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
+  }));
+}
+
+export default async function CommunityPage() {
   const userId = await requireUserId();
-  const stories = await listStories();
   const { t } = await getDictionary();
+
+  const [feed, friends, club, followingIds] = await Promise.all([
+    listStoriesForFeed("feed", userId),
+    listStoriesForFeed("friends", userId),
+    listStoriesForFeed("club", userId),
+    listFollowingIds(userId),
+  ]);
+  const followingSet = new Set(followingIds);
+
+  function renderStories(stories: StoryForCard[], emptyText: string) {
+    if (stories.length === 0) {
+      return (
+        <Card className="border-dashed">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">{emptyText}</CardContent>
+        </Card>
+      );
+    }
+    return (
+      <div className="flex flex-col gap-3">
+        {stories.map((story) => (
+          <StoryCard
+            key={story.id}
+            story={story}
+            viewerId={userId}
+            isFollowing={story.userId === userId ? null : followingSet.has(story.userId)}
+            t={t.community}
+            dateLocale={t.dateLocale}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
@@ -24,52 +63,23 @@ export default async function StoriesPage() {
         </CardContent>
       </Card>
 
-      {stories.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">{t.community.empty}</CardContent>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {stories.map((story) => (
-            <Card key={story.id}>
-              <CardContent className="flex flex-col gap-2 pt-6">
-                <div className="flex items-center gap-2">
-                  {story.user.image ? (
-                    <Image
-                      src={story.user.image}
-                      alt={story.user.name ?? ""}
-                      width={28}
-                      height={28}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <div className="flex size-7 items-center justify-center rounded-full bg-secondary text-xs text-secondary-foreground">
-                      {story.user.name?.[0] ?? "?"}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium">{story.user.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(story.createdAt).toLocaleDateString(t.dateLocale, {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </div>
-                <h2 className="font-heading text-lg">{story.title}</h2>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{story.content}</p>
-                {story.userId === userId && (
-                  <div className="pt-1">
-                    <StoryDeleteButton storyId={story.id} t={t.community} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <Tabs defaultValue="feed">
+        <TabsList>
+          <TabsTrigger value="feed">{t.community.tabFeed}</TabsTrigger>
+          <TabsTrigger value="friends">{t.community.tabFriends}</TabsTrigger>
+          <TabsTrigger value="club">{t.community.tabClub}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="feed" className="mt-4">
+          {renderStories(serialize(feed), t.community.empty)}
+        </TabsContent>
+        <TabsContent value="friends" className="mt-4">
+          {renderStories(serialize(friends), t.community.emptyFriends)}
+        </TabsContent>
+        <TabsContent value="club" className="mt-4">
+          {renderStories(serialize(club), t.community.emptyClub)}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

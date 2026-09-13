@@ -160,6 +160,28 @@ model User {
   voiceCallLogs VoiceCallLog[]
   swingVideos   SwingVideo[]
   playerProfile PlayerProfile?
+  likes         Like[]
+  comments      Comment[]
+  following     Follow[]       @relation("Following")
+  followers     Follow[]       @relation("Followers")
+}
+
+/**
+ * Grafo social simple: A sigue a B. Sin aprobación ni privacidad — seguir
+ * es público, como en la mayoría de apps deportivas. followerId = quien
+ * sigue, followingId = a quien sigue.
+ */
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
 }
 
 // Identidad competitiva de un jugador — deliberadamente separada de User:
@@ -486,7 +508,35 @@ model Story {
 
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes    Like[]
+  comments Comment[]
 
   @@index([createdAt])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId])
+  @@index([storyId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([storyId, createdAt])
 }
