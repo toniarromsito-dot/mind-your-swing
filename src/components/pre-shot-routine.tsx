@@ -29,7 +29,7 @@ export function PreShotRoutine({ t }: { t: Dictionary["preShotRoutine"] }) {
     <div className="fixed inset-0 z-40 flex flex-col bg-primary pt-[calc(0.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-primary-foreground">
       <div className="flex items-center justify-between px-4">
         <Link
-          href="/coach"
+          href="/aprende"
           aria-label={t.exitLabel}
           className="flex size-8 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20"
         >
@@ -77,7 +77,7 @@ export function PreShotRoutine({ t }: { t: Dictionary["preShotRoutine"] }) {
 
         {isFinal ? (
           <Link
-            href="/coach"
+            href="/aprende"
             className="flex flex-1 items-center justify-center rounded-full bg-white py-3 text-sm font-medium text-primary"
           >
             {t.playShot}

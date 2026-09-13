@@ -8,8 +8,10 @@ const es = {
   },
   nav: {
     home: "Inicio",
+    learn: "Aprende",
     play: "Jugar",
     coach: "Coach",
+    insights: "Insights",
     community: "Comunidad",
     perfil: "Perfil",
     cerrarSesion: "Cerrar sesión",
@@ -607,6 +609,13 @@ const es = {
     statusReviewed: "Revisado por Antonio",
     playAudio: "Escuchar",
   },
+  insights: {
+    title: "Insights",
+    subtitle: "Lo que dicen de verdad tus partidas y tu estado de ánimo.",
+    emptyTitle: "Todavía no hay suficientes datos",
+    emptyBody:
+      "Insights analiza tus partidas y tu ánimo a lo largo del tiempo para contarte qué está pasando de verdad en tu juego mental — no gráficas, frases concretas. Sigue jugando y registrando cómo te sientes: en cuanto haya un patrón real, aparecerá aquí.",
+  },
   community: {
     title: "Comunidad",
     subtitle:
@@ -644,8 +653,10 @@ const en: typeof es = {
   },
   nav: {
     home: "Home",
+    learn: "Learn",
     play: "Play",
     coach: "Coach",
+    insights: "Insights",
     community: "Community",
     perfil: "Profile",
     cerrarSesion: "Sign out",
@@ -1197,6 +1208,13 @@ const en: typeof es = {
     statusReviewed: "Reviewed by Antonio",
     playAudio: "Listen",
   },
+  insights: {
+    title: "Insights",
+    subtitle: "What your rounds and mood are really telling you.",
+    emptyTitle: "Not enough data yet",
+    emptyBody:
+      "Insights analyzes your rounds and mood over time to tell you what's really happening in your mental game — real sentences, not charts. Keep playing and logging how you feel: once there's a real pattern, it'll show up here.",
+  },
   community: {
     title: "Community",
     subtitle: "Share your real experience or read other players'. Nothing AI-generated: these are stories from real people.",
@@ -1233,8 +1251,10 @@ const de: typeof es = {
   },
   nav: {
     home: "Start",
+    learn: "Lernen",
     play: "Spielen",
     coach: "Coach",
+    insights: "Insights",
     community: "Community",
     perfil: "Profil",
     cerrarSesion: "Abmelden",
@@ -1835,6 +1855,13 @@ const de: typeof es = {
     statusPending: "Wartet auf manuelle Prüfung",
     statusReviewed: "Von Antonio geprüft",
     playAudio: "Anhören",
+  },
+  insights: {
+    title: "Insights",
+    subtitle: "Was deine Runden und deine Stimmung wirklich zeigen.",
+    emptyTitle: "Noch nicht genug Daten",
+    emptyBody:
+      "Insights analysiert deine Runden und deine Stimmung über die Zeit, um dir zu sagen, was in deinem mentalen Spiel wirklich passiert — konkrete Sätze, keine Diagramme. Spiel weiter und erfasse, wie du dich fühlst: Sobald es ein echtes Muster gibt, erscheint es hier.",
   },
   community: {
     title: "Community",

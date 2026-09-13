@@ -106,7 +106,7 @@ export function SwingVideoList({ videos, t, dateLocale }: { videos: SwingVideoIt
                 <div className="flex items-center justify-between">
                   <PlayFeedbackButton text={video.aiFeedback} label={t.playAudio} />
                   <Link
-                    href="/coach"
+                    href="/aprende"
                     className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                   >
                     {t.practiceLinkLabel}

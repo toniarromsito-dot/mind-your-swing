@@ -61,7 +61,7 @@ export async function submitSwingVideo(input: {
     },
   });
 
-  revalidatePath("/coach/videos");
+  revalidatePath("/aprende/videos");
   return { id: video.id, score: metrics.overallScore, aiFeedback };
 }
 
@@ -83,6 +83,6 @@ export async function submitManualFeedback(
   });
 
   revalidatePath("/admin/videos");
-  revalidatePath("/coach/videos");
+  revalidatePath("/aprende/videos");
   return { ok: true };
 }

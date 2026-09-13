@@ -29,5 +29,5 @@ export async function createMoodEntry(input: unknown) {
     },
   });
 
-  revalidatePath(gameId ? `/play/${gameId}` : "/mind");
+  revalidatePath(gameId ? `/play/${gameId}` : "/coach");
 }

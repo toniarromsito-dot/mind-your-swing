@@ -70,7 +70,7 @@ export function MindQuickCard({
               ))}
             </div>
 
-            <Link href="/mind" className="text-sm text-muted-foreground underline underline-offset-4">
+            <Link href="/coach" className="text-sm text-muted-foreground underline underline-offset-4">
               {t.talkToCoach}
             </Link>
           </div>
