@@ -164,6 +164,7 @@ model User {
   comments      Comment[]
   following     Follow[]       @relation("Following")
   followers     Follow[]       @relation("Followers")
+  tournamentRegistrations TournamentRegistration[]
 }
 
 /**
@@ -214,13 +215,36 @@ model PlayerProfile {
 }
 
 model Tournament {
-  id     String   @id @default(cuid())
-  name   String
-  course String
-  date   DateTime
+  id           String   @id @default(cuid())
+  name         String
+  course       String
+  golfCourseId String?
+  date         DateTime
+  /// Texto libre: "Stableford Individual", "Medal Play", "Parejas Better Ball"...
+  format       String?
 
-  results   TournamentResult[]
-  createdAt DateTime           @default(now())
+  golfCourse    GolfCourse?              @relation(fields: [golfCourseId], references: [id])
+  results       TournamentResult[]
+  registrations TournamentRegistration[]
+  createdAt     DateTime                 @default(now())
+}
+
+/**
+ * "Me apunto" a un torneo — intención de participar, nunca historial
+ * competitivo. Solo TournamentResult (creado por el futuro importador de
+ * resultados reales) construye el historial oficial; inscribirse aquí no
+ * crea ni toca un PlayerProfile.
+ */
+model TournamentRegistration {
+  id           String   @id @default(cuid())
+  tournamentId String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
 }
 
 // Un resultado real de un jugador en un torneo — esto es lo único que
@@ -308,8 +332,9 @@ model GolfCourse {
 
   createdAt DateTime @default(now())
 
-  holes GolfCourseHole[]
-  games Game[]
+  holes       GolfCourseHole[]
+  games       Game[]
+  tournaments Tournament[]
 }
 
 model GolfCourseHole {
