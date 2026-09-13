@@ -30,6 +30,20 @@ export function getActiveGamesForUser(userId: string) {
   });
 }
 
+/** Para la tarjeta "Última vuelta" del dashboard — la partida terminada más reciente del jugador. */
+export function getLastCompletedGameForUser(userId: string) {
+  return prisma.game.findFirst({
+    where: { status: "COMPLETED", players: { some: { userId } } },
+    orderBy: { date: "desc" },
+    include: gameWithPlayersInclude,
+  });
+}
+
+/** Para la tarjeta "Tu juego" del perfil — cuántas vueltas ha terminado el jugador en total. */
+export function getCompletedGamesCountForUser(userId: string) {
+  return prisma.game.count({ where: { status: "COMPLETED", players: { some: { userId } } } });
+}
+
 export function listGamesForUser(userId: string) {
   return prisma.game.findMany({
     where: { players: { some: { userId } } },

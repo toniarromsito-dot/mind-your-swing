@@ -1,26 +1,32 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Bell, ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/require-user";
-import { getActiveGamesForUser } from "@/lib/data/games";
+import { getLastCompletedGameForUser, getActiveGamesForUser } from "@/lib/data/games";
 import { Card, CardContent } from "@/components/ui/card";
-import { MindMark } from "@/components/mind-mark";
-import { ArrowRight, Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { MentalScoreCard } from "@/components/mental-score-card";
+import { TimeGreeting } from "@/components/time-greeting";
+import { buttonVariants } from "@/components/ui/button";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 import { prisma } from "@/lib/prisma";
 import { computeMentalScore } from "@/lib/mood";
+import { toStandingsInput } from "@/lib/games/adapt";
+import { computeStrokeStandings } from "@/lib/games/standings";
+import { cn } from "@/lib/utils";
 
 const MENTAL_SCORE_SAMPLE_SIZE = 14;
-const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus } as const;
 
 export default async function HomePage() {
   const userId = await requireUserId();
   const session = await auth();
   const { t } = await getDictionary();
   const h = t.home;
+  const firstName = session?.user.name?.split(" ")[0] ?? "";
 
-  const [activeGames, recentMoods] = await Promise.all([
+  const [lastGame, activeGames, recentMoods] = await Promise.all([
+    getLastCompletedGameForUser(userId),
     getActiveGamesForUser(userId),
     prisma.moodEntry.findMany({
       where: { userId },
@@ -29,123 +35,87 @@ export default async function HomePage() {
       select: { mood: true },
     }),
   ]);
-  const activeGame = activeGames[0] ?? null;
   const mentalScore = computeMentalScore(recentMoods);
-  const MentalTrendIcon = mentalScore ? TREND_ICON[mentalScore.trend] : null;
-  const mentalTrendLabel = mentalScore
-    ? mentalScore.trend === "up"
-      ? h.mentalTrendUp
-      : mentalScore.trend === "down"
-        ? h.mentalTrendDown
-        : h.mentalTrendFlat
-    : null;
+  const activeGame = activeGames[0] ?? null;
 
-  const secondaryCards = [
-    { href: "/mind", title: h.coachCard, body: h.coachCardBody, photo: DASHBOARD_PHOTOS.coach, isMind: true },
-    { href: "/coach", title: h.learnCard, body: h.learnCardBody, photo: DASHBOARD_PHOTOS.learn, isMind: false },
-    { href: "/community", title: h.communityCard, body: h.communityCardBody, photo: DASHBOARD_PHOTOS.community, isMind: false },
-  ];
+  let lastGameStrokes: number | null = null;
+  if (lastGame) {
+    const { players, scores } = toStandingsInput(lastGame);
+    const myPlayer = lastGame.players.find((p) => p.user.id === userId);
+    const standing = myPlayer ? computeStrokeStandings(players, scores).find((s) => s.playerId === myPlayer.id) : null;
+    lastGameStrokes = standing?.total ?? null;
+  }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
-          {t.dashboard.greeting(session?.user.name?.split(" ")[0] ?? "")}
-        </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">{h.prompt}</p>
+    <div className="flex flex-col gap-10">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-heading text-[28px] leading-tight font-semibold tracking-tight text-balance">
+            <TimeGreeting
+              fallback={t.dashboard.greeting(firstName)}
+              morning={t.dashboard.greetingMorning(firstName)}
+              afternoon={t.dashboard.greetingAfternoon(firstName)}
+              evening={t.dashboard.greetingEvening(firstName)}
+            />
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">{t.dashboard.readyToPlay}</p>
+        </div>
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground/70">
+          <Bell className="size-4" strokeWidth={1.5} />
+        </span>
       </div>
+
+      <Link
+        href={activeGame ? `/play/${activeGame.id}` : "/play/new"}
+        className={buttonVariants({ size: "lg", className: "gap-2 self-start rounded-full px-7 text-base" })}
+      >
+        {activeGame ? h.nextRoundTitle : t.dashboard.startRound}
+        <ChevronRight className="size-4" />
+      </Link>
+
+      {mentalScore && (
+        <div className="flex flex-col gap-3">
+          <h2 className="font-heading text-lg font-semibold">{h.mentalGameTitle}</h2>
+          <MentalScoreCard
+            score={mentalScore}
+            labels={{ confidence: h.confidenceLabel, focus: h.focusLabel, pressure: h.pressureLabel }}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
-        {/* Jugar es la acción principal: tarjeta dominante, no una más entre
-            cuatro iguales — "esta es mi app de golf", no "un panel de 4
-            funciones". */}
-        <Link href="/play/new" className="group">
-          <Card className="relative h-72 overflow-hidden border-none shadow-md transition-transform group-hover:-translate-y-0.5 sm:h-80">
-            <Image src={DASHBOARD_PHOTOS.play} alt="" fill sizes="100vw" className="object-cover" priority />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-            <CardContent className="relative flex h-full flex-col justify-between p-5">
-              <span className="ml-auto flex size-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
-                <ArrowRight className="size-4" />
-              </span>
-              <div>
-                <p className="font-heading text-3xl font-semibold text-white">{h.playCard}</p>
-                <p className="mt-1 text-sm text-white/80">{h.playCardBody}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Segundo plano deliberado: mismo trío, pero claramente más
-            pequeño y sin texto de cuerpo — Jugar es LA acción, esto es
-            "lo demás que también puedes hacer". */}
-        <div className="grid grid-cols-3 gap-2">
-          {secondaryCards.map((c) => (
-            <Link key={c.href} href={c.href} className="group">
-              <Card className="relative h-20 overflow-hidden border-none shadow-none transition-transform group-hover:-translate-y-0.5">
-                <Image src={c.photo} alt="" fill sizes="(min-width: 640px) 150px, 33vw" className="object-cover" />
-                <div className="absolute inset-0 bg-black/45" />
-                <CardContent className="relative flex h-full flex-col items-center justify-center gap-1 p-2">
-                  {c.isMind ? (
-                    <MindMark size="sm" />
-                  ) : (
-                    <span className="flex size-6 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
-                      <ArrowRight className="size-3" />
-                    </span>
-                  )}
-                  <p className="font-heading text-xs font-semibold text-white">{c.title}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {mentalScore && MentalTrendIcon && (
-        <Card>
-          <CardContent className="flex items-center gap-4 py-5">
-            <div>
-              <p className="font-heading text-4xl font-semibold tracking-tight">{mentalScore.score}</p>
-              <p className="text-xs text-muted-foreground uppercase">/ 100</p>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">{h.mentalGameTitle}</p>
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <MentalTrendIcon className="size-3.5" />
-                {mentalTrendLabel}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeGame && (
-        <Link href={`/play/${activeGame.id}`}>
-          <Card className="border-primary/30 bg-secondary/40 transition-colors hover:bg-secondary/60">
-            <CardContent className="flex items-center justify-between gap-4 py-5">
-              <div className="flex items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Calendar className="size-5" />
-                </span>
-                <div>
-                  <p className="text-xs font-medium tracking-wide text-primary uppercase">{h.nextRoundTitle}</p>
-                  <p className="mt-1 font-heading text-lg font-semibold">{activeGame.course}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(activeGame.date).toLocaleDateString(t.dateLocale, {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "short",
-                    })}{" "}
-                    ·{" "}
-                    {new Date(activeGame.date).toLocaleTimeString(t.dateLocale, { hour: "2-digit", minute: "2-digit" })}
-                    {activeGame.players.length > 1 ? ` · ${activeGame.players.length} ${t.play.players}` : ""}
+        <h2 className="font-heading text-lg font-semibold">{h.lastRoundTitle}</h2>
+        {lastGame ? (
+          <Link href={`/play/${lastGame.id}/resumen`}>
+            <Card className="overflow-hidden border-border/70 shadow-none transition-colors hover:bg-secondary/30">
+              <CardContent className="flex items-center gap-4 py-4">
+                <div className="relative size-14 shrink-0 overflow-hidden rounded-xl">
+                  <Image src={DASHBOARD_PHOTOS.play} alt="" fill sizes="56px" className="object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate font-heading text-base font-semibold">{lastGame.course}</p>
+                    {lastGameStrokes != null && (
+                      <p className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
+                        {lastGameStrokes} {t.summary.strokes.toLowerCase()}
+                      </p>
+                    )}
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground italic">
+                    {lastGame.insight ? lastGame.insight.split("\n")[0] : h.lastRoundInsightFallback}
                   </p>
                 </div>
-              </div>
-              <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </Link>
+        ) : (
+          <Card className={cn("border-dashed border-border/70 shadow-none")}>
+            <CardContent className="py-6 text-center text-sm text-muted-foreground">
+              {h.lastRoundInsightFallback}
             </CardContent>
           </Card>
-        </Link>
-      )}
+        )}
+      </div>
     </div>
   );
 }

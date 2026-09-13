@@ -51,25 +51,56 @@ export function averageMoodScore(entries: { mood: Mood }[]): number | null {
 
 export type MentalTrend = "up" | "down" | "flat";
 
+function trendFromScores(recentAvg: number, olderAvg: number, threshold: number): MentalTrend {
+  const diff = recentAvg - olderAvg;
+  return diff > threshold ? "up" : diff < -threshold ? "down" : "flat";
+}
+
+/** Frecuencia (0-1) de un ánimo concreto dentro de un conjunto de entradas. */
+function frequency(entries: { mood: Mood }[], moods: Mood[]): number {
+  if (entries.length === 0) return 0;
+  return entries.filter((e) => moods.includes(e.mood)).length / entries.length;
+}
+
+export type MentalScore = {
+  score: number;
+  trend: MentalTrend;
+  /** Confianza/foco/presión: derivados de la frecuencia real de cada
+   * ánimo concreto (CONFIADO/CONCENTRADO/NERVIOSO+FRUSTRADO) reciente vs.
+   * anterior — una lectura honesta de los mismos check-ins, no una
+   * métrica inventada aparte. Con pocos datos, "flat" por defecto. */
+  confidence: MentalTrend;
+  focus: MentalTrend;
+  pressure: MentalTrend;
+};
+
 /**
  * "Tu juego mental" del dashboard: una puntuación 0-100 (reescala
- * MOOD_SCORE de -2..2) + UNA tendencia general, no confianza/foco/presión
- * por separado — con solo 5 categorías de ánimo, partir eso en 3 métricas
- * distintas sería inventar precisión que los datos no tienen. `entries`
+ * MOOD_SCORE de -2..2) + tendencia general, más confianza/foco/presión
+ * como tres lentes distintas sobre el mismo humor reciente. `entries`
  * debe venir ordenado de más reciente a más antiguo.
  */
-export function computeMentalScore(entries: { mood: Mood }[]): { score: number; trend: MentalTrend } | null {
+export function computeMentalScore(entries: { mood: Mood }[]): MentalScore | null {
   const avg = averageMoodScore(entries);
   if (avg == null) return null;
   const score = Math.round(((avg + 2) / 4) * 100);
 
-  if (entries.length < 4) return { score, trend: "flat" };
+  if (entries.length < 4) {
+    return { score, trend: "flat", confidence: "flat", focus: "flat", pressure: "flat" };
+  }
 
   const mid = Math.floor(entries.length / 2);
-  const recentAvg = averageMoodScore(entries.slice(0, mid))!;
-  const olderAvg = averageMoodScore(entries.slice(mid))!;
-  const diff = recentAvg - olderAvg;
-  const trend: MentalTrend = diff > 0.3 ? "up" : diff < -0.3 ? "down" : "flat";
+  const recent = entries.slice(0, mid);
+  const older = entries.slice(mid);
 
-  return { score, trend };
+  const trend = trendFromScores(averageMoodScore(recent)!, averageMoodScore(older)!, 0.3);
+  const confidence = trendFromScores(frequency(recent, ["CONFIADO"]), frequency(older, ["CONFIADO"]), 0.15);
+  const focus = trendFromScores(frequency(recent, ["CONCENTRADO"]), frequency(older, ["CONCENTRADO"]), 0.15);
+  const pressure = trendFromScores(
+    frequency(recent, ["NERVIOSO", "FRUSTRADO"]),
+    frequency(older, ["NERVIOSO", "FRUSTRADO"]),
+    0.15
+  );
+
+  return { score, trend, confidence, focus, pressure };
 }

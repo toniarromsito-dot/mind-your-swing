@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Camera, Hand, PersonStanding, Move, Target, AlertTriangle, Flag as FlagIcon, MapPinned, BookOpen, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { VideoCard } from "@/components/video-card";
 import { MindMark } from "@/components/mind-mark";
+import { Card, CardContent } from "@/components/ui/card";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
@@ -12,25 +13,26 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const TOPIC_ICONS = [Hand, PersonStanding, Move, Target, AlertTriangle, Sparkles, MapPinned, BookOpen, FlagIcon];
 
-// Agrupación visual de los temas de fundamentos en las 5 categorías de la
-// Academia. Por índice (no por texto) para no depender de traducciones.
-// El número de temas de fundamentos NO es el mismo en todos los idiomas
-// (el inglés tiene uno más, "How to practice") — los 6 últimos del array
-// SIEMPRE son los de juego mental añadidos después (presión, rutina
-// pre-golpe, errores, confianza, enfoque, visualización), en ese orden,
-// así que su posición se calcula desde el final, no con un índice fijo.
+// Los módulos de juego mental (Aprende) reutilizan la misma fotografía ya
+// integrada en el resto de la app — nada de bancos de imágenes nuevos.
+// Se repiten cíclicamente entre los 6 módulos.
+const MENTAL_MODULE_PHOTOS = [DASHBOARD_PHOTOS.coach, DASHBOARD_PHOTOS.play, DASHBOARD_PHOTOS.learn, DASHBOARD_PHOTOS.community];
+
+// El número de temas TÉCNICOS (grip, postura...) no es el mismo en todos
+// los idiomas (el inglés tiene uno más, "How to practice") — los 6
+// últimos del array SIEMPRE son los de juego mental añadidos después
+// (presión, rutina pre-golpe, errores, confianza, enfoque, visualización),
+// en ese orden, así que se separan desde el final, no con un índice fijo.
 const MENTAL_TOPICS_COUNT = 6;
-const PRE_SHOT_ROUTINE_OFFSET_FROM_END = 5; // 2º de los 6 últimos → length - 6 + 1
+const PRE_SHOT_ROUTINE_INDEX_IN_MENTAL = 1; // 2º de los 6: presión, [rutina pre-golpe], errores...
 
 type CategoryKey = keyof Dictionary["coach"]["categoryLabels"];
-function categoryRanges(topicCount: number): { key: CategoryKey; start: number; end: number | null }[] {
-  const mentalStart = topicCount - MENTAL_TOPICS_COUNT;
+function technicalCategoryRanges(technicalCount: number): { key: CategoryKey; start: number; end: number | null }[] {
   return [
     { key: "fundamentos", start: 0, end: 3 },
     { key: "swing", start: 3, end: 5 },
     { key: "golpes", start: 5, end: 7 },
-    { key: "campo", start: 7, end: mentalStart },
-    { key: "mental", start: mentalStart, end: null },
+    { key: "campo", start: 7, end: technicalCount },
   ];
 }
 
@@ -39,6 +41,8 @@ export default async function LearnPage() {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true, email: true } });
   const { t } = await getDictionary();
   const isPro = hasProAccess(user);
+  const technicalCount = t.coach.topics.length - MENTAL_TOPICS_COUNT;
+  const mentalTopics = t.coach.topics.slice(technicalCount);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
@@ -74,12 +78,59 @@ export default async function LearnPage() {
         </div>
       </Link>
 
-      <div className="flex flex-col gap-5">
-        <h2 className="font-heading text-xl">{t.coach.academyTitle}</h2>
+      {/* La biblioteca de juego mental es el corazón de Aprender — módulos
+          con imagen propia, no una lista de texto plegable. Los temas
+          técnicos (grip, postura...) quedan debajo como referencia rápida,
+          en segundo plano. */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 className="font-heading text-xl font-semibold">{t.coach.categoryLabels.mental}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t.coach.mentalGameBody}</p>
+        </div>
 
-        {categoryRanges(t.coach.topics.length).map(({ key, start, end }) => {
+        <div className="grid grid-cols-2 gap-3">
+          {mentalTopics.map((topic, i) => {
+            const href = i === PRE_SHOT_ROUTINE_INDEX_IN_MENTAL ? "/coach/rutina" : undefined;
+            const photo = MENTAL_MODULE_PHOTOS[i % MENTAL_MODULE_PHOTOS.length];
+            const content = (
+              <Card className="h-full overflow-hidden border-border/70 py-0 shadow-none transition-transform hover:-translate-y-0.5">
+                <div className="relative h-24 w-full">
+                  <Image src={photo} alt="" fill sizes="200px" className="object-cover" />
+                </div>
+                <CardContent className="flex flex-col gap-1 p-3">
+                  <p className="font-heading text-sm font-semibold">{topic.title}</p>
+                  <p className="text-xs text-muted-foreground">{topic.body}</p>
+                </CardContent>
+              </Card>
+            );
+            return href ? (
+              <Link key={topic.title} href={href}>
+                {content}
+              </Link>
+            ) : (
+              <div key={topic.title}>{content}</div>
+            );
+          })}
+        </div>
+
+        <Link
+          href="/mind"
+          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-secondary/40"
+        >
+          <MindMark size="sm" />
+          <span className="flex-1">
+            <span className="block text-sm font-medium">{t.home.coachCard}</span>
+            <span className="block text-xs text-muted-foreground">{t.coach.mentalGameBody}</span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </Link>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        <h2 className="font-heading text-lg font-semibold text-muted-foreground">{t.coach.academyTitle}</h2>
+
+        {technicalCategoryRanges(technicalCount).map(({ key, start, end }) => {
           const topics = t.coach.topics.slice(start, end ?? t.coach.topics.length);
-          const preShotRoutineIndex = t.coach.topics.length - PRE_SHOT_ROUTINE_OFFSET_FROM_END;
           return (
             <div key={key} className="flex flex-col gap-2">
               <h3 className="text-sm font-medium text-muted-foreground">{t.coach.categoryLabels[key]}</h3>
@@ -98,39 +149,13 @@ export default async function LearnPage() {
                       <span className="flex-1 text-sm font-medium">{topic.title}</span>
                       <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
                     </summary>
-                    <div className="px-4 pb-4 pl-[3.25rem]">
-                      <p className="text-sm text-muted-foreground">{topic.body}</p>
-                      {globalIndex === preShotRoutineIndex && (
-                        <Link
-                          href="/coach/rutina"
-                          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                        >
-                          {t.preShotRoutine.practiceCta}
-                          <ChevronRight className="size-3.5" />
-                        </Link>
-                      )}
-                    </div>
+                    <p className="px-4 pb-4 pl-[3.25rem] text-sm text-muted-foreground">{topic.body}</p>
                   </details>
                 );
               })}
             </div>
           );
         })}
-
-        <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-medium text-muted-foreground">{t.coach.categoryLabels.mental}</h3>
-          <Link
-            href="/mind"
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-secondary/40"
-          >
-            <MindMark size="sm" />
-            <span className="flex-1">
-              <span className="block text-sm font-medium">{t.home.coachCard}</span>
-              <span className="block text-xs text-muted-foreground">{t.coach.mentalGameBody}</span>
-            </span>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-          </Link>
-        </div>
       </div>
 
       <div className="flex flex-col gap-6">

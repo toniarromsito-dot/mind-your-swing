@@ -9,10 +9,15 @@ import { createCheckoutSession, createPortalSession } from "@/actions/stripe";
 import { isStripeConfigured } from "@/lib/stripe";
 import { isAdminEmail, isOwnerEmail } from "@/lib/admin";
 import { getVoiceMinutesUsedThisPeriod, INCLUDED_VOICE_MINUTES } from "@/lib/billing";
+import { getCompletedGamesCountForUser } from "@/lib/data/games";
+import { computeMentalScore } from "@/lib/mood";
+import { MentalScoreCard } from "@/components/mental-score-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { fmt } from "@/lib/i18n/format";
+
+const MENTAL_SCORE_SAMPLE_SIZE = 14;
 
 export default async function ProfilePage({
   searchParams,
@@ -28,6 +33,17 @@ export default async function ProfilePage({
   const minutesUsed = await getVoiceMinutesUsedThisPeriod(userId);
   const minutesIncluded = INCLUDED_VOICE_MINUTES[user.plan];
 
+  const [roundsPlayed, recentMoods] = await Promise.all([
+    getCompletedGamesCountForUser(userId),
+    prisma.moodEntry.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: MENTAL_SCORE_SAMPLE_SIZE,
+      select: { mood: true },
+    }),
+  ]);
+  const mentalScore = computeMentalScore(recentMoods);
+
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
       <div className="flex items-center gap-4">
@@ -38,6 +54,21 @@ export default async function ProfilePage({
           <h1 className="font-heading text-2xl font-semibold tracking-tight">{user.name}</h1>
           <p className="text-sm text-muted-foreground">{user.email}</p>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div>
+          <h2 className="font-heading text-lg font-semibold">{t.perfil.yourGameTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {roundsPlayed === 1 ? t.perfil.roundsPlayedOne : fmt(t.perfil.roundsPlayedMany, { n: roundsPlayed })}
+          </p>
+        </div>
+        {mentalScore && (
+          <MentalScoreCard
+            score={mentalScore}
+            labels={{ confidence: t.home.confidenceLabel, focus: t.home.focusLabel, pressure: t.home.pressureLabel }}
+          />
+        )}
       </div>
 
       {checkout === "success" && (
