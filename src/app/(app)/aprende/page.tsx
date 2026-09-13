@@ -13,15 +13,15 @@ import {
   Sparkles,
   ChevronDown,
   ChevronRight,
-  Wind,
-  RefreshCw,
   Eye,
   Compass,
+  Gauge,
+  Trophy,
+  PlayCircle,
+  Clock,
+  Brain,
 } from "lucide-react";
 import { VideoCard } from "@/components/video-card";
-import { MindMark } from "@/components/mind-mark";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
@@ -31,19 +31,12 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const TOPIC_ICONS = [Hand, PersonStanding, Move, Target, AlertTriangle, Sparkles, MapPinned, BookOpen, FlagIcon];
 
-// Los módulos de juego mental (Aprende) reutilizan la misma fotografía ya
-// integrada en el resto de la app — nada de bancos de imágenes nuevos.
-// Se repiten cíclicamente entre los módulos.
-const MENTAL_MODULE_PHOTOS = [DASHBOARD_PHOTOS.coach, DASHBOARD_PHOTOS.play, DASHBOARD_PHOTOS.learn, DASHBOARD_PHOTOS.community];
-
-// El número de temas TÉCNICOS (grip, postura...) no es el mismo en todos
-// los idiomas (el inglés tiene uno más, "How to practice") — los 8
-// últimos del array SIEMPRE son los de juego mental añadidos después
-// (presión, rutina pre-golpe, errores, confianza, enfoque, visualización,
-// competición, últimos hoyos), en ese orden, así que se separan desde el
-// final, no con un índice fijo.
+// Los 8 temas de juego mental, en el mismo orden que el diccionario:
+// presión, rutina pre-golpe, errores, confianza, enfoque, visualización,
+// competición, últimos hoyos.
+const MENTAL_TOPIC_ICONS = [Gauge, Compass, AlertTriangle, Sparkles, Target, Eye, Trophy, FlagIcon];
 const MENTAL_TOPICS_COUNT = 8;
-const PRE_SHOT_ROUTINE_INDEX_IN_MENTAL = 1; // 2º de los 8: presión, [rutina pre-golpe], errores...
+const PRE_SHOT_ROUTINE_INDEX_IN_MENTAL = 1;
 
 type CategoryKey = keyof Dictionary["coach"]["categoryLabels"];
 function technicalCategoryRanges(technicalCount: number): { key: CategoryKey; start: number; end: number | null }[] {
@@ -55,6 +48,10 @@ function technicalCategoryRanges(technicalCount: number): { key: CategoryKey; st
   ];
 }
 
+function mentalTopicSlug(i: number) {
+  return `tema-mental-${i}`;
+}
+
 export default async function LearnPage() {
   const userId = await requireUserId();
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true, email: true } });
@@ -62,128 +59,237 @@ export default async function LearnPage() {
   const isPro = hasProAccess(user);
   const technicalCount = t.coach.topics.length - MENTAL_TOPICS_COUNT;
   const mentalTopics = t.coach.topics.slice(technicalCount);
+  const featuredTopic = mentalTopics[0]; // "Controla la presión" — el primer tema mental.
 
-  const exerciseCards = [
+  // Duración estimada de cada herramienta interactiva — una estimación
+  // razonable de cuánto se tarda en completarla (como el tiempo de una
+  // receta), no un dato de progreso personal fabricado: eso exigiría un
+  // seguimiento de sesiones que la app todavía no tiene.
+  const practiceTools = [
     {
       key: "preShotRoutine",
       href: "/aprende/rutina",
-      icon: Compass,
+      photo: DASHBOARD_PHOTOS.play,
       title: t.preShotRoutine.title,
       description: mentalTopics[PRE_SHOT_ROUTINE_INDEX_IN_MENTAL].body,
+      durationMinutes: 2,
     },
-    { key: "breathing", href: "/aprende/ejercicios/respiracion", icon: Wind, title: t.exercises.breathing.title, description: t.exercises.breathing.description },
-    { key: "mentalReset", href: "/aprende/ejercicios/reset-mental", icon: RefreshCw, title: t.exercises.mentalReset.title, description: t.exercises.mentalReset.description },
-    { key: "visualization", href: "/aprende/ejercicios/visualizacion", icon: Eye, title: t.exercises.visualization.title, description: t.exercises.visualization.description },
+    {
+      key: "mentalReset",
+      href: "/aprende/ejercicios/reset-mental",
+      photo: DASHBOARD_PHOTOS.coach,
+      title: t.exercises.mentalReset.title,
+      description: t.exercises.mentalReset.description,
+      durationMinutes: 2,
+    },
+    {
+      key: "breathing",
+      href: "/aprende/ejercicios/respiracion",
+      photo: DASHBOARD_PHOTOS.community,
+      title: t.exercises.breathing.title,
+      description: t.exercises.breathing.description,
+      durationMinutes: 3,
+    },
+    {
+      key: "visualization",
+      href: "/aprende/ejercicios/visualizacion",
+      photo: DASHBOARD_PHOTOS.learn,
+      title: t.exercises.visualization.title,
+      description: t.exercises.visualization.description,
+      durationMinutes: 3,
+    },
+  ];
+
+  // 5 categorías destacadas de acceso rápido — el resto de los 8 temas
+  // mentales sigue accesible en la lista completa de abajo, solo no
+  // tienen su propio icono en esta cuadrícula compacta.
+  const exploreTiles = [
+    { key: "mentalGame", icon: Brain, label: t.coach.categoryLabels.mental, anchor: "mental-topics" },
+    { key: "focus", icon: Target, label: mentalTopics[4].title, anchor: mentalTopicSlug(4) },
+    { key: "confidence", icon: Sparkles, label: mentalTopics[3].title, anchor: mentalTopicSlug(3) },
+    { key: "pressure", icon: Gauge, label: mentalTopics[0].title, anchor: mentalTopicSlug(0) },
+    { key: "courseStrategy", icon: FlagIcon, label: t.coach.courseStrategyLabel, anchor: mentalTopicSlug(7) },
   ];
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.coach.title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t.coach.subtitle}</p>
+      {/* 1. Cabecera editorial, igual que Home: título + tagline. */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.coach.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t.coach.subtitle}</p>
+        </div>
+        <div className="hidden shrink-0 text-right sm:block">
+          <p className="font-heading text-sm leading-tight italic">{t.coach.learnTagline}</p>
+        </div>
       </div>
 
-      {/* Los 3 pilares de Aprende, tal y como pide el producto: Vídeos,
-          Ejercicios, IA Swing — cada uno con un propósito claro y
-          distinto, en vez de todo apilado en una sola pantalla larga. */}
-      <Tabs defaultValue="videos">
-        <TabsList>
-          <TabsTrigger value="videos">{t.coach.categoryLabels.mental}</TabsTrigger>
-          <TabsTrigger value="ejercicios">{t.exercises.hubTitle}</TabsTrigger>
-          <TabsTrigger value="swing">{t.swingVideos.navLink}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="videos" className="mt-4 flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">{t.coach.mentalGameBody}</p>
-
-          <div className="flex flex-col gap-3">
-            {mentalTopics.map((topic, i) => {
-              const href = i === PRE_SHOT_ROUTINE_INDEX_IN_MENTAL ? "/aprende/rutina" : undefined;
-              const photo = MENTAL_MODULE_PHOTOS[i % MENTAL_MODULE_PHOTOS.length];
-              const content = (
-                <Card className="h-full flex-row items-stretch overflow-hidden border-border/70 gap-0 py-0 shadow-none transition-transform hover:-translate-y-0.5">
-                  <div className="relative size-24 shrink-0">
-                    <Image src={photo} alt="" fill sizes="96px" className="object-cover" />
-                  </div>
-                  <CardContent className="flex flex-1 flex-col justify-center gap-1 p-4">
-                    <p className="font-heading text-base font-semibold">{topic.title}</p>
-                    <p className="line-clamp-2 text-xs text-muted-foreground">{topic.body}</p>
-                  </CardContent>
-                </Card>
-              );
-              return href ? (
-                <Link key={topic.title} href={href}>
-                  {content}
-                </Link>
-              ) : (
-                <div key={topic.title}>{content}</div>
-              );
-            })}
+      {/* 2. Destacado — el primer tema mental (Controla la presión) como tarjeta fotográfica dominante. */}
+      <Link href="/coach" className="group block">
+        <div className="relative overflow-hidden rounded-[28px] shadow-md transition-transform group-hover:-translate-y-0.5">
+          <div className="relative h-96 w-full sm:h-[26rem]">
+            <Image
+              src={DASHBOARD_PHOTOS.play}
+              alt=""
+              fill
+              sizes="(min-width: 640px) 600px, 100vw"
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
           </div>
-
-          <Link
-            href="/coach"
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-secondary/40"
-          >
-            <MindMark size="sm" />
-            <span className="flex-1">
-              <span className="block text-sm font-medium">{t.home.coachCard}</span>
-              <span className="block text-xs text-muted-foreground">{t.coach.mentalGameBody}</span>
+          <div className="absolute top-5 right-5 max-w-[34%] text-right text-[9.5px] font-medium tracking-[0.15em] text-white/70 uppercase">
+            {t.coach.featuredFooter}
+            <span className="mt-1 block h-px w-8 bg-white/40" />
+          </div>
+          <div className="absolute inset-0 flex flex-col justify-end p-6">
+            <span className="text-xs font-semibold tracking-[0.2em] text-white/70 uppercase">
+              {t.coach.featuredEyebrow}
             </span>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-          </Link>
-        </TabsContent>
+            <p className="mt-2 max-w-[80%] font-heading text-2xl font-semibold text-white sm:max-w-md sm:text-3xl">
+              {t.coach.featuredHeadline}
+            </p>
+            <p className="mt-2 max-w-sm text-sm text-white/80">{featuredTopic.body}</p>
+            <span className="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm">
+              {t.coach.startLessonCta}
+              <ChevronRight className="size-4" />
+            </span>
+          </div>
+        </div>
+      </Link>
 
-        <TabsContent value="ejercicios" className="mt-4 flex flex-col gap-3">
-          <p className="text-sm text-muted-foreground">{t.exercises.hubSubtitle}</p>
-          {exerciseCards.map((ex) => (
-            <Link
-              key={ex.key}
-              href={ex.href}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-secondary/40"
-            >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <ex.icon className="size-4.5" />
-              </span>
+      {/* 3. Herramientas reales de práctica (rutina, reset, respiración, visualización). */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            {t.exercises.hubTitle}
+          </h2>
+        </div>
+        <div className="flex flex-col divide-y divide-border/60">
+          {practiceTools.map((tool) => (
+            <Link key={tool.key} href={tool.href} className="flex items-center gap-3 py-3.5">
+              <div className="relative size-14 shrink-0 overflow-hidden rounded-xl">
+                <Image src={tool.photo} alt="" fill sizes="56px" className="object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                  <PlayCircle className="size-5 text-white" strokeWidth={1.5} />
+                </div>
+              </div>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{ex.title}</span>
-                <span className="block truncate text-xs text-muted-foreground">{ex.description}</span>
+                <span className="block text-sm font-medium">{tool.title}</span>
+                <span className="block truncate text-xs text-muted-foreground">{tool.description}</span>
+                <span className="mt-1 flex items-center gap-1 text-[10.5px] text-muted-foreground/80">
+                  <Clock className="size-3" strokeWidth={1.5} />
+                  {tool.durationMinutes} min
+                </span>
               </span>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
             </Link>
           ))}
-        </TabsContent>
+        </div>
+      </div>
 
-        <TabsContent value="swing" className="mt-4">
-          <Link href="/aprende/videos" className="group block">
-            <div className="relative h-56 overflow-hidden rounded-3xl shadow-md transition-transform group-hover:-translate-y-0.5 sm:h-64">
-              <Image
-                src={DASHBOARD_PHOTOS.learn}
-                alt=""
-                fill
-                sizes="(min-width: 640px) 600px, 100vw"
-                className="object-cover"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-              <div className="relative flex h-full flex-col justify-between p-5">
-                <span className="ml-auto rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                  {t.swingVideos.progressPill}
+      {/* 4. Explora — 5 categorías destacadas de acceso rápido a la lista completa. */}
+      <div className="flex flex-col gap-3">
+        <h2 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          {t.coach.exploreTitle}
+        </h2>
+        <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-5">
+          {exploreTiles.map((tile) => (
+            <a
+              key={tile.key}
+              href={`#${tile.anchor}`}
+              className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/70 px-2 py-3 text-center transition-colors hover:border-primary/40"
+            >
+              <tile.icon className="size-4.5 text-primary" strokeWidth={1.5} />
+              <span className="text-[10.5px] leading-tight font-medium">{tile.label}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* 5. Juego mental — cada tema, en detalle (acordeón), con ancla para "Explora". */}
+      <div id="mental-topics" className="flex scroll-mt-20 flex-col gap-2">
+        {mentalTopics.map((topic, i) => {
+          if (i === PRE_SHOT_ROUTINE_INDEX_IN_MENTAL) {
+            const RoutineIcon = MENTAL_TOPIC_ICONS[i];
+            return (
+              <Link
+                key={topic.title}
+                href="/aprende/rutina"
+                id={mentalTopicSlug(i)}
+                className="flex scroll-mt-20 items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary hover:bg-secondary/40"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <RoutineIcon className="size-4" />
                 </span>
-                <div>
-                  <p className="font-heading text-2xl font-semibold text-white">{t.coach.analyzeSwingCard.title}</p>
-                  <p className="mt-1 text-sm text-white/80">{t.coach.analyzeSwingCard.subtitle}</p>
-                  <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-primary shadow-sm">
-                    <Camera className="size-4" />
-                    {t.coach.analyzeSwingCard.cta}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Link>
-        </TabsContent>
-      </Tabs>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium">{topic.title}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{topic.body}</span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+              </Link>
+            );
+          }
+          const Icon = MENTAL_TOPIC_ICONS[i % MENTAL_TOPIC_ICONS.length];
+          return (
+            <details
+              key={topic.title}
+              id={mentalTopicSlug(i)}
+              className="group scroll-mt-20 rounded-2xl border border-border bg-card [&::-webkit-details-marker]:hidden"
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-3 p-4">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Icon className="size-4" />
+                </span>
+                <span className="flex-1 text-sm font-medium">{topic.title}</span>
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="px-4 pb-4 pl-[3.25rem] text-sm text-muted-foreground">{topic.body}</p>
+            </details>
+          );
+        })}
+      </div>
 
+      {/* 6. IA Swing — sube tu vídeo y recibe feedback por fases (ya existente, restilizado). */}
+      <Link
+        href="/aprende/videos"
+        className="group flex flex-col gap-4 rounded-3xl border border-border/70 p-4 transition-colors hover:border-primary/40 sm:flex-row sm:items-center"
+      >
+        <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-2xl sm:h-28 sm:w-28">
+          <Image src={DASHBOARD_PHOTOS.learn} alt="" fill sizes="160px" className="object-cover" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <PlayCircle className="size-9 text-white" strokeWidth={1.5} />
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <span className="text-[10.5px] font-semibold tracking-[0.15em] text-muted-foreground uppercase">
+            {t.swingVideos.navLink}
+          </span>
+          <p className="font-heading text-xl font-semibold">{t.coach.analyzeSwingCard.title}</p>
+          <p className="text-sm text-muted-foreground">{t.coach.analyzeSwingCard.subtitle}</p>
+          <span className="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm">
+            <Camera className="size-4" />
+            {t.coach.analyzeSwingCard.cta}
+          </span>
+        </div>
+        <div className="flex shrink-0 flex-col gap-1 border-t border-border/60 pt-3 text-xs text-muted-foreground sm:border-t-0 sm:border-l sm:pt-0 sm:pl-4">
+          <span className="mb-0.5 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase">
+            {t.swingVideos.phasesTitle}
+          </span>
+          {/* Los 7 términos reales del vocabulario de fases, separando las
+              parejas Takeaway·Backswing / Transición·Bajada /
+              Impacto·Acompañamiento — que en el análisis de un vídeo
+              concreto se muestran unidas porque solo se detectan 3
+              transiciones reales, no fabricando 7 momentos medidos. */}
+          {[t.swingVideos.phaseSetup, t.swingVideos.phaseBackswing, t.swingVideos.phaseDownswing, t.swingVideos.phaseFollowThrough]
+            .flatMap((label) => label.split(" · "))
+            .map((term) => (
+              <span key={term}>{term}</span>
+            ))}
+        </div>
+      </Link>
+
+      {/* 7. Academia — fundamentos técnicos, sin cambios de contenido. */}
       <div className="flex flex-col gap-5">
         <h2 className="font-heading text-lg font-semibold text-muted-foreground">{t.coach.academyTitle}</h2>
 
@@ -216,6 +322,7 @@ export default async function LearnPage() {
         })}
       </div>
 
+      {/* 8. Vídeos reales (enlaces, nunca generados por IA). */}
       <div className="flex flex-col gap-6">
         <div>
           <h2 className="font-heading text-xl">{t.coach.videosTitle}</h2>

@@ -540,6 +540,13 @@ const es = {
       campo: "Jugar en el campo",
     },
     mentalGameBody: "Tu compañero para la parte mental del juego.",
+    learnTagline: "Los mejores jugadores nunca dejan de aprender.",
+    featuredEyebrow: "Destacado",
+    featuredHeadline: "Juega tu mejor golf bajo presión",
+    startLessonCta: "Empezar",
+    featuredFooter: "Una mente más fuerte para un juego mejor.",
+    exploreTitle: "Explora",
+    courseStrategyLabel: "Estrategia",
     topics: [
       {
         title: "El agarre (grip)",
@@ -1384,6 +1391,13 @@ const en: typeof es = {
       campo: "Playing on the course",
     },
     mentalGameBody: "Your companion for the mental side of the game.",
+    learnTagline: "Better players never stop learning.",
+    featuredEyebrow: "Featured",
+    featuredHeadline: "Play your best golf under pressure",
+    startLessonCta: "Start lesson",
+    featuredFooter: "A stronger mind for a better game.",
+    exploreTitle: "Explore",
+    courseStrategyLabel: "Strategy",
     topics: [
       { title: "The grip", body: "Rest the club against the base of the fingers of your lead hand (not the palm), with the thumb pointing down the shaft. Close the other hand so its fingers interlock with the first. A grip that's too tight tenses the arms — start soft and adjust from there." },
       { title: "Posture and setup", body: "Feet shoulder-width apart, knees slightly flexed, and bend from the hips (not the back) until your arms hang naturally. Weight should be spread evenly between both feet, not on the heels or the toes." },
@@ -2168,6 +2182,13 @@ const de: typeof es = {
       campo: "Auf dem Platz spielen",
     },
     mentalGameBody: "Dein Begleiter für die mentale Seite des Spiels.",
+    learnTagline: "Die besten Spieler hören nie auf zu lernen.",
+    featuredEyebrow: "Empfohlen",
+    featuredHeadline: "Spiele dein bestes Golf unter Druck",
+    startLessonCta: "Starten",
+    featuredFooter: "Ein stärkerer Kopf für ein besseres Spiel.",
+    exploreTitle: "Entdecken",
+    courseStrategyLabel: "Strategie",
     topics: [
       {
         title: "Der Griff",
