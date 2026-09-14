@@ -9,8 +9,6 @@ import { finishGame } from "@/actions/games";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export type ShotForView = { id: string; club: string; distanceMeters: number | null; sequence: number };
-
 type GameForView = {
   id: string;
   course: string;
@@ -19,7 +17,7 @@ type GameForView = {
   players: {
     id: string;
     user: { name: string | null; handicap: number | null };
-    scores: { holeId: string; strokes: number | null; shots: ShotForView[] }[];
+    scores: { holeId: string; strokes: number | null }[];
   }[];
 };
 
@@ -61,7 +59,6 @@ export function GameView({
           name: p.user.name ?? "Jugador",
           handicap: p.user.handicap,
           strokes: score?.strokes ?? null,
-          shots: score?.shots ?? [],
         };
       }),
     [game.players, hole.id]
