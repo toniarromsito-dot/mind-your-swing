@@ -52,23 +52,17 @@ export function AppShell({
       <Link
         href={link.href}
         className={cn(
-          "flex flex-1 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[10.5px] transition-colors",
+          "flex flex-1 flex-col items-center gap-1 py-1.5 text-[10.5px] transition-colors",
           active ? "text-primary" : "text-muted-foreground hover:text-foreground"
         )}
       >
-        <span
-          className={cn(
-            "flex size-8 items-center justify-center rounded-full transition-colors",
-            active && "bg-primary/10"
-          )}
-        >
-          {link.icon ? (
-            <link.icon className="size-[18px]" strokeWidth={active ? 2 : 1.5} />
-          ) : (
-            <MindMark size="sm" className="size-[18px] bg-transparent text-current" />
-          )}
-        </span>
-        <span className={cn(active && "font-medium")}>{link.label}</span>
+        {link.icon ? (
+          <link.icon className="size-[19px]" strokeWidth={active ? 2 : 1.5} />
+        ) : (
+          <MindMark size="sm" className="size-[19px] bg-transparent text-current" />
+        )}
+        <span className={cn(active && "font-semibold")}>{link.label}</span>
+        <span className={cn("mt-0.5 size-1 rounded-full", active ? "bg-primary" : "bg-transparent")} />
       </Link>
     );
   }
