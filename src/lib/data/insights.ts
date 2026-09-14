@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { RecoveryEvent } from "@/lib/insights";
+import { toStandingsInput } from "@/lib/games/adapt";
+import { relativeToPar } from "@/lib/golf";
 
 const MOOD_SAMPLE_SIZE = 30;
 const RECOVERY_SAMPLE_SIZE = 50;
@@ -16,6 +18,46 @@ export function getMentalTrendData(userId: string) {
     take: MOOD_SAMPLE_SIZE,
     select: { mood: true, hole: { select: { number: true } } },
   });
+}
+
+/** Check-ins de ánimo dentro de una ventana de fechas concreta — para comparar periodos reales (ej. últimos 30 días vs los 30 anteriores), nunca una comparación fabricada. */
+export function getMentalEntriesBetween(userId: string, from: Date, to: Date) {
+  return prisma.moodEntry.findMany({
+    where: { userId, createdAt: { gte: from, lt: to } },
+    orderBy: { createdAt: "desc" },
+    select: { mood: true },
+  });
+}
+
+/**
+ * Resultado (relativo al par) de cada ronda completada, en orden
+ * cronológico, con su fecha — para la gráfica "En el campo" de
+ * Insights. Reutiliza la misma lógica de standings que el resto de la
+ * app, nunca un número aparte inventado para el gráfico.
+ */
+export async function getRoundScoreTrend(userId: string, limit = 12) {
+  const games = await prisma.game.findMany({
+    where: { status: "COMPLETED", players: { some: { userId } } },
+    orderBy: { date: "desc" },
+    take: limit,
+    include: {
+      holes: { orderBy: { number: "asc" } },
+      players: { include: { user: { select: { id: true, name: true } }, scores: true } },
+    },
+  });
+
+  const points: { date: Date; relative: number }[] = [];
+  for (const game of [...games].reverse()) {
+    const myPlayer = game.players.find((p) => p.user.id === userId);
+    if (!myPlayer) continue;
+    const { scores } = toStandingsInput(game);
+    const myHoles = scores
+      .filter((s) => s.playerId === myPlayer.id)
+      .map((s) => ({ number: s.holeNumber, par: s.par, strokes: s.strokes }));
+    if (myHoles.every((h) => h.strokes == null)) continue;
+    points.push({ date: game.date, relative: relativeToPar(myHoles) });
+  }
+  return points;
 }
 
 /**

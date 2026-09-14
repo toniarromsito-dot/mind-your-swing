@@ -73,6 +73,28 @@ export function computeClosingPressureInsight(
   return { closeFrequency, restFrequency };
 }
 
+export type PercentChangeInsight = { percent: number; trend: "up" | "down" };
+
+/**
+ * Cambio porcentual real del score mental entre dos ventanas de tiempo
+ * (ej. últimos 30 días vs los 30 anteriores) — para el "+12%" de
+ * Insights. Requiere al menos una entrada en AMBAS ventanas; si falta
+ * cualquiera, no hay nada honesto que comparar.
+ */
+export function computeMentalPercentChange(
+  currentEntries: { mood: Mood }[],
+  previousEntries: { mood: Mood }[]
+): PercentChangeInsight | null {
+  const currentScore = computeMentalScore(currentEntries);
+  const previousScore = computeMentalScore(previousEntries);
+  if (!currentScore || !previousScore || previousScore.score === 0) return null;
+
+  const percent = Math.round(((currentScore.score - previousScore.score) / previousScore.score) * 100);
+  if (percent === 0) return null;
+
+  return { percent, trend: percent > 0 ? "up" : "down" };
+}
+
 export type ScoringTrendInsight = { diff: number; trend: "up" | "down" };
 
 /**
