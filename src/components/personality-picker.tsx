@@ -14,7 +14,14 @@ const PERSONALITIES: { key: CoachTone; emoji: string }[] = [
   { key: "FRIEND", emoji: "😄" },
 ];
 
-export function PersonalityPicker({ defaultValue, t }: { defaultValue: CoachTone; t: Dictionary["mind"] }) {
+export function PersonalityPicker({
+  defaultValue,
+  t,
+}: {
+  defaultValue: CoachTone;
+  /** Sin `greeting`: es una función y no se puede pasar a un Client Component. */
+  t: Omit<Dictionary["mind"], "greeting">;
+}) {
   const [isPending, startTransition] = useTransition();
 
   function select(tone: CoachTone) {

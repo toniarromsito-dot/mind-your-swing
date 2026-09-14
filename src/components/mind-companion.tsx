@@ -14,16 +14,23 @@ export function MindCompanion({
   initialMessages,
   t,
   quickPrompts,
+  autoSendMessage,
 }: {
   initialMessages: ChatMessage[];
   t: Dictionary["chat"];
   quickPrompts: readonly string[];
+  autoSendMessage?: string | null;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <CallCoach t={t} />
       <div className="min-h-0 flex-1">
-        <CoachChat initialMessages={initialMessages} t={t} quickPrompts={quickPrompts} />
+        <CoachChat
+          initialMessages={initialMessages}
+          t={t}
+          quickPrompts={quickPrompts}
+          autoSendMessage={autoSendMessage}
+        />
       </div>
     </div>
   );

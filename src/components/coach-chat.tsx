@@ -25,12 +25,15 @@ export function CoachChat({
   initialMessages,
   t,
   quickPrompts,
+  autoSendMessage,
 }: {
   gameId?: string | null;
   holeId?: string | null;
   initialMessages: { id: string; role: "USER" | "ASSISTANT"; content: string }[];
   t: Dictionary["chat"];
   quickPrompts: readonly string[];
+  /** Mensaje a enviar automáticamente al montar — viene del hub de Coach (input/chip/tema pulsado antes de que existiera conversación). Solo se envía una vez. */
+  autoSendMessage?: string | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -64,6 +67,11 @@ export function CoachChat({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (autoSendMessage) void send(autoSendMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo se dispara una vez al montar, no en cada cambio de `send`
+  }, [autoSendMessage]);
 
   async function playMessageAudio(id: string, text: string) {
     try {

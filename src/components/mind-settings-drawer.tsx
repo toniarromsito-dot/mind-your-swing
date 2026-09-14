@@ -27,7 +27,8 @@ export function MindSettingsDrawer({
   coachTone: CoachTone;
   moodTrendData: MoodPoint[];
   noMoodDataLabel: string;
-  t: Dictionary["mind"];
+  /** Sin `greeting`: es una función y no se puede pasar a un Client Component. */
+  t: Omit<Dictionary["mind"], "greeting">;
   moodCheckinT: Dictionary["moodCheckin"];
   moodLabels: Dictionary["mood"];
 }) {

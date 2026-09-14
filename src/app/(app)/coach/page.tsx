@@ -1,26 +1,29 @@
+import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getStandaloneMessages } from "@/lib/data/games";
-import { MindSettingsDrawer } from "@/components/mind-settings-drawer";
-import { MindCompanion } from "@/components/mind-companion";
-import { MindMark } from "@/components/mind-mark";
-import { moodTrend } from "@/lib/mood";
+import { CoachScreen } from "@/components/coach-screen";
+import type { CoachTopic } from "@/components/coach-hub";
+import { computeMentalScore, mentalStateFromScore, moodTrend } from "@/lib/mood";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
-/**
- * El chat es el contenido principal de esta pantalla — no una pila de
- * tarjetas con un botón que abre el chat en un cajón. Personalidad y
- * estado de ánimo viven en MindSettingsDrawer, detrás de un icono
- * pequeño en la cabecera.
- */
-export default async function MindPage() {
+const MENTAL_SCORE_SAMPLE_SIZE = 14;
+
+// 4 temas reales del juego mental (mismo contenido que Aprende), elegidos
+// por ser los más "de coaching en el momento" — nunca duplicamos los 8,
+// solo destacamos estos 4 aquí igual que hace Aprende con su cuadrícula.
+const POPULAR_TOPIC_INDICES = [1, 0, 4, 2] as const; // rutina, presión, enfoque, errores
+
+export default async function CoachPage() {
   const userId = await requireUserId();
+  const session = await auth();
   const { t } = await getDictionary();
+  const firstName = session?.user.name?.split(" ")[0] ?? "";
 
   const [user, messages, recentMoods] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: userId } }),
     getStandaloneMessages(userId),
-    prisma.moodEntry.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 10 }),
+    prisma.moodEntry.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: MENTAL_SCORE_SAMPLE_SIZE }),
   ]);
 
   const trend = moodTrend([...recentMoods].reverse(), {
@@ -28,36 +31,50 @@ export default async function MindPage() {
     checkin: t.summary.chartCheckin,
   });
 
-  return (
-    // Altura exacta del hueco libre dentro de <main>: header (4rem) + su
-    // padding superior (1.5rem) + el hueco reservado para la bottom nav
-    // (6rem) + safe areas — si no se descuenta todo, el chat crece de más
-    // y empuja el campo de texto fuera de la pantalla en vez de scrollear
-    // solo internamente.
-    <div className="mx-auto flex h-[calc(100dvh-11.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-lg flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <MindMark size="lg" />
-          <div>
-            <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.mind.title}</h1>
-            <p className="text-sm text-muted-foreground">{t.mind.subtitle}</p>
-          </div>
-        </div>
-        <MindSettingsDrawer
-          coachTone={user.coachTone}
-          moodTrendData={trend}
-          noMoodDataLabel={t.summary.noMoodData}
-          t={t.mind}
-          moodCheckinT={t.moodCheckin}
-          moodLabels={t.mood}
-        />
-      </div>
+  const mentalScore = computeMentalScore(recentMoods);
+  const mentalState = mentalScore ? mentalStateFromScore(mentalScore.score) : null;
 
-      <MindCompanion
-        initialMessages={messages.map((m) => ({ id: m.id, role: m.role, content: m.content }))}
-        t={t.chat}
-        quickPrompts={t.quickPrompts}
-      />
-    </div>
+  // t.mind.greeting es una función — hay que resolverla aquí (Server
+  // Component) y quitarla del objeto antes de pasarlo a componentes
+  // cliente, que no pueden recibir funciones como prop.
+  const greeting = t.mind.greeting(firstName);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito: es una función, no se puede pasar a un Client Component
+  const { greeting: _greetingFn, ...mindTSafe } = t.mind;
+
+  const technicalCount = t.coach.topics.length - 8;
+  const mentalTopics = t.coach.topics.slice(technicalCount);
+  const topicCategories = [t.coach.categoryLabels.mental, t.home.pressureLabel, t.home.focusLabel, t.mind.resilienceLabel];
+  const topicPhotos = [
+    "/images/coach-topic-ball.jpg",
+    "/images/coach-topic-swing.jpg",
+    "/images/coach-topic-tree.jpg",
+    "/images/coach-topic-cliff.jpg",
+  ];
+  const topics: CoachTopic[] = POPULAR_TOPIC_INDICES.map((topicIndex, i) => ({
+    title: mentalTopics[topicIndex].title,
+    body: mentalTopics[topicIndex].body,
+    category: topicCategories[i],
+    photo: topicPhotos[i],
+  }));
+
+  return (
+    <CoachScreen
+      greeting={greeting}
+      photo="/images/coach-hero.jpg"
+      mentalScore={mentalScore}
+      mentalState={mentalState}
+      topics={topics}
+      quickPrompts={t.quickPrompts}
+      initialMessages={messages.map((m) => ({ id: m.id, role: m.role, content: m.content }))}
+      coachTone={user.coachTone}
+      moodTrendData={trend}
+      hubT={mindTSafe}
+      homeT={t.home}
+      chatT={t.chat}
+      mindT={mindTSafe}
+      moodCheckinT={t.moodCheckin}
+      moodLabels={t.mood}
+      noMoodDataLabel={t.summary.noMoodData}
+    />
   );
 }
