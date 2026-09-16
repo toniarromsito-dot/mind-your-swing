@@ -544,6 +544,10 @@ const es = {
     disclaimer:
       "Esto es orientación general y no sustituye clases con un profesional certificado (PGA): cada swing es distinto, y un profesional ve en persona matices que un texto nunca podrá corregir. Este contenido es independiente de tu compañero mental, que no da indicaciones técnicas por su cuenta.",
     academyTitle: "Academia",
+    menuExercisesDescription: "Entrena aspectos concretos de tu juego.",
+    menuExploreDescription: "Los temas del juego mental, todos en un sitio.",
+    menuAcademyDescription: "Fundamentos técnicos, paso a paso.",
+    menuVideosDescription: "Tips cortos en formato vídeo.",
     analyzeSwingCard: {
       title: "Analiza tu swing",
       subtitle: "Graba tu swing y descubre qué puedes mejorar.",
@@ -1434,6 +1438,10 @@ const en: typeof es = {
     disclaimer:
       "This is general guidance and not a substitute for lessons with a certified (PGA) professional: every swing is different, and a professional sees nuances in person that text never can. This content is independent from your mental companion, which doesn't give technical guidance on its own.",
     academyTitle: "Academy",
+    menuExercisesDescription: "Train specific aspects of your game.",
+    menuExploreDescription: "Every mental-game topic, in one place.",
+    menuAcademyDescription: "Technical fundamentals, step by step.",
+    menuVideosDescription: "Short video tips.",
     analyzeSwingCard: {
       title: "Analyze your swing",
       subtitle: "Record your swing and discover what you can improve.",
@@ -2264,6 +2272,10 @@ const de: typeof es = {
     disclaimer:
       "Das ist eine allgemeine Orientierung und ersetzt keinen Unterricht bei einem zertifizierten (PGA-)Profi: Jeder Schwung ist anders, und ein Profi sieht persönlich Nuancen, die ein Text nie korrigieren kann. Dieser Inhalt ist unabhängig von deinem mentalen Begleiter, der von sich aus keine technischen Hinweise gibt.",
     academyTitle: "Akademie",
+    menuExercisesDescription: "Trainiere konkrete Aspekte deines Spiels.",
+    menuExploreDescription: "Alle Themen des mentalen Spiels an einem Ort.",
+    menuAcademyDescription: "Technische Grundlagen, Schritt für Schritt.",
+    menuVideosDescription: "Kurze Video-Tipps.",
     analyzeSwingCard: {
       title: "Schwung analysieren",
       subtitle: "Nimm deinen Schwung auf und finde heraus, was du verbessern kannst.",
