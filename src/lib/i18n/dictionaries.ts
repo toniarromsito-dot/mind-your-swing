@@ -555,6 +555,7 @@ const es = {
     menuExploreDescription: "Los temas del juego mental, todos en un sitio.",
     menuAcademyDescription: "Fundamentos técnicos, paso a paso.",
     menuVideosDescription: "Tips cortos en formato vídeo.",
+    menuLongSubtitle: "Formación, análisis y contenido para llevar tu juego al siguiente nivel.",
     analyzeSwingCard: {
       title: "Analiza tu swing",
       subtitle: "Graba tu swing y descubre qué puedes mejorar.",
@@ -1456,6 +1457,7 @@ const en: typeof es = {
     menuExploreDescription: "Every mental-game topic, in one place.",
     menuAcademyDescription: "Technical fundamentals, step by step.",
     menuVideosDescription: "Short video tips.",
+    menuLongSubtitle: "Training, analysis, and content to take your game to the next level.",
     analyzeSwingCard: {
       title: "Analyze your swing",
       subtitle: "Record your swing and discover what you can improve.",
@@ -2297,6 +2299,7 @@ const de: typeof es = {
     menuExploreDescription: "Alle Themen des mentalen Spiels an einem Ort.",
     menuAcademyDescription: "Technische Grundlagen, Schritt für Schritt.",
     menuVideosDescription: "Kurze Video-Tipps.",
+    menuLongSubtitle: "Training, Analysen und Inhalte, um dein Spiel auf die nächste Stufe zu bringen.",
     analyzeSwingCard: {
       title: "Schwung analysieren",
       subtitle: "Nimm deinen Schwung auf und finde heraus, was du verbessern kannst.",

@@ -27,10 +27,12 @@ export function AppShell({
 }) {
   const pathname = usePathname();
 
-  // Home es una pantalla de entrada inmersiva, sin cabecera ni barra
-  // inferior: navega solo desde sus propios 4 accesos grandes + la foto a
-  // pantalla completa. El resto de secciones sí llevan el chrome normal.
-  const isImmersiveHome = pathname === "/dashboard";
+  // Home y el menú de Aprende son pantallas inmersivas, sin cabecera ni
+  // barra inferior: cada una dibuja su propia marca (logo grande, flecha
+  // de atrás en Aprende) sobre la foto a pantalla completa. Las
+  // subpáginas de Aprende (ejercicios, explora...) siguen con el chrome
+  // normal — solo el menú principal es inmersivo.
+  const isImmersivePage = pathname === "/dashboard" || pathname === "/aprende";
 
   // Las 6 áreas del producto, ninguna oculta (brief: "no elimines ninguna
   // de estas áreas"), como una barra plana de peso igual — sin botón
@@ -82,7 +84,7 @@ export function AppShell({
     );
   }
 
-  if (isImmersiveHome) {
+  if (isImmersivePage) {
     return <div className="min-h-svh bg-background">{children}</div>;
   }
 

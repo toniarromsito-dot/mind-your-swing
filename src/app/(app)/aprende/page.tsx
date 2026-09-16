@@ -1,18 +1,26 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Dumbbell, Compass, Camera, GraduationCap, PlayCircle, ChevronRight } from "lucide-react";
+import {
+  Dumbbell,
+  Compass,
+  Video,
+  GraduationCap,
+  PlayCircle,
+  ArrowRight,
+  ChevronLeft,
+} from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 import { PageTransition } from "@/components/page-transition";
 
 /**
- * Aprende ya no es una página larga de scroll: es un menú de 4 tarjetas
- * (Ejercicios/Explora/Analiza tu swing/Academia) + una fila ancha
- * (Vídeos) — cada una lleva a su propia pantalla. El contenido real de
- * cada sección vive ahora en su propia ruta (ver aprende/ejercicios,
- * aprende/explora, aprende/academia, aprende/tutoriales); "Analiza tu
- * swing" sigue siendo aprende/videos (IA Swing, ya existente).
+ * Menú de Aprende, inmersivo como Home (ver isImmersivePage en
+ * app-shell.tsx): sin cabecera ni barra inferior, solo la foto a
+ * pantalla completa, el logo grande y la flecha de atrás. Cada tarjeta
+ * lleva a su propia pantalla (ver aprende/ejercicios, /explora,
+ * /academia, /tutoriales; "Analiza tu swing" sigue siendo aprende/videos,
+ * la función de IA Swing ya existente).
  */
 export default async function LearnMenuPage() {
   await requireUserId();
@@ -24,75 +32,137 @@ export default async function LearnMenuPage() {
       icon: Dumbbell,
       title: t.exercises.hubTitle,
       description: t.coach.menuExercisesDescription,
+      photo: "/images/coach-topic-ball.jpg",
     },
     {
       href: "/aprende/explora",
       icon: Compass,
       title: t.coach.exploreTitle,
       description: t.coach.menuExploreDescription,
+      photo: DASHBOARD_PHOTOS.community,
     },
     {
       href: "/aprende/videos",
-      icon: Camera,
+      icon: Video,
       title: t.swingVideos.navLink,
       description: t.coach.analyzeSwingCard.subtitle,
+      photo: DASHBOARD_PHOTOS.play,
     },
     {
       href: "/aprende/academia",
       icon: GraduationCap,
       title: t.coach.academyTitle,
       description: t.coach.menuAcademyDescription,
+      photo: DASHBOARD_PHOTOS.coach,
     },
   ];
 
   return (
     <PageTransition>
-      <div className="mx-auto flex max-w-2xl flex-col gap-5">
-        <div className="relative -mx-4 h-48 w-[calc(100%+2rem)] overflow-hidden sm:mx-0 sm:w-full sm:rounded-3xl">
-          <Image
-            src={DASHBOARD_PHOTOS.learn}
-            alt=""
-            fill
-            sizes="(min-width: 640px) 600px, 100vw"
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5" />
-          <div className="absolute inset-x-0 bottom-0 p-5">
-            <h1 className="font-heading text-3xl font-semibold text-white">{t.coach.title}</h1>
-            <p className="mt-1 text-sm text-white/80">{t.coach.subtitle}</p>
+      <div className="relative">
+        {/* Foto a pantalla completa detrás de toda la página (como Home,
+            ver isImmersivePage en app-shell.tsx), no solo detrás del hero. */}
+        <Image
+          src="/images/aprende-hero.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover object-[center_35%]"
+          priority
+        />
+        <div className="relative flex flex-col gap-4 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-8 sm:px-6">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/dashboard"
+              aria-label={t.exercises.hubTitle}
+              className="flex size-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm"
+            >
+              <ChevronLeft className="size-5" />
+            </Link>
+          </div>
+          <div className="flex flex-col leading-none">
+            <span className="font-sans text-4xl font-bold tracking-tight text-white">
+              MYS
+            </span>
+            <span className="mt-0.5 text-sm text-white/90">
+              Mind Your Swing
+            </span>
+          </div>
+          <div className="mt-4">
+            <h1 className="font-heading text-5xl font-bold text-white">
+              {t.coach.title}
+            </h1>
+            <p className="mt-1 text-lg text-white/90">{t.coach.subtitle}</p>
+            <p className="mt-3 max-w-sm text-sm text-white/80">
+              {t.coach.menuLongSubtitle}
+            </p>
+          </div>
+
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            <div className="grid grid-cols-2 gap-3">
+              {tiles.map((tile) => (
+                <Link
+                  key={tile.href}
+                  href={tile.href}
+                  className="relative flex min-h-[230px] flex-col justify-between gap-2 overflow-hidden rounded-2xl p-4 shadow-sm"
+                >
+                  <Image
+                    src={tile.photo}
+                    alt=""
+                    fill
+                    sizes="200px"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur-sm">
+                      <tile.icon className="size-5" strokeWidth={1.6} />
+                    </span>
+                    <span className="flex size-8 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm">
+                      <ArrowRight className="size-4" />
+                    </span>
+                  </div>
+                  <div className="relative z-10">
+                    <p className="text-base font-semibold text-white">
+                      {tile.title}
+                    </p>
+                    <p className="mt-1 text-xs leading-snug text-white/85">
+                      {tile.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <Link
+              href="/aprende/tutoriales"
+              className="relative flex min-h-[92px] items-center gap-3 overflow-hidden rounded-2xl p-4 shadow-sm"
+            >
+              <Image
+                src="/images/coach-topic-tree.jpg"
+                alt=""
+                fill
+                sizes="400px"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/15" />
+              <span className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur-sm">
+                <PlayCircle className="size-5" strokeWidth={1.6} />
+              </span>
+              <span className="relative z-10 min-w-0 flex-1">
+                <span className="block text-base font-semibold text-white">
+                  {t.coach.videosTitle}
+                </span>
+                <span className="block text-xs text-white/85">
+                  {t.coach.menuVideosDescription}
+                </span>
+              </span>
+              <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm">
+                <ArrowRight className="size-4" />
+              </span>
+            </Link>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {tiles.map((tile) => (
-            <Link
-              key={tile.href}
-              href={tile.href}
-              className="flex flex-col gap-2 rounded-2xl border border-border/70 p-4 transition-colors hover:border-primary/40"
-            >
-              <span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <tile.icon className="size-4.5" strokeWidth={1.5} />
-              </span>
-              <span className="text-sm font-semibold">{tile.title}</span>
-              <span className="text-xs leading-snug text-muted-foreground">{tile.description}</span>
-            </Link>
-          ))}
-        </div>
-
-        <Link
-          href="/aprende/tutoriales"
-          className="flex items-center gap-3 rounded-2xl border border-border/70 p-4 transition-colors hover:border-primary/40"
-        >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <PlayCircle className="size-4.5" strokeWidth={1.5} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold">{t.coach.videosTitle}</span>
-            <span className="block text-xs text-muted-foreground">{t.coach.menuVideosDescription}</span>
-          </span>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-        </Link>
       </div>
     </PageTransition>
   );
