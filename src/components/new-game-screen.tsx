@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, MapPin, Calendar, Users, FileText, Plus, X, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Calendar, Users, FileText, Plus, X, Search, Mail } from "lucide-react";
 import { createGame, searchPlayersToInvite, type ActionState } from "@/actions/games";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,12 @@ export function NewGameScreen({
   const [date, setDate] = useState(toDateInputValue(now));
   const [time, setTime] = useState(toTimeInputValue(now));
   const [players, setPlayers] = useState<InvitablePlayer[]>([]);
+  // Cuántos jugadores va a tener la partida en total — se elige libremente
+  // (como en el asistente antiguo), independiente de a cuántos se
+  // encuentra por nombre: los huecos que no se rellenen aquí se quedan
+  // abiertos para unirse después con el código de invitación (mismo flujo
+  // que ya existe en el lobby), nunca bloquea la partida a "tú solo".
+  const [manualCount, setManualCount] = useState(1);
   const [holeCount, setHoleCount] = useState<9 | 18>(18);
   const [mode, setMode] = useState<GameMode>("STROKE_PLAY");
 
@@ -116,7 +122,8 @@ export function NewGameScreen({
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createGame, undefined);
 
-  const playerCount = 1 + players.length;
+  const playerCount = Math.max(manualCount, 1 + players.length);
+  const openSlots = playerCount - 1 - players.length;
   const availableModes = useMemo(() => modesForPlayerCount(playerCount), [playerCount]);
 
   useEffect(() => {
@@ -147,17 +154,22 @@ export function NewGameScreen({
     if (!nextModes.includes(mode)) setMode(nextModes[0] ?? "STROKE_PLAY");
   }
 
+  function pickCount(n: number) {
+    setManualCount(n);
+    syncModeToCount(Math.max(n, 1 + players.length));
+  }
+
   function addPlayer(player: InvitablePlayer) {
     if (players.length >= 3) return;
     setPlayers((prev) => [...prev, player]);
-    syncModeToCount(playerCount + 1);
+    syncModeToCount(Math.max(manualCount, playerCount + 1));
     setPlayerQuery("");
     setPlayerResults([]);
   }
 
   function removePlayer(id: string) {
     setPlayers((prev) => prev.filter((p) => p.id !== id));
-    syncModeToCount(playerCount - 1);
+    syncModeToCount(Math.max(manualCount, playerCount - 1));
   }
 
   const combinedDate = new Date(`${date}T${time}`);
@@ -250,7 +262,20 @@ export function NewGameScreen({
                   <span className="max-w-14 truncate text-[10px] text-muted-foreground">{p.name}</span>
                 </button>
               ))}
-              {players.length < 3 && (
+              {Array.from({ length: openSlots }).map((_, i) => (
+                <button
+                  key={`open-${i}`}
+                  type="button"
+                  onClick={() => setPlayersDrawerOpen(true)}
+                  className="flex w-14 flex-col items-center gap-0.5"
+                >
+                  <span className="flex size-[34px] items-center justify-center rounded-full border-2 border-dashed border-border text-muted-foreground">
+                    <Mail className="size-3.5" />
+                  </span>
+                  <span className="max-w-14 truncate text-[10px] text-muted-foreground">{t.openSlotLabel}</span>
+                </button>
+              ))}
+              {playerCount < 4 && (
                 <button
                   type="button"
                   onClick={() => setPlayersDrawerOpen(true)}
@@ -379,7 +404,29 @@ export function NewGameScreen({
           <DrawerHeader>
             <DrawerTitle>{t.playersFieldLabel}</DrawerTitle>
           </DrawerHeader>
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">{t.howManyPlayers}</p>
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 2, 3, 4].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    disabled={n < 1 + players.length}
+                    onClick={() => pickCount(n)}
+                    className={cn(
+                      "rounded-xl border py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                      playerCount === n
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card hover:border-primary hover:bg-secondary/40"
+                    )}
+                  >
+                    {n === 1 ? t.onePlayerLabel : n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex flex-wrap gap-2">
               <span className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm">
                 <Avatar name={me.name} image={me.image} size={20} />
@@ -394,10 +441,21 @@ export function NewGameScreen({
                   </button>
                 </span>
               ))}
+              {Array.from({ length: openSlots }).map((_, i) => (
+                <span
+                  key={`open-${i}`}
+                  className="flex items-center gap-2 rounded-full border border-dashed border-border px-3 py-1.5 text-sm text-muted-foreground"
+                >
+                  <Mail className="size-3.5" />
+                  {t.openSlotLabel}
+                </span>
+              ))}
             </div>
 
-            {players.length < 3 && (
-              <>
+            {openSlots > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm font-medium">{t.playersSearchLabel}</p>
+                <p className="text-xs text-muted-foreground">{t.playersInviteHint}</p>
                 <div className="relative">
                   <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -430,7 +488,7 @@ export function NewGameScreen({
                     </button>
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </div>
           <DrawerFooter>
