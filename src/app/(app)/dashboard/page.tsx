@@ -1,18 +1,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Calendar,
-  Clock,
   Flag as FlagIcon,
   Gauge,
   ChevronRight,
+  ArrowRight,
   CalendarDays,
+  GraduationCap,
+  Users,
   TrendingUp,
   Sun,
   Target,
   Activity,
 } from "lucide-react";
-import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/require-user";
 import {
   getLastCompletedGameForUser,
@@ -20,9 +20,9 @@ import {
   getMonthlyRelativeToPar,
 } from "@/lib/data/games";
 import { getDictionary } from "@/lib/i18n/current-locale";
-import { TimeGreeting } from "@/components/time-greeting";
 import { PageTransition } from "@/components/page-transition";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
+import { MindMark } from "@/components/mind-mark";
 import { prisma } from "@/lib/prisma";
 import { computeMentalScore, mentalStateFromScore } from "@/lib/mood";
 import {
@@ -42,23 +42,22 @@ import type { LucideIcon } from "lucide-react";
 const MENTAL_SCORE_SAMPLE_SIZE = 14;
 
 /**
- * Home reproduce la referencia visual de 1 panel entregada por el
- * usuario: hero editorial con foto integrada → Próxima ronda como
- * tarjeta fotográfica dominante → Juego mental (anillo) y Última vuelta
- * en dos columnas → Tu juego este mes como lista editorial. Todo dato
+ * Home: foto real de marca a pantalla completa (home-hero-v2.jpg) con el
+ * titular y 4 accesos grandes encima (Jugar/Coach/Aprende/Comunidad,
+ * mismos destinos que la barra inferior) + la próxima vuelta si existe.
+ * Debajo, sin cambios de fondo: Juego mental (anillo) y Última vuelta en
+ * dos columnas, y Tu juego este mes como lista editorial. Todo dato
  * mostrado es real (computeMentalScore, el motor de hándicap de Fase B,
- * los insights de Fase E) — "Fairways"/"GIR" de la referencia no se
- * muestran porque la app no trackea golpe de salida ni green en
+ * los insights de Fase E) — "Fairways"/"GIR" de referencias antiguas no
+ * se muestran porque la app no trackea golpe de salida ni green en
  * regulación: se sustituyen por Putts (Score.putts, cuando existe para
  * TODOS los hoyos jugados) y la puntuación mental de esa ronda concreta,
  * nunca fabricados.
  */
 export default async function HomePage() {
   const userId = await requireUserId();
-  const session = await auth();
   const { t } = await getDictionary();
   const h = t.home;
-  const firstName = session?.user.name?.split(" ")[0] ?? "";
 
   const [lastGame, activeGames, recentMoods, monthlyRelatives] =
     await Promise.all([
@@ -85,9 +84,6 @@ export default async function HomePage() {
   const roundsThisMonth = monthlyRelatives.current.length;
 
   const activeGame = activeGames[0] ?? null;
-  const myHandicap =
-    activeGame?.players.find((p) => p.user.id === userId)?.user.handicap ??
-    null;
 
   let lastGameGross: number | null = null;
   let lastGameNet: number | null = null;
@@ -129,16 +125,6 @@ export default async function HomePage() {
   }
 
   const heroHref = activeGame ? `/play/${activeGame.id}` : "/play/new";
-  const heroEyebrow = activeGame
-    ? activeGame.started
-      ? h.inProgressEyebrow
-      : h.nextRoundEyebrow
-    : h.noRoundEyebrow;
-  const heroCta = activeGame
-    ? activeGame.started
-      ? h.continueRoundCta
-      : h.nextRoundCta
-    : t.dashboard.startRound;
 
   type MonthlyTile = {
     key: string;
@@ -191,145 +177,84 @@ export default async function HomePage() {
   return (
     <PageTransition>
       <div className="flex flex-col gap-8">
-        {/* 1. Hero editorial: eyebrow + saludo grande + foto integrada + tagline. */}
-        <section className="relative">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-primary/70 uppercase">
-            {h.eyebrow}
-          </p>
-          <div className="relative mt-3 max-w-[58%] sm:max-w-[64%]">
-            <h1 className="font-heading text-[32px] leading-[1.05] font-semibold tracking-tight text-balance sm:text-[40px]">
-              <TimeGreeting
-                fallback={t.dashboard.greeting(firstName)}
-                morning={t.dashboard.greetingMorning(firstName)}
-                afternoon={t.dashboard.greetingAfternoon(firstName)}
-                evening={t.dashboard.greetingEvening(firstName)}
-              />
-            </h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              {h.feelingPrompt}
-            </p>
-          </div>
-
-          <div
-            className="pointer-events-none absolute top-0 right-0 h-[200px] w-[46%] overflow-hidden rounded-3xl sm:w-[38%]"
-            style={{
-              maskImage:
-                "linear-gradient(to left, black 45%, transparent 100%)",
-              WebkitMaskImage:
-                "linear-gradient(to left, black 45%, transparent 100%)",
-            }}
-          >
-            <Image
-              src={DASHBOARD_PHOTOS.coach}
-              alt=""
-              fill
-              sizes="220px"
-              className="object-cover opacity-90"
-            />
-          </div>
-
-          <div className="mt-8 flex items-center gap-3">
-            <div>
-              <p className="font-heading text-base leading-tight italic">
-                {h.tagline1}
-              </p>
-              <p className="font-heading text-base leading-tight italic">
-                {h.tagline2}
-              </p>
-            </div>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-        </section>
-
-        {/* 2. Próxima ronda — tarjeta fotográfica dominante, no un botón. */}
-        <Link href={heroHref} className="group block">
-          <div className="relative overflow-hidden rounded-[28px] shadow-md transition-transform group-hover:-translate-y-0.5">
-            <div className="relative h-72 w-full sm:h-80">
-              <Image
-                src={DASHBOARD_PHOTOS.coach}
-                alt=""
-                fill
-                sizes="(min-width: 640px) 600px, 100vw"
-                className="object-cover"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
-            </div>
-
-            {activeGame && (
-              <div className="absolute top-5 right-5 flex flex-col items-end gap-1 text-right text-[9.5px] font-medium tracking-[0.25em] text-white/70 uppercase">
-                <span>{h.playTag}</span>
-                <span>{h.practiceTag}</span>
-                <span>{h.improveTag}</span>
-                <span className="mt-1 h-px w-8 bg-white/40" />
+        {/* 1. Hero a pantalla completa: foto real de marca + titular + 4 accesos grandes + próxima vuelta. */}
+        <div className="-mx-4 -mt-6 sm:-mx-6">
+          <div className="relative overflow-hidden">
+            <Image src="/images/home-hero-v2.jpg" alt="" fill sizes="(min-width: 640px) 600px, 100vw" className="object-cover" priority />
+            <div className="relative flex flex-col gap-6 px-4 pt-10 pb-6 sm:px-6">
+              <div>
+                <h1 className="font-heading text-[28px] leading-[1.1] font-semibold text-white sm:text-[32px]">
+                  {t.dashboard.heroHeadline}
+                </h1>
+                <p className="mt-2 text-sm text-white/90">{t.dashboard.heroTagline}</p>
               </div>
-            )}
 
-            <div className="absolute inset-0 flex flex-col justify-end p-6">
-              <span className="text-xs font-semibold tracking-[0.2em] text-white/70 uppercase">
-                {heroEyebrow}
-              </span>
-              {activeGame ? (
-                <>
-                  <p className="mt-2 font-heading text-3xl font-semibold text-white sm:text-4xl">
-                    {activeGame.course}
-                  </p>
-                  <div className="mt-3 flex flex-col gap-1.5 text-sm text-white/85">
-                    <span className="flex items-center gap-2">
-                      <Calendar
-                        className="size-3.5 shrink-0"
-                        strokeWidth={1.5}
-                      />
-                      {new Date(activeGame.date).toLocaleDateString(
-                        t.dateLocale,
-                        {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                        }
-                      )}
+              <div className="grid grid-cols-2 gap-3">
+                <Link href={heroHref} className="flex flex-col gap-2 rounded-2xl bg-primary p-4 text-primary-foreground shadow-lg">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-white/20">
+                    <FlagIcon className="size-4" strokeWidth={1.5} />
+                  </span>
+                  <span className="text-sm font-semibold">{t.nav.play}</span>
+                  <span className="text-xs text-primary-foreground/80">{t.dashboard.tilePlayDescription}</span>
+                  <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-white/20">
+                    <ArrowRight className="size-3.5" />
+                  </span>
+                </Link>
+                <Link href="/coach" className="flex flex-col gap-2 rounded-2xl bg-card/95 p-4 shadow-lg backdrop-blur-sm">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <MindMark size="sm" className="size-4 bg-transparent text-current" />
+                  </span>
+                  <span className="text-sm font-semibold">{t.nav.coach}</span>
+                  <span className="text-xs text-muted-foreground">{t.dashboard.tileCoachDescription}</span>
+                  <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                    <ArrowRight className="size-3.5" />
+                  </span>
+                </Link>
+                <Link href="/aprende" className="flex flex-col gap-2 rounded-2xl bg-card/95 p-4 shadow-lg backdrop-blur-sm">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <GraduationCap className="size-4" strokeWidth={1.5} />
+                  </span>
+                  <span className="text-sm font-semibold">{t.nav.learn}</span>
+                  <span className="text-xs text-muted-foreground">{t.dashboard.tileLearnDescription}</span>
+                  <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                    <ArrowRight className="size-3.5" />
+                  </span>
+                </Link>
+                <Link href="/community" className="flex flex-col gap-2 rounded-2xl bg-card/95 p-4 shadow-lg backdrop-blur-sm">
+                  <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Users className="size-4" strokeWidth={1.5} />
+                  </span>
+                  <span className="text-sm font-semibold">{t.nav.community}</span>
+                  <span className="text-xs text-muted-foreground">{t.dashboard.tileCommunityDescription}</span>
+                  <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                    <ArrowRight className="size-3.5" />
+                  </span>
+                </Link>
+              </div>
+
+              {activeGame && (
+                <Link href={heroHref} className="flex items-center gap-3 rounded-2xl bg-card/95 p-3.5 shadow-lg backdrop-blur-sm">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <CalendarDays className="size-4" strokeWidth={1.5} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">{t.dashboard.nextRoundLabel}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {activeGame.course} ·{" "}
+                      {new Date(activeGame.date).toLocaleDateString(t.dateLocale, { weekday: "long", day: "numeric", month: "short" })} ·{" "}
+                      {new Date(activeGame.date).toLocaleTimeString(t.dateLocale, { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    <span className="flex items-center gap-2">
-                      <Clock className="size-3.5 shrink-0" strokeWidth={1.5} />
-                      {new Date(activeGame.date).toLocaleTimeString(
-                        t.dateLocale,
-                        { hour: "2-digit", minute: "2-digit" }
-                      )}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <FlagIcon
-                        className="size-3.5 shrink-0"
-                        strokeWidth={1.5}
-                      />
-                      {fmt(t.summary.holesTotal, {
-                        total: activeGame.holes.length,
-                      })}
-                    </span>
-                    {myHandicap != null && (
-                      <span className="flex items-center gap-2">
-                        <Gauge
-                          className="size-3.5 shrink-0"
-                          strokeWidth={1.5}
-                        />
-                        {fmt(h.handicapShort, { n: myHandicap })}
-                      </span>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <p className="mt-2 max-w-xs text-sm text-white/80">
-                  {h.noRoundBody}
-                </p>
+                  </span>
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                    <ArrowRight className="size-3.5" />
+                  </span>
+                </Link>
               )}
-              <span className="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-primary shadow-sm">
-                {heroCta}
-                <ChevronRight className="size-4" />
-              </span>
             </div>
           </div>
-        </Link>
+        </div>
 
-        {/* 3. Juego mental (anillo) + Última vuelta — dos columnas compactas. */}
+        {/* 2. Juego mental (anillo) + Última vuelta — dos columnas compactas. */}
         <div className="grid grid-cols-2 gap-3">
           {mentalScore && mentalState ? (
             <Link
@@ -477,7 +402,7 @@ export default async function HomePage() {
           )}
         </div>
 
-        {/* 4. Tu juego este mes — cuadrícula editorial compacta, no cuatro tarjetas grandes. */}
+        {/* 3. Tu juego este mes — cuadrícula editorial compacta, no cuatro tarjetas grandes. */}
         <div className="flex flex-col gap-4 border-t border-border/70 pt-6">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-medium">{h.monthlyTitle}</h2>
