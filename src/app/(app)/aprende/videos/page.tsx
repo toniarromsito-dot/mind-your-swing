@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { BarChart3, Camera, Dumbbell } from "lucide-react";
+import Link from "next/link";
+import { BarChart3, Camera, ChevronLeft, Dumbbell } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +12,33 @@ import { ProUpsell } from "@/components/pro-upsell";
 import { MindMark } from "@/components/mind-mark";
 import { hasProAccess } from "@/lib/plan";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
+
+// Inmersiva como Coach/Aprende/Home (ver isImmersivePage en app-shell.tsx):
+// se llega aquí desde el acceso rápido "Análisis de swing" de Coach, así que
+// necesita la misma cabecera (flecha + logo grande) para no sentirse como
+// una pantalla distinta. El resto del flujo (subir vídeo, lista) es largo
+// y no cabe en una pantalla, así que aquí sí se permite scroll normal.
+function VideosHeader({ backLabel }: { backLabel: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Link
+        href="/aprende"
+        aria-label={backLabel}
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground"
+      >
+        <ChevronLeft className="size-5" />
+      </Link>
+      <div className="flex flex-col leading-none">
+        <span className="font-sans text-2xl font-bold tracking-tight text-primary">
+          MYS
+        </span>
+        <span className="mt-0.5 text-xs text-muted-foreground">
+          Mind Your Swing
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function BenefitRow({
   icon: Icon,
@@ -47,7 +75,8 @@ export default async function SwingVideosPage() {
 
   if (!hasProAccess(user)) {
     return (
-      <div className="mx-auto max-w-lg py-8">
+      <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
+        <VideosHeader backLabel={t.nav.learn} />
         <ProUpsell t={t.landing} />
       </div>
     );
@@ -56,7 +85,9 @@ export default async function SwingVideosPage() {
   const videos = await listMySwingVideos(userId);
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
+    <div className="mx-auto flex max-w-2xl flex-col gap-8 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
+      <VideosHeader backLabel={t.nav.learn} />
+
       <div>
         <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.swingVideos.heroTitle}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t.swingVideos.heroSubtitle}</p>

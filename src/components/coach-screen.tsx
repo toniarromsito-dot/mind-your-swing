@@ -161,7 +161,7 @@ export function CoachScreen({
           </button>
         </div>
 
-        <div className="mt-3 min-h-0 flex-1">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col">
           {started ? (
             <MindCompanion
               initialMessages={initialMessages}
