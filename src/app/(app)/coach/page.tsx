@@ -3,8 +3,13 @@ import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getStandaloneMessages } from "@/lib/data/games";
 import { CoachScreen } from "@/components/coach-screen";
+import { PageTransition } from "@/components/page-transition";
 import type { CoachTopic } from "@/components/coach-hub";
-import { computeMentalScore, mentalStateFromScore, moodTrend } from "@/lib/mood";
+import {
+  computeMentalScore,
+  mentalStateFromScore,
+  moodTrend,
+} from "@/lib/mood";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
 const MENTAL_SCORE_SAMPLE_SIZE = 14;
@@ -23,7 +28,11 @@ export default async function CoachPage() {
   const [user, messages, recentMoods] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: userId } }),
     getStandaloneMessages(userId),
-    prisma.moodEntry.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: MENTAL_SCORE_SAMPLE_SIZE }),
+    prisma.moodEntry.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: MENTAL_SCORE_SAMPLE_SIZE,
+    }),
   ]);
 
   const trend = moodTrend([...recentMoods].reverse(), {
@@ -32,7 +41,9 @@ export default async function CoachPage() {
   });
 
   const mentalScore = computeMentalScore(recentMoods);
-  const mentalState = mentalScore ? mentalStateFromScore(mentalScore.score) : null;
+  const mentalState = mentalScore
+    ? mentalStateFromScore(mentalScore.score)
+    : null;
 
   // t.mind.greeting es una función — hay que resolverla aquí (Server
   // Component) y quitarla del objeto antes de pasarlo a componentes
@@ -43,7 +54,12 @@ export default async function CoachPage() {
 
   const technicalCount = t.coach.topics.length - 8;
   const mentalTopics = t.coach.topics.slice(technicalCount);
-  const topicCategories = [t.coach.categoryLabels.mental, t.home.pressureLabel, t.home.focusLabel, t.mind.resilienceLabel];
+  const topicCategories = [
+    t.coach.categoryLabels.mental,
+    t.home.pressureLabel,
+    t.home.focusLabel,
+    t.mind.resilienceLabel,
+  ];
   const topicPhotos = [
     "/images/coach-topic-ball.jpg",
     "/images/coach-topic-swing.jpg",
@@ -58,23 +74,29 @@ export default async function CoachPage() {
   }));
 
   return (
-    <CoachScreen
-      greeting={greeting}
-      photo="/images/coach-hero.jpg"
-      mentalScore={mentalScore}
-      mentalState={mentalState}
-      topics={topics}
-      quickPrompts={t.quickPrompts}
-      initialMessages={messages.map((m) => ({ id: m.id, role: m.role, content: m.content }))}
-      coachTone={user.coachTone}
-      moodTrendData={trend}
-      hubT={mindTSafe}
-      homeT={t.home}
-      chatT={t.chat}
-      mindT={mindTSafe}
-      moodCheckinT={t.moodCheckin}
-      moodLabels={t.mood}
-      noMoodDataLabel={t.summary.noMoodData}
-    />
+    <PageTransition>
+      <CoachScreen
+        greeting={greeting}
+        photo="/images/coach-hero.jpg"
+        mentalScore={mentalScore}
+        mentalState={mentalState}
+        topics={topics}
+        quickPrompts={t.quickPrompts}
+        initialMessages={messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+        }))}
+        coachTone={user.coachTone}
+        moodTrendData={trend}
+        hubT={mindTSafe}
+        homeT={t.home}
+        chatT={t.chat}
+        mindT={mindTSafe}
+        moodCheckinT={t.moodCheckin}
+        moodLabels={t.mood}
+        noMoodDataLabel={t.summary.noMoodData}
+      />
+    </PageTransition>
   );
 }
