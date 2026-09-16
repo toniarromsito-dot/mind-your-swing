@@ -59,9 +59,10 @@ export default async function LearnMenuPage() {
 
   return (
     <PageTransition>
-      <div className="relative">
+      <div className="relative h-svh overflow-hidden">
         {/* Foto a pantalla completa detrás de toda la página (como Home,
-            ver isImmersivePage en app-shell.tsx), no solo detrás del hero. */}
+            ver isImmersivePage en app-shell.tsx), no solo detrás del hero.
+            h-svh + overflow-hidden: cabe todo en una pantalla, sin scroll. */}
         <Image
           src="/images/aprende-hero.jpg"
           alt=""
@@ -70,8 +71,8 @@ export default async function LearnMenuPage() {
           className="object-cover object-[center_35%]"
           priority
         />
-        <div className="relative flex flex-col gap-4 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-8 sm:px-6">
-          <div className="flex items-center justify-between">
+        <div className="relative flex h-full flex-col px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6">
+          <div className="flex shrink-0 items-center justify-between">
             <Link
               href="/dashboard"
               aria-label={t.exercises.hubTitle}
@@ -80,31 +81,31 @@ export default async function LearnMenuPage() {
               <ChevronLeft className="size-5" />
             </Link>
           </div>
-          <div className="flex flex-col leading-none">
-            <span className="font-sans text-4xl font-bold tracking-tight text-white">
+          <div className="mt-2 flex shrink-0 flex-col leading-none">
+            <span className="font-sans text-3xl font-bold tracking-tight text-white">
               MYS
             </span>
-            <span className="mt-0.5 text-sm text-white/90">
+            <span className="mt-0.5 text-xs text-white/90">
               Mind Your Swing
             </span>
           </div>
-          <div className="mt-4">
-            <h1 className="font-heading text-5xl font-bold text-white">
+          <div className="mt-3 shrink-0">
+            <h1 className="font-heading text-4xl font-bold text-white">
               {t.coach.title}
             </h1>
-            <p className="mt-1 text-lg text-white/90">{t.coach.subtitle}</p>
-            <p className="mt-3 max-w-sm text-sm text-white/80">
+            <p className="mt-1 text-base text-white/90">{t.coach.subtitle}</p>
+            <p className="mt-1.5 max-w-sm text-xs text-white/80">
               {t.coach.menuLongSubtitle}
             </p>
           </div>
 
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="mx-auto flex w-full max-w-5xl min-h-0 flex-1 flex-col gap-3 pt-4">
+            <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-3">
               {tiles.map((tile) => (
                 <Link
                   key={tile.href}
                   href={tile.href}
-                  className="relative flex min-h-[230px] flex-col justify-between gap-2 overflow-hidden rounded-2xl p-4 shadow-sm"
+                  className="relative flex min-h-0 flex-col justify-between gap-2 overflow-hidden rounded-2xl p-3 shadow-sm sm:p-4"
                 >
                   <Image
                     src={tile.photo}
@@ -136,7 +137,7 @@ export default async function LearnMenuPage() {
 
             <Link
               href="/aprende/tutoriales"
-              className="relative flex min-h-[92px] items-center gap-3 overflow-hidden rounded-2xl p-4 shadow-sm"
+              className="relative flex h-16 shrink-0 items-center gap-3 overflow-hidden rounded-2xl p-3 shadow-sm sm:h-20 sm:p-4"
             >
               <Image
                 src="/images/coach-topic-tree.jpg"
