@@ -77,7 +77,6 @@ export default async function CoachPage() {
     <PageTransition>
       <CoachScreen
         greeting={greeting}
-        photo="/images/coach-hero.jpg"
         mentalScore={mentalScore}
         mentalState={mentalState}
         topics={topics}

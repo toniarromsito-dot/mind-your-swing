@@ -24,7 +24,7 @@ export function MentalPerformanceCard({
   homeT: Dictionary["home"];
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-3xl border border-border/70 p-5">
+    <div className="bg-card/95 flex flex-col gap-4 rounded-3xl border border-border/70 p-5 shadow-sm backdrop-blur-sm">
       <div className="flex items-center justify-between gap-2">
         <h2 className="min-w-0 truncate text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
           {eyebrow}

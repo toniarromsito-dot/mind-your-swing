@@ -21,7 +21,6 @@ export type CoachTopic = { title: string; body: string; category: string; photo:
  */
 export function CoachHub({
   greeting,
-  photo,
   mentalScore,
   mentalState,
   topics,
@@ -32,7 +31,6 @@ export function CoachHub({
 }: {
   /** Ya resuelto en el servidor (t.mind.greeting(firstName)) — una función no se puede pasar a un Client Component. */
   greeting: string;
-  photo: string;
   mentalScore: MentalScore | null;
   mentalState: MentalState | null;
   topics: CoachTopic[];
@@ -49,32 +47,8 @@ export function CoachHub({
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">{t.title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t.subtitle}</p>
-        </div>
-        <div className="hidden shrink-0 text-right sm:block">
-          <p className="text-[10px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">{t.tagline}</p>
-        </div>
-      </div>
-
-      <div className="relative -mx-4 h-64 w-[calc(100%+2rem)] overflow-hidden sm:mx-0 sm:w-full sm:rounded-3xl">
-        <Image src={photo} alt="" fill sizes="(min-width: 640px) 600px, 100vw" className="object-cover" priority />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 p-6">
-          <p className="font-heading text-lg leading-tight text-white italic">
-            {t.photoTagline1}
-            <br />
-            {t.photoTagline2}
-            <br />
-            {t.photoTagline3}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4 rounded-3xl bg-secondary/50 p-5">
+    <div className="flex h-full flex-col gap-4 overflow-y-auto">
+      <div className="flex flex-col gap-4 rounded-3xl bg-card/90 p-5 shadow-sm backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <span className="text-[10.5px] font-semibold tracking-[0.15em] text-muted-foreground uppercase">
             {t.aiCoachEyebrow}
