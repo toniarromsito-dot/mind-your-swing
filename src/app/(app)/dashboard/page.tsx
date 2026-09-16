@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Flag as FlagIcon,
+  Home,
   Gauge,
   ChevronRight,
   ArrowRight,
@@ -21,8 +21,8 @@ import {
 } from "@/lib/data/games";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { PageTransition } from "@/components/page-transition";
+import { GolferSwingIcon } from "@/components/golfer-swing-icon";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
-import { MindMark } from "@/components/mind-mark";
 import { prisma } from "@/lib/prisma";
 import { computeMentalScore, mentalStateFromScore } from "@/lib/mood";
 import {
@@ -192,7 +192,7 @@ export default async function HomePage() {
               <div className="grid grid-cols-2 gap-3">
                 <Link href={heroHref} className="flex flex-col gap-2 rounded-2xl bg-primary p-4 text-primary-foreground shadow-lg">
                   <span className="flex size-8 items-center justify-center rounded-lg bg-white/20">
-                    <FlagIcon className="size-4" strokeWidth={1.5} />
+                    <GolferSwingIcon className="size-4" />
                   </span>
                   <span className="text-sm font-semibold">{t.nav.play}</span>
                   <span className="text-xs text-primary-foreground/80">{t.dashboard.tilePlayDescription}</span>
@@ -202,7 +202,7 @@ export default async function HomePage() {
                 </Link>
                 <Link href="/coach" className="flex flex-col gap-2 rounded-2xl bg-card/95 p-4 shadow-lg backdrop-blur-sm">
                   <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <MindMark size="sm" className="size-4 bg-transparent text-current" />
+                    <Home className="size-4" strokeWidth={1.5} />
                   </span>
                   <span className="text-sm font-semibold">{t.nav.coach}</span>
                   <span className="text-xs text-muted-foreground">{t.dashboard.tileCoachDescription}</span>
