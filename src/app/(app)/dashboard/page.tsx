@@ -179,53 +179,58 @@ export default async function HomePage() {
   return (
     <PageTransition>
       <div className="flex flex-col gap-8">
-        {/* 1. Hero a pantalla completa: sin cabecera ni barra inferior (ver AppShell) — solo la foto, la marca, el titular, los 4 accesos y la próxima vuelta. */}
-        <div>
-          <div className="relative overflow-hidden">
-            <Image
-              src="/images/home-hero-v2.jpg"
-              alt=""
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority
-            />
-            <div className="relative flex flex-col gap-6 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-6 sm:px-6">
-              <div className="flex items-start justify-between">
-                <div className="flex shrink-0 flex-col leading-none">
-                  <span className="font-sans text-4xl font-bold tracking-tight text-white">MYS</span>
-                  <span className="mt-0.5 text-sm text-white/90">Mind Your Swing</span>
-                </div>
-                <Link href="/perfil" aria-label={t.nav.perfil}>
-                  {session?.user.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name ?? t.nav.perfil}
-                      width={32}
-                      height={32}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <div className="flex size-8 items-center justify-center rounded-full bg-primary text-sm text-primary-foreground">
-                      {session?.user.name?.[0] ?? "?"}
-                    </div>
-                  )}
-                </Link>
+        {/* 1. Hero a pantalla completa: sin cabecera ni barra inferior (ver AppShell) — solo la foto, la marca, el titular, los 4 accesos y la próxima vuelta.
+            h-svh + overflow-hidden: cabe todo en una pantalla, sin scroll (el resto de Home sigue debajo, alcanzable con scroll si se quiere). */}
+        <div className="relative h-svh overflow-hidden">
+          <Image
+            src="/images/home-hero-v2.jpg"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
+          <div className="relative flex h-full flex-col px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6">
+            <div className="flex shrink-0 items-start justify-between">
+              <div className="flex shrink-0 flex-col leading-none">
+                <span className="font-sans text-3xl font-bold tracking-tight text-white">
+                  MYS
+                </span>
+                <span className="mt-0.5 text-xs text-white/90">
+                  Mind Your Swing
+                </span>
               </div>
+              <Link href="/perfil" aria-label={t.nav.perfil}>
+                {session?.user.image ? (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user.name ?? t.nav.perfil}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="flex size-8 items-center justify-center rounded-full bg-primary text-sm text-primary-foreground">
+                    {session?.user.name?.[0] ?? "?"}
+                  </div>
+                )}
+              </Link>
+            </div>
 
-              <div>
-                <h1 className="font-heading text-[28px] leading-[1.1] font-semibold text-white sm:text-[32px]">
-                  {t.dashboard.heroHeadline}
-                </h1>
-                <p className="mt-2 text-sm text-white/90">
-                  {t.dashboard.heroTagline}
-                </p>
-              </div>
+            <div className="mt-3 shrink-0">
+              <h1 className="font-heading text-2xl leading-[1.1] font-semibold text-white sm:text-[32px]">
+                {t.dashboard.heroHeadline}
+              </h1>
+              <p className="mt-1.5 text-sm text-white/90">
+                {t.dashboard.heroTagline}
+              </p>
+            </div>
 
+            <div className="mt-4 flex min-h-0 flex-1 flex-col justify-center gap-3">
               <div className="grid grid-cols-2 gap-3">
                 <Link
                   href={heroHref}
-                  className="flex flex-col gap-2 rounded-2xl bg-primary p-4 text-primary-foreground shadow-lg"
+                  className="flex flex-col gap-2 rounded-2xl bg-primary p-3 text-primary-foreground shadow-lg"
                 >
                   <span className="flex size-8 items-center justify-center rounded-lg bg-white/20">
                     <GolferSwingIcon className="size-4" />
@@ -240,7 +245,7 @@ export default async function HomePage() {
                 </Link>
                 <Link
                   href="/coach"
-                  className="flex flex-col gap-2 rounded-2xl bg-card/95 p-4 shadow-lg backdrop-blur-sm"
+                  className="flex flex-col gap-2 rounded-2xl bg-card/95 p-3 shadow-lg backdrop-blur-sm"
                 >
                   <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Home className="size-4" strokeWidth={1.5} />
@@ -255,7 +260,7 @@ export default async function HomePage() {
                 </Link>
                 <Link
                   href="/aprende"
-                  className="flex flex-col gap-2 rounded-2xl bg-card/95 p-4 shadow-lg backdrop-blur-sm"
+                  className="flex flex-col gap-2 rounded-2xl bg-card/95 p-3 shadow-lg backdrop-blur-sm"
                 >
                   <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <GraduationCap className="size-4" strokeWidth={1.5} />
@@ -270,7 +275,7 @@ export default async function HomePage() {
                 </Link>
                 <Link
                   href="/community"
-                  className="flex flex-col gap-2 rounded-2xl bg-card/95 p-4 shadow-lg backdrop-blur-sm"
+                  className="flex flex-col gap-2 rounded-2xl bg-card/95 p-3 shadow-lg backdrop-blur-sm"
                 >
                   <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Users className="size-4" strokeWidth={1.5} />
@@ -290,7 +295,7 @@ export default async function HomePage() {
               {activeGame && (
                 <Link
                   href={heroHref}
-                  className="flex items-center gap-3 rounded-2xl bg-card/95 p-3.5 shadow-lg backdrop-blur-sm"
+                  className="flex shrink-0 items-center gap-3 rounded-2xl bg-card/95 p-3.5 shadow-lg backdrop-blur-sm"
                 >
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <CalendarDays className="size-4" strokeWidth={1.5} />
@@ -320,8 +325,7 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-
-        {/* Sin AppShell en esta pantalla (ver isImmersiveHome), así que el
+        {/* Sin AppShell en esta pantalla (ver isImmersivePage), así que el
             padding de página que antes daba <main> hay que darlo aquí,
             solo para el contenido bajo el hero, no para la foto. */}
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6">
