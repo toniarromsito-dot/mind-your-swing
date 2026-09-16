@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { SocialLogin } from "@capgo/capacitor-social-login";
 import { MindMark } from "@/components/mind-mark";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 import { signInWithGoogle } from "@/actions/auth";
@@ -26,6 +27,7 @@ export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
   const [alreadyOnboarded, setAlreadyOnboarded] = useState<boolean | null>(null);
   const [isNative, setIsNative] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,12 +64,33 @@ export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
     scrollerRef.current?.scrollTo({ left: CTA_INDEX * (scrollerRef.current.clientWidth ?? 0), behavior: "smooth" });
   }
 
-  function signInNative() {
-    Browser.open({ url: "https://mind-your-swing.vercel.app/mobile-login" });
+  // Credential Manager nativo de Google (diálogo del sistema, sin
+  // navegador) — se inicializa una vez en NativeAppInit. Si falla (sin
+  // Google Play Services, error de red...) cae a la Custom Tab de siempre;
+  // si el usuario simplemente cancela el diálogo, no se hace nada.
+  async function signInNative() {
+    setIsSigningIn(true);
+    try {
+      const { result } = await SocialLogin.login({ provider: "google", options: { scopes: ["email", "profile"] } });
+      if (result.responseType !== "online" || !result.idToken) throw new Error("Sin idToken de Google");
+
+      const res = await fetch("/api/mobile/google-signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: result.idToken }),
+      });
+      if (!res.ok) throw new Error("El backend rechazó el idToken");
+
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setIsSigningIn(false);
+      if ((err as { code?: string })?.code === "USER_CANCELLED") return;
+      Browser.open({ url: "https://mind-your-swing.vercel.app/mobile-login" });
+    }
   }
 
   if (alreadyOnboarded) {
-    return <CtaScreen t={t} isNative={isNative} onSignInNative={signInNative} />;
+    return <CtaScreen t={t} isNative={isNative} isSigningIn={isSigningIn} onSignInNative={signInNative} />;
   }
   if (alreadyOnboarded === null) return null; // evita el parpadeo del carrusel antes de leer localStorage
 
@@ -103,7 +126,7 @@ export function NativeOnboarding({ t }: { t: Dictionary["onboarding"] }) {
           <SlideCopy title={t.slide4Title} body={t.slide4Body} light={false} />
         </Slide>
         <div className="flex h-svh w-full shrink-0 snap-start items-center justify-center bg-background">
-          <CtaScreen t={t} isNative={isNative} onSignInNative={signInNative} />
+          <CtaScreen t={t} isNative={isNative} isSigningIn={isSigningIn} onSignInNative={signInNative} />
         </div>
       </div>
 
@@ -166,10 +189,12 @@ function SlideCopy({ title, body, light = true }: { title: string; body: string;
 function CtaScreen({
   t,
   isNative,
+  isSigningIn,
   onSignInNative,
 }: {
   t: Dictionary["onboarding"];
   isNative: boolean;
+  isSigningIn: boolean;
   onSignInNative: () => void;
 }) {
   return (
@@ -182,11 +207,17 @@ function CtaScreen({
             <button
               type="button"
               onClick={onSignInNative}
-              className="w-full rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+              disabled={isSigningIn}
+              className="w-full rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              {t.continueWithGoogle}
+              {isSigningIn ? t.signingIn : t.continueWithGoogle}
             </button>
-            <button type="button" onClick={onSignInNative} className="text-sm text-muted-foreground underline">
+            <button
+              type="button"
+              onClick={onSignInNative}
+              disabled={isSigningIn}
+              className="text-sm text-muted-foreground underline disabled:opacity-60"
+            >
               {t.alreadyHaveAccount}
             </button>
           </>

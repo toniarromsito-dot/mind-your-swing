@@ -486,6 +486,7 @@ const es = {
     ctaTitle: "Empieza gratis",
     continueWithGoogle: "Continuar con Google",
     alreadyHaveAccount: "Ya tengo cuenta",
+    signingIn: "Conectando…",
   },
   moodCheckin: {
     moodCheckinLabel: "¿Cómo te sientes?",
@@ -1376,6 +1377,7 @@ const en: typeof es = {
     ctaTitle: "Start for free",
     continueWithGoogle: "Continue with Google",
     alreadyHaveAccount: "I already have an account",
+    signingIn: "Signing in…",
   },
   moodCheckin: {
     moodCheckinLabel: "How are you feeling?",
@@ -2204,6 +2206,7 @@ const de: typeof es = {
     ctaTitle: "Kostenlos starten",
     continueWithGoogle: "Mit Google fortfahren",
     alreadyHaveAccount: "Ich habe schon ein Konto",
+    signingIn: "Anmeldung läuft…",
   },
   moodCheckin: {
     moodCheckinLabel: "Wie fühlst du dich?",
