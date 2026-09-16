@@ -27,6 +27,11 @@ export function AppShell({
 }) {
   const pathname = usePathname();
 
+  // Home es una pantalla de entrada inmersiva, sin cabecera ni barra
+  // inferior: navega solo desde sus propios 4 accesos grandes + la foto a
+  // pantalla completa. El resto de secciones sí llevan el chrome normal.
+  const isImmersiveHome = pathname === "/dashboard";
+
   // Las 6 áreas del producto, ninguna oculta (brief: "no elimines ninguna
   // de estas áreas"), como una barra plana de peso igual — sin botón
   // elevado — con el activo tratado con la píldora verde bosque (ref.
@@ -53,18 +58,32 @@ export function AppShell({
         href={link.href}
         className={cn(
           "flex flex-1 flex-col items-center gap-1 py-1.5 text-[10.5px] transition-colors",
-          active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+          active
+            ? "text-primary"
+            : "text-muted-foreground hover:text-foreground"
         )}
       >
         {link.icon ? (
           <link.icon className="size-[19px]" strokeWidth={active ? 2 : 1.5} />
         ) : (
-          <MindMark size="sm" className="size-[19px] bg-transparent text-current" />
+          <MindMark
+            size="sm"
+            className="size-[19px] bg-transparent text-current"
+          />
         )}
         <span className={cn(active && "font-semibold")}>{link.label}</span>
-        <span className={cn("mt-0.5 size-1 rounded-full", active ? "bg-primary" : "bg-transparent")} />
+        <span
+          className={cn(
+            "mt-0.5 size-1 rounded-full",
+            active ? "bg-primary" : "bg-transparent"
+          )}
+        />
       </Link>
     );
+  }
+
+  if (isImmersiveHome) {
+    return <div className="min-h-svh bg-background">{children}</div>;
   }
 
   return (
@@ -97,7 +116,14 @@ export function AppShell({
                     className: "gap-2 text-sm whitespace-nowrap",
                   })}
                 >
-                  {link.icon ? <link.icon className="size-4" /> : <MindMark size="sm" className="size-4 bg-transparent text-current" />}
+                  {link.icon ? (
+                    <link.icon className="size-4" />
+                  ) : (
+                    <MindMark
+                      size="sm"
+                      className="size-4 bg-transparent text-current"
+                    />
+                  )}
                   {link.label}
                 </Link>
               );
