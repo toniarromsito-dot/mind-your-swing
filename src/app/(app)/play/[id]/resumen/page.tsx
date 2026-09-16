@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Trophy, RotateCcw } from "lucide-react";
@@ -72,42 +73,60 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
   const playedFewerHoles = holesPlayedCount > 0 && holesPlayedCount < game.totalHoles;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div className="text-center">
-        <p className="text-xs font-medium tracking-wide text-primary uppercase">{t.summary.roundFinished}</p>
-        {myStanding && (
-          <div className="mt-2">
-            <p className="font-heading text-6xl font-semibold tracking-tight">{myStanding.total}</p>
-            <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">{t.summary.strokes}</p>
-            {myNet && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t.summary.grossLabel} {myStanding.total} · {t.summary.netLabel} {myNet.net}
-              </p>
-            )}
-          </div>
-        )}
-        <h1 className="mt-4 font-heading text-xl font-semibold tracking-tight">{game.course}</h1>
-        <p className="text-sm text-muted-foreground">
-          {playedFewerHoles
-            ? fmt(t.summary.holesPlayedPartial, { played: holesPlayedCount, total: game.totalHoles })
-            : fmt(t.summary.holesTotal, { total: game.totalHoles })}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {new Date(game.date).toLocaleDateString(t.dateLocale, { day: "numeric", month: "long", year: "numeric" })}
-        </p>
+    <div className="flex h-svh flex-col overflow-hidden bg-background">
+      <div className="relative flex h-[22vh] min-h-[170px] shrink-0 flex-col items-center justify-center overflow-hidden px-6 pt-[env(safe-area-inset-top)] text-center">
+        <Image
+          src="/images/play-hero.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover object-[center_70%]"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/25 to-black/50" />
+        <div className="relative flex flex-col items-center gap-1">
+          <span className="flex size-11 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+            <Trophy className="size-5 text-white" />
+          </span>
+          <p className="font-heading text-2xl font-bold text-white">{t.summary.roundFinished}</p>
+          <p className="text-xs font-medium text-white/85">{game.course}</p>
+          <p className="text-[11px] text-white/75">
+            {playedFewerHoles
+              ? fmt(t.summary.holesPlayedPartial, { played: holesPlayedCount, total: game.totalHoles })
+              : fmt(t.summary.holesTotal, { total: game.totalHoles })}
+            {" · "}
+            {new Date(game.date).toLocaleDateString(t.dateLocale, { day: "numeric", month: "long", year: "numeric" })}
+          </p>
+        </div>
       </div>
 
+      <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-1 flex-col gap-3 overflow-hidden rounded-t-3xl bg-background px-4 pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6">
+      {myStanding && (
+        <div className="flex shrink-0 flex-col items-center gap-0.5 rounded-3xl border border-border/70 bg-card px-5 py-3.5 text-center shadow-sm">
+          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">{t.summary.strokes}</p>
+          <p className="flex items-baseline gap-2 font-heading text-4xl font-semibold tracking-tight">
+            {myStanding.total}
+            <span className="text-lg font-medium text-muted-foreground">{myStanding.relativeToPar}</span>
+          </p>
+          {myNet && (
+            <p className="text-xs text-muted-foreground">
+              {t.summary.grossLabel} {myStanding.total} · {t.summary.netLabel} {myNet.net}
+            </p>
+          )}
+        </div>
+      )}
+
       {usesTeams && winnerTeam && loserTeam ? (
-        <Card className="border-primary/40">
-          <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+        <Card className="shrink-0 border-primary/40">
+          <CardContent className="flex flex-col items-center gap-2 py-4 text-center">
             <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
               <span>{t.standings.team} A</span>
               <span>{t.summary.vsLabel}</span>
               <span>{t.standings.team} B</span>
             </div>
             <div className="flex items-center gap-2">
-              <Trophy className="size-6 text-primary" />
-              <p className="font-heading text-3xl">
+              <Trophy className="size-5 text-primary" />
+              <p className="font-heading text-2xl">
                 {t.standings.team} {winnerTeam.team}
               </p>
             </div>
@@ -115,10 +134,10 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-primary/40">
-          <CardContent className="flex flex-col items-center gap-3 py-6">
-            <Trophy className="size-7 text-primary" />
-            <div className="flex w-full max-w-xs flex-col gap-2">
+        <Card className="shrink-0 border-primary/40">
+          <CardContent className="flex flex-col items-center gap-2 py-3.5">
+            <Trophy className="size-5 text-primary" />
+            <div className="flex w-full max-w-xs flex-col gap-1.5">
               {individualStandings.map((s, i) => (
                 <div
                   key={s.playerId}
@@ -151,28 +170,28 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         </Card>
       )}
 
-      {game.bet && (loserPlayer || loserTeam) && (
-        <p className="text-center text-sm">
-          {fmt(t.summary.betLoserTemplate, {
-            name: usesTeams ? loserTeam!.playerNames.join(" y ") : loserPlayer!.name,
-            bet: game.bet,
-          })}
-        </p>
-      )}
-
-      {game.insight && (
-        <MindInsightReveal
-          insight={game.insight}
-          t={{ reviewPrompt: t.summary.reviewPrompt, reviewButton: t.summary.reviewButton, fromCoach: t.summary.fromCoach }}
-        />
-      )}
-
-      {/* Todo lo secundario (mejor/peor hoyo, historial cara-a-cara,
-          check-in de humor) vive detrás de un toque, no apilado en la
-          pantalla principal — mismo patrón que MindSettingsDrawer en
-          /mind: la pantalla de resultado enseña lo esencial de un
-          vistazo, el detalle está a un toque de distancia. */}
+      {/* Apuesta, insight de Mind, mejor/peor hoyo, historial cara-a-cara y
+          check-in de humor: todo secundario vive detrás de un toque, no
+          apilado en la pantalla principal — el insight de Mind puede ser
+          largo (texto generado), así que no puede vivir en una pantalla que
+          tiene que caber siempre en un tamaño fijo sin scroll. */}
       <DetailsDrawer label={t.summary.viewDetails}>
+        {game.bet && (loserPlayer || loserTeam) && (
+          <p className="text-center text-sm">
+            {fmt(t.summary.betLoserTemplate, {
+              name: usesTeams ? loserTeam!.playerNames.join(" y ") : loserPlayer!.name,
+              bet: game.bet,
+            })}
+          </p>
+        )}
+
+        {game.insight && (
+          <MindInsightReveal
+            insight={game.insight}
+            t={{ reviewPrompt: t.summary.reviewPrompt, reviewButton: t.summary.reviewButton, fromCoach: t.summary.fromCoach }}
+          />
+        )}
+
         {headToHead && headToHead.totalGamesTogether > 0 && (
           <Card>
             <CardContent className="flex flex-col items-center gap-1 py-4 text-center text-sm text-muted-foreground">
@@ -221,7 +240,9 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         <MoodCheckin gameId={game.id} t={t.moodCheckin} moodLabels={t.mood} />
       </DetailsDrawer>
 
-      <div className="flex gap-3">
+      <div className="min-h-0 flex-1" />
+
+      <div className="flex shrink-0 gap-3">
         <form action={createRematch.bind(null, game.id)} className="flex-1">
           <Button type="submit" variant="outline" className="w-full gap-2">
             <RotateCcw className="size-4" />
@@ -231,6 +252,7 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
         <Link href="/play" className={buttonVariants({ variant: "outline", className: "flex-1" })}>
           {t.summary.viewHistory}
         </Link>
+      </div>
       </div>
     </div>
   );

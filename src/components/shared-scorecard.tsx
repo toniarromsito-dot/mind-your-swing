@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
 import { saveHoleScores } from "@/actions/games";
 import { holeResultLabel } from "@/lib/golf";
 import { strokesReceivedOnHole } from "@/lib/games/handicap";
@@ -24,7 +23,6 @@ const STROKE_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1);
 export function SharedScorecard({
   gameId,
   hole,
-  totalHoles,
   players,
   onSaved,
   t,
@@ -32,7 +30,6 @@ export function SharedScorecard({
 }: {
   gameId: string;
   hole: { id: string; number: number; par: number; distance: number | null; index: number | null };
-  totalHoles: number;
   players: ScorecardPlayer[];
   onSaved: () => void;
   t: Dictionary["playGame"];
@@ -74,11 +71,13 @@ export function SharedScorecard({
   if (confirmation) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-        <span className="flex size-20 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Check className="size-9" />
+        <span className="flex size-24 items-center justify-center rounded-full bg-secondary">
+          <span className="font-heading text-5xl font-bold">{confirmation.strokes}</span>
         </span>
-        <p className="font-heading text-3xl font-semibold">{fmt(t.strokesCount, { n: confirmation.strokes })}</p>
-        <p className="text-lg text-muted-foreground">{confirmation.label}</p>
+        <p className="text-sm font-medium text-muted-foreground">{fmt(t.strokesCount, { n: confirmation.strokes })}</p>
+        <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+          {confirmation.label}
+        </span>
         <p className="mt-2 text-sm text-muted-foreground">{t.nextHolePrompt}</p>
       </div>
     );
@@ -86,26 +85,14 @@ export function SharedScorecard({
 
   return (
     <div className="flex flex-1 flex-col items-center gap-6 px-6 py-6 text-center">
+      {/* El título "Hoyo N/Total · Par" ya lo dibuja GameView sobre la foto
+          — aquí solo el resto de datos reales del hoyo, que la foto no
+          tiene sitio para mostrar. */}
       <div>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">
-          {fmt(t.hole, { n: hole.number, total: totalHoles })}
-        </h1>
-        <p className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-lg text-muted-foreground">
-          <span>
-            {t.par} {hole.par}
-          </span>
-          {hole.distance != null && (
-            <>
-              <span className="text-border">·</span>
-              <span>{fmt(t.distanceMeters, { n: hole.distance })}</span>
-            </>
-          )}
-          {hole.index != null && (
-            <>
-              <span className="text-border">·</span>
-              <span>{fmt(t.strokeIndexShort, { n: hole.index })}</span>
-            </>
-          )}
+        <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
+          {hole.distance != null && <span>{fmt(t.distanceMeters, { n: hole.distance })}</span>}
+          {hole.distance != null && hole.index != null && <span className="text-border">·</span>}
+          {hole.index != null && <span>{fmt(t.strokeIndexShort, { n: hole.index })}</span>}
         </p>
         {strokesReceived > 0 && (
           <span className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">

@@ -2,12 +2,14 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ChevronLeft, Loader2, MoreHorizontal } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
 import { MindQuickCard } from "@/components/mind-quick-card";
 import { finishGame } from "@/actions/games";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { fmt } from "@/lib/i18n/format";
 
 type GameForView = {
   id: string;
@@ -87,54 +89,77 @@ export function GameView({
     // Focus Mode se pinta por encima de TODO (fixed inset-0, z por delante
     // del header/bottom nav de AppShell): "durante la vuelta, la app
     // desaparece" — nada de navegación inferior ni cabecera de la app
-    // visibles ni pulsables mientras se juega. pt/pb con env(safe-area-*)
-    // porque esta pantalla ya no hereda el padding del <main> de AppShell.
-    <div className="fixed inset-0 z-40 flex flex-col bg-background pt-[calc(0.5rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-between px-3">
-        <button
-          type="button"
-          onClick={() => setHoleIndex((i) => Math.max(0, i - 1))}
-          disabled={holeIndex === 0}
-          className="flex items-center gap-1 text-sm text-muted-foreground disabled:opacity-0"
-        >
-          <ChevronLeft className="size-4" />
-          {t.previousHole}
-        </button>
-        <p className="truncate px-2 text-sm font-medium text-muted-foreground">{game.course}</p>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <MindQuickCard gameId={game.id} holeId={hole.id} t={t.quickCoach} />
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label={t.moreOptionsLabel}
-              className="flex size-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+    // visibles ni pulsables mientras se juega. Franja de foto arriba (misma
+    // identidad visual que el resto de Jugar) + hoja blanca redondeada
+    // debajo con el scorecard real, sin quitar ningún control existente
+    // (hoyo anterior, Mind, terminar antes) — solo reubicados sobre la foto.
+    <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      <div className="relative h-[26vh] min-h-[190px] shrink-0 overflow-hidden">
+        <Image
+          src="/images/play-hero.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover object-[center_70%]"
+          priority
+        />
+        <div className="relative flex h-full flex-col justify-between px-3 pt-[calc(0.5rem+env(safe-area-inset-top))] pb-5">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setHoleIndex((i) => Math.max(0, i - 1))}
+              disabled={holeIndex === 0}
+              className="flex items-center gap-1 rounded-full bg-white/15 py-1 pr-2.5 pl-1.5 text-sm text-white backdrop-blur-sm disabled:opacity-0"
             >
-              <MoreHorizontal className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem disabled>{t.keepPlaying}</DropdownMenuItem>
-              {!isLastHole && <DropdownMenuItem onClick={finishEarly}>{t.finishEarly}</DropdownMenuItem>}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <ChevronLeft className="size-4" />
+              {t.previousHole}
+            </button>
+            <p className="truncate px-2 text-xs font-medium text-white/85">{game.course}</p>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <MindQuickCard gameId={game.id} holeId={hole.id} t={t.quickCoach} />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label={t.moreOptionsLabel}
+                  className="flex size-8 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+                >
+                  <MoreHorizontal className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled>{t.keepPlaying}</DropdownMenuItem>
+                  {!isLastHole && <DropdownMenuItem onClick={finishEarly}>{t.finishEarly}</DropdownMenuItem>}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          <div className="text-center text-white">
+            <h1 className="font-heading text-3xl font-bold">
+              {fmt(t.hole, { n: hole.number, total: game.holes.length })}
+            </h1>
+            <p className="mt-0.5 text-base text-white/85">
+              {t.par} {hole.par}
+            </p>
+          </div>
         </div>
       </div>
 
-      {isFinishing ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-6 animate-spin" />
-          <p>{t.saving}</p>
-        </div>
-      ) : (
-        <SharedScorecard
-          key={hole.id}
-          gameId={game.id}
-          hole={hole}
-          totalHoles={game.holes.length}
-          players={players}
-          onSaved={goToNextHole}
-          t={t}
-          golfResult={golfResult}
-        />
-      )}
+      <div className="relative -mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)]">
+        {isFinishing ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
+            <Loader2 className="size-6 animate-spin" />
+            <p>{t.saving}</p>
+          </div>
+        ) : (
+          <SharedScorecard
+            key={hole.id}
+            gameId={game.id}
+            hole={hole}
+            players={players}
+            onSaved={goToNextHole}
+            t={t}
+            golfResult={golfResult}
+          />
+        )}
+      </div>
     </div>
   );
 }

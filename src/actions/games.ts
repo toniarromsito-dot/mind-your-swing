@@ -39,6 +39,7 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     date: formData.get("date"),
     goal: formData.get("goal") ?? "",
     holeCount: formData.get("holeCount") || 18,
+    playerIds: formData.getAll("playerIds").filter((v): v is string => typeof v === "string" && v.length > 0),
   };
 
   const parsed = createGameSchema.safeParse(raw);
@@ -46,7 +47,7 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const { playerCount, mode, courseId, course, date, goal, holeCount } = parsed.data;
+  const { playerCount, mode, courseId, course, date, goal, holeCount, playerIds } = parsed.data;
 
   let holesData: { number: number; par: number; index: number | null; distance: number | null }[];
   let courseName: string;
@@ -74,6 +75,15 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     holesData = holesData.slice(0, 9);
   }
 
+  // Jugadores reales elegidos por nombre al crear (además del creador),
+  // deduplicados y recortados a playerCount - 1: se añaden directamente
+  // como GamePlayer, igual que si ya hubieran usado el código de invitación.
+  const extraPlayerIds = [...new Set(playerIds ?? [])]
+    .filter((id) => id !== session.user.id)
+    .slice(0, Math.max(0, playerCount - 1));
+  const usesTeams = TEAM_MODES.includes(mode);
+  const allPlayerIds = [session.user.id, ...extraPlayerIds];
+
   // started queda en su default (false): la partida arranca en el lobby,
   // no directamente en el scorecard — ver /play/[id]/page.tsx.
   const game = await prisma.game.create({
@@ -88,13 +98,40 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
       inviteCode: generateInviteCode(),
       holes: { create: holesData },
       players: {
-        create: { userId: session.user.id, team: TEAM_MODES.includes(mode) ? "A" : null },
+        create: allPlayerIds.map((userId, i) => ({
+          userId,
+          // Mismo reparto que joinGame: los 2 primeros al equipo A, el resto al B.
+          team: usesTeams ? (i < 2 ? "A" : "B") : null,
+        })),
       },
     },
   });
 
   revalidatePath("/play");
   redirect(`/play/${game.id}`);
+}
+
+/** Buscar jugadores reales por nombre al crear una partida (paso "Jugadores"), para añadirlos directamente sin código de invitación. */
+export async function searchPlayersToInvite(query: string) {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+
+  return prisma.user.findMany({
+    where: { id: { not: session.user.id }, name: { contains: trimmed, mode: "insensitive" } },
+    orderBy: { name: "asc" },
+    take: 8,
+    select: { id: true, name: true, image: true, handicap: true },
+  });
+}
+
+/** Del formulario de "Unirte a una partida" con código escrito a mano: solo redirige a la página que ya resuelve el código (/play/join/[code]), sin unir aquí. */
+export async function goToJoinByCode(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const code = String(formData.get("code") ?? "").trim();
+  if (!code) return { error: "missingCode" };
+  redirect(`/play/join/${encodeURIComponent(code)}`);
 }
 
 export async function joinGame(inviteCode: string) {

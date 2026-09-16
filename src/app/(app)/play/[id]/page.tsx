@@ -19,16 +19,29 @@ export default async function GamePage({ params }: PageProps<"/play/[id]">) {
   const { t } = await getDictionary();
 
   if (!game.started) {
+    const totalPar = game.holes.reduce((sum, h) => sum + h.par, 0);
     return (
       <GameLobby
         gameId={game.id}
         course={game.course}
+        totalHoles={game.holes.length}
+        totalPar={totalPar}
+        date={game.date.toISOString()}
         inviteCode={game.inviteCode}
         isSolo={game.mode === "SOLO"}
         playerCount={game.playerCount}
-        players={game.players.map((p) => ({ id: p.id, name: p.user.name ?? "Jugador", image: p.user.image }))}
+        players={game.players.map((p, i) => ({
+          id: p.id,
+          name: p.user.name ?? "Jugador",
+          image: p.user.image,
+          handicap: p.user.handicap,
+          isCreator: i === 0,
+        }))}
+        modeLabel={t.newGame.modeLabels[game.mode]}
         bet={game.bet}
         t={t.lobby}
+        playT={t.play}
+        dateLocale={t.dateLocale}
         moodLabels={t.mood}
         moodCheckinT={t.moodCheckin}
       />

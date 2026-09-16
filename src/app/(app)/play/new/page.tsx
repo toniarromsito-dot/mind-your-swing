@@ -1,17 +1,28 @@
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { listDemoCourses } from "@/lib/data/games";
-import { GameWizard } from "@/components/game-wizard";
+import { NewGameScreen } from "@/components/new-game-screen";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { hasProAccess } from "@/lib/plan";
 
 export default async function NewGamePage() {
   const userId = await requireUserId();
   const [user, courses] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true, email: true } }),
+    prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { plan: true, email: true, name: true, image: true, handicap: true },
+    }),
     listDemoCourses(),
   ]);
   const { t } = await getDictionary();
 
-  return <GameWizard courses={courses} t={t.newGame} isPro={hasProAccess(user)} />;
+  return (
+    <NewGameScreen
+      courses={courses}
+      t={t.newGame}
+      playT={t.play}
+      isPro={hasProAccess(user)}
+      me={{ name: user.name, image: user.image, handicap: user.handicap }}
+    />
+  );
 }

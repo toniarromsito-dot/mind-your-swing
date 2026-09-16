@@ -5,6 +5,7 @@ import { relativeToPar } from "@/lib/golf";
 
 const gameWithPlayersInclude = {
   players: {
+    orderBy: { joinedAt: "asc" as const },
     include: {
       user: { select: { id: true, name: true, image: true, handicap: true } },
       scores: { include: { shots: { orderBy: { sequence: "asc" as const } } } },

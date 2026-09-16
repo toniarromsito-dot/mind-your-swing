@@ -30,6 +30,9 @@ export const createGameSchema = z.object({
   date: z.coerce.date(),
   goal: z.string().trim().max(300).optional().or(z.literal("")),
   holeCount: z.coerce.number().int().refine((v) => v === 9 || v === 18, "Elige 9 o 18 hoyos").default(18),
+  // Jugadores reales elegidos por nombre al crear (además del creador) —
+  // se añaden como GamePlayer directamente, sin pasar por invitación.
+  playerIds: z.array(z.string().min(1)).max(3).optional(),
 }).refine((v) => v.courseId || v.course, { message: "Elige un campo" });
 
 // Scorecard compartido: cualquier jugador de la partida puede anotar el

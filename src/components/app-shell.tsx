@@ -27,19 +27,23 @@ export function AppShell({
 }) {
   const pathname = usePathname();
 
-  // Home, el menú de Aprende y Coach son pantallas inmersivas, sin
-  // cabecera ni barra inferior: cada una dibuja su propia marca (logo
-  // grande, flecha de atrás salvo en Home) sobre la foto a pantalla
-  // completa. /aprende/videos (Análisis de swing) también lo es, aunque
-  // sin foto de fondo: se llega desde el acceso rápido de Coach y necesita
-  // la misma cabecera para no sentirse como una pantalla distinta. El
-  // resto de subpáginas de Aprende (ejercicios, explora...) sigue con el
-  // chrome normal.
+  // Home, el menú de Aprende, Coach y el hub de Jugar son pantallas
+  // inmersivas, sin cabecera ni barra inferior: cada una dibuja su propia
+  // marca (logo grande, flecha de atrás salvo en Home) sobre la foto a
+  // pantalla completa. /aprende/videos y /play/join también lo son, aunque
+  // no son las pantallas principales: se llega a ellas desde un acceso
+  // rápido de una pantalla inmersiva y necesitan la misma cabecera para no
+  // sentirse como una pantalla distinta. El resto de subpáginas (ejercicios
+  // de Aprende, historial de Jugar...) sigue con el chrome normal.
   const isImmersivePage =
     pathname === "/dashboard" ||
     pathname === "/aprende" ||
     pathname === "/coach" ||
-    pathname === "/aprende/videos";
+    pathname === "/aprende/videos" ||
+    pathname === "/play" ||
+    pathname === "/play/join" ||
+    pathname === "/play/new" ||
+    (pathname.startsWith("/play/") && pathname.endsWith("/resumen"));
 
   // Las 6 áreas del producto, ninguna oculta (brief: "no elimines ninguna
   // de estas áreas"), como una barra plana de peso igual — sin botón
