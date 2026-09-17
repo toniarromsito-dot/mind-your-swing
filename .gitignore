@@ -58,3 +58,12 @@ next-env.d.ts
 
 .env*
 .vercel
+
+# Claude Code scratch files (throwaway debug/verification scripts, not source)
+/.claude/scratchpad/
+
+# IDE project settings
+.idea/
+
+# built app binaries (delivered ad hoc, not app assets — not served from public/)
+*.apk
