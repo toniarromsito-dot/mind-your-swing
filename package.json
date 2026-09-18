@@ -16,6 +16,7 @@
     "db:test:migrate": "dotenv -e .env.test -- prisma migrate deploy",
     "db:seed:golf-mallorca": "node scripts/seed-mallorca-golf.mjs",
     "db:import:golf-mallorca-verified": "node scripts/import-mallorca-golf-verified.mjs",
+    "db:import:golf-mallorca-pending": "node scripts/import-mallorca-golf-pending-layouts.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",

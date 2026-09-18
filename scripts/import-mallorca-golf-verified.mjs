@@ -87,8 +87,11 @@ async function importEntry(entry) {
   }
 
   const t = entry.reference_tee;
-  const existingTee = await prisma.golfCourseTee.findUnique({
-    where: { layoutId_name: { layoutId: layout.id, name: t.name } },
+  // findFirst en vez de findUnique: la clave única de GolfCourseTee incluye
+  // `category`, que aquí puede ser null, y findUnique no admite null en un
+  // campo de una unique compuesta (ver import-mallorca-golf-pending-layouts.mjs).
+  const existingTee = await prisma.golfCourseTee.findFirst({
+    where: { layoutId: layout.id, name: t.name, category: t.sex ?? null },
   });
   if (existingTee) {
     return {

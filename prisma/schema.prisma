@@ -400,7 +400,11 @@ model GolfCourseTee {
   layout GolfCourseLayout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
   holes  GolfCourseTeeHole[]
 
-  @@unique([layoutId, name])
+  // Algunos recorridos (p. ej. Palma Pitch & Putt) publican el mismo
+  // nombre de tee ("VERDES") con dos valoraciones oficiales distintas por
+  // categoría (Hombres/Mujeres) — la clave de unicidad incluye `category`
+  // para que ambas convivan como filas separadas en vez de pisarse.
+  @@unique([layoutId, name, category])
 }
 
 /// Detalle hoyo a hoyo de UN tee concreto — cada tee tiene su propia fila
