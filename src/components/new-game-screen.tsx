@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, MapPin, Calendar, Users, FileText, Plus, X, Search, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Calendar, Users, FileText, Plus, X, Search, Mail, Share2 } from "lucide-react";
 import { createGame, searchPlayersToInvite, type ActionState } from "@/actions/games";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -119,8 +119,23 @@ export function NewGameScreen({
   const [playerQuery, setPlayerQuery] = useState("");
   const [playerResults, setPlayerResults] = useState<InvitablePlayer[]>([]);
   const [isSearching, startSearching] = useTransition();
+  const [inviteBlocked, setInviteBlocked] = useState(false);
 
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createGame, undefined);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // El código de invitación solo existe una vez creada la partida — "invitar
+  // ya" desde este paso adelanta el mismo envío que hace el botón "Crear",
+  // así se aterriza directo en el lobby (/play/[id]) donde el botón
+  // "Invitar" real (WhatsApp/email) ya funciona, sin duplicar esa lógica aquí.
+  function handleInviteNow() {
+    if (!selectedCourse && !freeTextCourse.trim()) {
+      setInviteBlocked(true);
+      return;
+    }
+    setInviteBlocked(false);
+    formRef.current?.requestSubmit();
+  }
 
   const playerCount = Math.max(manualCount, 1 + players.length);
   const openSlots = playerCount - 1 - players.length;
@@ -196,7 +211,7 @@ export function NewGameScreen({
           <p className="mt-1 text-sm text-white/85">{t.heroTagline}</p>
         </div>
 
-        <form action={formAction} className="mt-4 flex flex-col gap-2.5">
+        <form ref={formRef} action={formAction} className="mt-4 flex flex-col gap-2.5">
           <input type="hidden" name="playerCount" value={playerCount} />
           <input type="hidden" name="mode" value={mode} />
           {selectedCourse ? (
@@ -454,6 +469,16 @@ export function NewGameScreen({
 
             {openSlots > 0 && (
               <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleInviteNow}
+                  disabled={pending}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-60"
+                >
+                  <Share2 className="size-4" />
+                  {t.inviteNowLabel}
+                </button>
+                {inviteBlocked && <p className="text-xs text-destructive">{t.chooseCourseFirstHint}</p>}
                 <p className="text-sm font-medium">{t.playersSearchLabel}</p>
                 <p className="text-xs text-muted-foreground">{t.playersInviteHint}</p>
                 <div className="relative">
