@@ -1,0 +1,2568 @@
+{
+  "dataset": "Mind Your Swing — Mallorca Golf FINAL",
+  "version": "2026-09-19",
+  "status": "FINAL_REFERENCE_DATASET",
+  "scope": "20 Mallorca layouts currently targeted by the Mind Your Swing local database.",
+  "method": {
+    "primary_source": "Real Federación Española de Golf (RFEG) current club cards",
+    "secondary_official_source": "Son Antem Golf official West course scorecard",
+    "rule": "No missing values are invented. When the official current card did not expose a field cleanly, the value is left null or the source is explicitly noted."
+  },
+  "notes": [
+    "This file contains ONE verified reference tee/layout per field, not every possible tee.",
+    "Pollença is stored as a 9-hole layout because the current RFEG card is 9 holes and the 18-hole view repeats the nine.",
+    "Son Antem West uses the club's official scorecard for hole distances/HCP/par; its web page lists current tee totals and rating/slope.",
+    "The dataset intentionally excludes Santa Ponsa II, Santa Ponsa III and Palma Pitch & Putt because Claude's current database was reported as containing 20 real fields and those are not part of that 20-row target."
+  ],
+  "courses": [
+    {
+      "slug": "alcanada",
+      "name": "Club de Golf Alcanada",
+      "layout": "Alcanada",
+      "municipality": "Alcúdia",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "M",
+        "par_total": 72,
+        "distance_total_m": 6571,
+        "course_rating": 74.6,
+        "slope": 137,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 11,
+            "par": 5,
+            "distance_m": 458
+          },
+          {
+            "number": 2,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 387
+          },
+          {
+            "number": 3,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 335
+          },
+          {
+            "number": 4,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 188
+          },
+          {
+            "number": 5,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 376
+          },
+          {
+            "number": 6,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 156
+          },
+          {
+            "number": 7,
+            "handicap": 3,
+            "par": 5,
+            "distance_m": 579
+          },
+          {
+            "number": 8,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 428
+          },
+          {
+            "number": 9,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 397
+          },
+          {
+            "number": 10,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 363
+          },
+          {
+            "number": 11,
+            "handicap": 6,
+            "par": 5,
+            "distance_m": 554
+          },
+          {
+            "number": 12,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 347
+          },
+          {
+            "number": 13,
+            "handicap": 18,
+            "par": 5,
+            "distance_m": 514
+          },
+          {
+            "number": 14,
+            "handicap": 14,
+            "par": 3,
+            "distance_m": 167
+          },
+          {
+            "number": 15,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 326
+          },
+          {
+            "number": 16,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 435
+          },
+          {
+            "number": 17,
+            "handicap": 9,
+            "par": 3,
+            "distance_m": 213
+          },
+          {
+            "number": 18,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 348
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_de_golf_alcanada?id=390",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "andratx",
+      "name": "Golf de Andratx",
+      "layout": "Andratx",
+      "municipality": "Andratx",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 72,
+        "distance_total_m": 6030,
+        "course_rating": 78.8,
+        "slope": 143,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 352
+          },
+          {
+            "number": 2,
+            "handicap": 7,
+            "par": 3,
+            "distance_m": 161
+          },
+          {
+            "number": 3,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 251
+          },
+          {
+            "number": 4,
+            "handicap": 9,
+            "par": 3,
+            "distance_m": 161
+          },
+          {
+            "number": 5,
+            "handicap": 5,
+            "par": 5,
+            "distance_m": 485
+          },
+          {
+            "number": 6,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 609
+          },
+          {
+            "number": 7,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 242
+          },
+          {
+            "number": 8,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 405
+          },
+          {
+            "number": 9,
+            "handicap": 13,
+            "par": 3,
+            "distance_m": 158
+          },
+          {
+            "number": 10,
+            "handicap": 8,
+            "par": 5,
+            "distance_m": 484
+          },
+          {
+            "number": 11,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 426
+          },
+          {
+            "number": 12,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 346
+          },
+          {
+            "number": 13,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 371
+          },
+          {
+            "number": 14,
+            "handicap": 18,
+            "par": 4,
+            "distance_m": 279
+          },
+          {
+            "number": 15,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 186
+          },
+          {
+            "number": 16,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 315
+          },
+          {
+            "number": 17,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 344
+          },
+          {
+            "number": 18,
+            "handicap": 4,
+            "par": 5,
+            "distance_m": 455
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_de_golf_andratx?id=381",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "bendinat",
+      "name": "Real Golf de Bendinat",
+      "layout": "Bendinat",
+      "municipality": "Calvià",
+      "holes": 18,
+      "reference_tee": {
+        "name": "AMARILLAS",
+        "sex": "F",
+        "par_total": 69,
+        "distance_total_m": 5342,
+        "course_rating": 76.5,
+        "slope": 145,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 344
+          },
+          {
+            "number": 2,
+            "handicap": 11,
+            "par": 3,
+            "distance_m": 152
+          },
+          {
+            "number": 3,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 334
+          },
+          {
+            "number": 4,
+            "handicap": 7,
+            "par": 3,
+            "distance_m": 163
+          },
+          {
+            "number": 5,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 396
+          },
+          {
+            "number": 6,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 366
+          },
+          {
+            "number": 7,
+            "handicap": 5,
+            "par": 3,
+            "distance_m": 174
+          },
+          {
+            "number": 8,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 340
+          },
+          {
+            "number": 9,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 310
+          },
+          {
+            "number": 10,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 349
+          },
+          {
+            "number": 11,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 291
+          },
+          {
+            "number": 12,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 135
+          },
+          {
+            "number": 13,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 294
+          },
+          {
+            "number": 14,
+            "handicap": 12,
+            "par": 5,
+            "distance_m": 444
+          },
+          {
+            "number": 15,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 334
+          },
+          {
+            "number": 16,
+            "handicap": 16,
+            "par": 4,
+            "distance_m": 320
+          },
+          {
+            "number": 17,
+            "handicap": 6,
+            "par": 3,
+            "distance_m": 152
+          },
+          {
+            "number": 18,
+            "handicap": 4,
+            "par": 5,
+            "distance_m": 444
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/real_golf_bendinat?id=377",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "canyamel",
+      "name": "Canyamel Golf",
+      "layout": "Canyamel",
+      "municipality": "Capdepera",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 73,
+        "distance_total_m": 6188,
+        "course_rating": 80.1,
+        "slope": 149,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 16,
+            "par": 4,
+            "distance_m": 339
+          },
+          {
+            "number": 2,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 362
+          },
+          {
+            "number": 3,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 321
+          },
+          {
+            "number": 4,
+            "handicap": 5,
+            "par": 5,
+            "distance_m": 442
+          },
+          {
+            "number": 5,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 103
+          },
+          {
+            "number": 6,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 328
+          },
+          {
+            "number": 7,
+            "handicap": 9,
+            "par": 5,
+            "distance_m": 486
+          },
+          {
+            "number": 8,
+            "handicap": 7,
+            "par": 3,
+            "distance_m": 201
+          },
+          {
+            "number": 9,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 394
+          },
+          {
+            "number": 10,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 368
+          },
+          {
+            "number": 11,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 332
+          },
+          {
+            "number": 12,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 374
+          },
+          {
+            "number": 13,
+            "handicap": 4,
+            "par": 5,
+            "distance_m": 475
+          },
+          {
+            "number": 14,
+            "handicap": 14,
+            "par": 3,
+            "distance_m": 138
+          },
+          {
+            "number": 15,
+            "handicap": 3,
+            "par": 5,
+            "distance_m": 501
+          },
+          {
+            "number": 16,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 384
+          },
+          {
+            "number": 17,
+            "handicap": 15,
+            "par": 5,
+            "distance_m": 467
+          },
+          {
+            "number": 18,
+            "handicap": 8,
+            "par": 3,
+            "distance_m": 173
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/campo_de_golf_canyamel?id=379",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "capdepera",
+      "name": "Capdepera Golf",
+      "layout": "Capdepera",
+      "municipality": "Artà",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 72,
+        "distance_total_m": 5847,
+        "course_rating": 78.0,
+        "slope": 145,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 8,
+            "par": 5,
+            "distance_m": 470
+          },
+          {
+            "number": 2,
+            "handicap": 14,
+            "par": 3,
+            "distance_m": 182
+          },
+          {
+            "number": 3,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 512
+          },
+          {
+            "number": 4,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 115
+          },
+          {
+            "number": 5,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 346
+          },
+          {
+            "number": 6,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 307
+          },
+          {
+            "number": 7,
+            "handicap": 4,
+            "par": 3,
+            "distance_m": 212
+          },
+          {
+            "number": 8,
+            "handicap": 16,
+            "par": 5,
+            "distance_m": 417
+          },
+          {
+            "number": 9,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 346
+          },
+          {
+            "number": 10,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 256
+          },
+          {
+            "number": 11,
+            "handicap": 5,
+            "par": 3,
+            "distance_m": 208
+          },
+          {
+            "number": 12,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 543
+          },
+          {
+            "number": 13,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 311
+          },
+          {
+            "number": 14,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 331
+          },
+          {
+            "number": 15,
+            "handicap": 11,
+            "par": 3,
+            "distance_m": 181
+          },
+          {
+            "number": 16,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 360
+          },
+          {
+            "number": 17,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 310
+          },
+          {
+            "number": 18,
+            "handicap": 7,
+            "par": 5,
+            "distance_m": 440
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_de_golf_capdepera?id=378",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "maioris",
+      "name": "Golf Maioris",
+      "layout": "Maioris",
+      "municipality": "Llucmajor",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 72,
+        "distance_total_m": 6347,
+        "course_rating": 81.0,
+        "slope": 143,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 353
+          },
+          {
+            "number": 2,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 384
+          },
+          {
+            "number": 3,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 131
+          },
+          {
+            "number": 4,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 457
+          },
+          {
+            "number": 5,
+            "handicap": 14,
+            "par": 5,
+            "distance_m": 483
+          },
+          {
+            "number": 6,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 371
+          },
+          {
+            "number": 7,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 346
+          },
+          {
+            "number": 8,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 208
+          },
+          {
+            "number": 9,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 389
+          },
+          {
+            "number": 10,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 537
+          },
+          {
+            "number": 11,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 156
+          },
+          {
+            "number": 12,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 344
+          },
+          {
+            "number": 13,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 155
+          },
+          {
+            "number": 14,
+            "handicap": 13,
+            "par": 5,
+            "distance_m": 479
+          },
+          {
+            "number": 15,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 430
+          },
+          {
+            "number": 16,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 335
+          },
+          {
+            "number": 17,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 387
+          },
+          {
+            "number": 18,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 402
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_deportivo_golf_maioris?id=383",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "pollensa",
+      "name": "Golf Pollença",
+      "layout": "Pollença",
+      "municipality": "Pollença",
+      "holes": 9,
+      "reference_tee": {
+        "name": "AMARILLAS",
+        "sex": "F",
+        "par_total": 35,
+        "distance_total_m": 2608,
+        "course_rating": null,
+        "slope": null,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 11,
+            "par": 3,
+            "distance_m": 155
+          },
+          {
+            "number": 2,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 521
+          },
+          {
+            "number": 3,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 351
+          },
+          {
+            "number": 4,
+            "handicap": 9,
+            "par": 3,
+            "distance_m": 134
+          },
+          {
+            "number": 5,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 265
+          },
+          {
+            "number": 6,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 278
+          },
+          {
+            "number": 7,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 335
+          },
+          {
+            "number": 8,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 103
+          },
+          {
+            "number": 9,
+            "handicap": 3,
+            "par": 5,
+            "distance_m": 466
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_de_golf_de_pollensa?id=375",
+        "verified_date": "2026-09-19"
+      },
+      "notes": "RFEG current card exposes the 9-hole card (Par 35, 2,608 m on the outbound). The same 9 holes are repeated for an 18-hole calculation. Stored as the underlying 9-hole layout; Course Rating/Slope are not copied from the duplicated 18-hole calculation here."
+    },
+    {
+      "slug": "pula",
+      "name": "Pula Golf Resort",
+      "layout": "Pula Golf",
+      "municipality": "Son Servera",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "M",
+        "par_total": 72,
+        "distance_total_m": 6297,
+        "course_rating": 74.4,
+        "slope": 139,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 385
+          },
+          {
+            "number": 2,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 161
+          },
+          {
+            "number": 3,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 379
+          },
+          {
+            "number": 4,
+            "handicap": 18,
+            "par": 4,
+            "distance_m": 359
+          },
+          {
+            "number": 5,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 325
+          },
+          {
+            "number": 6,
+            "handicap": 12,
+            "par": 5,
+            "distance_m": 494
+          },
+          {
+            "number": 7,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 397
+          },
+          {
+            "number": 8,
+            "handicap": 8,
+            "par": 3,
+            "distance_m": 197
+          },
+          {
+            "number": 9,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 450
+          },
+          {
+            "number": 10,
+            "handicap": 13,
+            "par": 5,
+            "distance_m": 519
+          },
+          {
+            "number": 11,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 286
+          },
+          {
+            "number": 12,
+            "handicap": 17,
+            "par": 5,
+            "distance_m": 431
+          },
+          {
+            "number": 13,
+            "handicap": 7,
+            "par": 3,
+            "distance_m": 163
+          },
+          {
+            "number": 14,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 361
+          },
+          {
+            "number": 15,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 407
+          },
+          {
+            "number": 16,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 398
+          },
+          {
+            "number": 17,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 405
+          },
+          {
+            "number": 18,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 180
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_esportiu_pula_golf?id=388",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "santa_ponsa_1",
+      "name": "Golf Santa Ponsa I",
+      "layout": "Santa Ponsa I",
+      "municipality": "Calvià",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 72,
+        "distance_total_m": 6485,
+        "course_rating": 81.8,
+        "slope": 140,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 439
+          },
+          {
+            "number": 2,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 491
+          },
+          {
+            "number": 3,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 153
+          },
+          {
+            "number": 4,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 423
+          },
+          {
+            "number": 5,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 304
+          },
+          {
+            "number": 6,
+            "handicap": 12,
+            "par": 5,
+            "distance_m": 445
+          },
+          {
+            "number": 7,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 167
+          },
+          {
+            "number": 8,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 362
+          },
+          {
+            "number": 9,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 399
+          },
+          {
+            "number": 10,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 587
+          },
+          {
+            "number": 11,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 355
+          },
+          {
+            "number": 12,
+            "handicap": 7,
+            "par": 3,
+            "distance_m": 199
+          },
+          {
+            "number": 13,
+            "handicap": 11,
+            "par": 5,
+            "distance_m": 456
+          },
+          {
+            "number": 14,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 380
+          },
+          {
+            "number": 15,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 171
+          },
+          {
+            "number": 16,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 402
+          },
+          {
+            "number": 17,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 317
+          },
+          {
+            "number": 18,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 435
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/golf_santa_ponsa?id=386",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "son_antem_east",
+      "name": "Golf Son Antem East",
+      "layout": "Son Antem East",
+      "municipality": "Llucmajor",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 72,
+        "distance_total_m": 6232,
+        "course_rating": 79.9,
+        "slope": 141,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 9,
+            "par": 5,
+            "distance_m": 472
+          },
+          {
+            "number": 2,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 159
+          },
+          {
+            "number": 3,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 309
+          },
+          {
+            "number": 4,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 320
+          },
+          {
+            "number": 5,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 179
+          },
+          {
+            "number": 6,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 346
+          },
+          {
+            "number": 7,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 534
+          },
+          {
+            "number": 8,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 363
+          },
+          {
+            "number": 9,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 341
+          },
+          {
+            "number": 10,
+            "handicap": 14,
+            "par": 5,
+            "distance_m": 494
+          },
+          {
+            "number": 11,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 373
+          },
+          {
+            "number": 12,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 325
+          },
+          {
+            "number": 13,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 178
+          },
+          {
+            "number": 14,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 397
+          },
+          {
+            "number": 15,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 385
+          },
+          {
+            "number": 16,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 167
+          },
+          {
+            "number": 17,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 389
+          },
+          {
+            "number": 18,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 501
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_de_golf_son_antem?id=172",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "son_antem_west",
+      "name": "Golf Son Antem West",
+      "layout": "Son Antem West",
+      "municipality": "Llucmajor",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": null,
+        "par_total": 72,
+        "distance_total_m": 6293,
+        "course_rating": 74.3,
+        "slope": 138,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 364
+          },
+          {
+            "number": 2,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 186
+          },
+          {
+            "number": 3,
+            "handicap": 10,
+            "par": 5,
+            "distance_m": 482
+          },
+          {
+            "number": 4,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 381
+          },
+          {
+            "number": 5,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 377
+          },
+          {
+            "number": 6,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 297
+          },
+          {
+            "number": 7,
+            "handicap": 6,
+            "par": 5,
+            "distance_m": 483
+          },
+          {
+            "number": 8,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 139
+          },
+          {
+            "number": 9,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 357
+          },
+          {
+            "number": 10,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 393
+          },
+          {
+            "number": 11,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 153
+          },
+          {
+            "number": 12,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 367
+          },
+          {
+            "number": 13,
+            "handicap": 13,
+            "par": 5,
+            "distance_m": 471
+          },
+          {
+            "number": 14,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 374
+          },
+          {
+            "number": 15,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 384
+          },
+          {
+            "number": 16,
+            "handicap": 3,
+            "par": 5,
+            "distance_m": 495
+          },
+          {
+            "number": 17,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 190
+          },
+          {
+            "number": 18,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 400
+          }
+        ]
+      },
+      "source": {
+        "type": "Official club scorecard PDF",
+        "url": "https://es.sonantemgolf.com/son-antem-west/",
+        "verified_date": "2026-09-19"
+      },
+      "notes": "Hole distances and HCP/par are from the club's official West scorecard PDF; club webpage confirms the current West tee totals and rating/slope family. White reference used here."
+    },
+    {
+      "slug": "son_gual",
+      "name": "Golf Son Gual",
+      "layout": "Son Gual",
+      "municipality": "Palma",
+      "holes": 18,
+      "reference_tee": {
+        "name": "NEGRAS",
+        "sex": "M",
+        "par_total": 72,
+        "distance_total_m": 6621,
+        "course_rating": 75.1,
+        "slope": 143,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 420
+          },
+          {
+            "number": 2,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 344
+          },
+          {
+            "number": 3,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 318
+          },
+          {
+            "number": 4,
+            "handicap": 11,
+            "par": 5,
+            "distance_m": 507
+          },
+          {
+            "number": 5,
+            "handicap": 5,
+            "par": 3,
+            "distance_m": 147
+          },
+          {
+            "number": 6,
+            "handicap": 9,
+            "par": 5,
+            "distance_m": 492
+          },
+          {
+            "number": 7,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 433
+          },
+          {
+            "number": 8,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 354
+          },
+          {
+            "number": 9,
+            "handicap": 3,
+            "par": 3,
+            "distance_m": 200
+          },
+          {
+            "number": 10,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 367
+          },
+          {
+            "number": 11,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 423
+          },
+          {
+            "number": 12,
+            "handicap": 14,
+            "par": 5,
+            "distance_m": 500
+          },
+          {
+            "number": 13,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 429
+          },
+          {
+            "number": 14,
+            "handicap": 16,
+            "par": 4,
+            "distance_m": 360
+          },
+          {
+            "number": 15,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 175
+          },
+          {
+            "number": 16,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 433
+          },
+          {
+            "number": 17,
+            "handicap": 8,
+            "par": 3,
+            "distance_m": 187
+          },
+          {
+            "number": 18,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 532
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_de_golf_son_gual?id=384",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "son_muntaner",
+      "name": "Son Muntaner",
+      "layout": "Son Muntaner",
+      "municipality": "Palma",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "M",
+        "par_total": 72,
+        "distance_total_m": 6305,
+        "course_rating": 74.1,
+        "slope": 133,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 372
+          },
+          {
+            "number": 2,
+            "handicap": 3,
+            "par": 5,
+            "distance_m": 487
+          },
+          {
+            "number": 3,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 350
+          },
+          {
+            "number": 4,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 407
+          },
+          {
+            "number": 5,
+            "handicap": 11,
+            "par": 3,
+            "distance_m": 196
+          },
+          {
+            "number": 6,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 416
+          },
+          {
+            "number": 7,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 141
+          },
+          {
+            "number": 8,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 502
+          },
+          {
+            "number": 9,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 388
+          },
+          {
+            "number": 10,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 382
+          },
+          {
+            "number": 11,
+            "handicap": 12,
+            "par": 3,
+            "distance_m": 205
+          },
+          {
+            "number": 12,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 359
+          },
+          {
+            "number": 13,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 130
+          },
+          {
+            "number": 14,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 315
+          },
+          {
+            "number": 15,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 524
+          },
+          {
+            "number": 16,
+            "handicap": 16,
+            "par": 5,
+            "distance_m": 442
+          },
+          {
+            "number": 17,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 328
+          },
+          {
+            "number": 18,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 361
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/son_muntaner_golf?id=380",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "son_quint",
+      "name": "Son Quint",
+      "layout": "Son Quint",
+      "municipality": "Palma",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": null,
+        "par_total": 71,
+        "distance_total_m": 6021,
+        "course_rating": 79.3,
+        "slope": 137,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 351
+          },
+          {
+            "number": 2,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 360
+          },
+          {
+            "number": 3,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 165
+          },
+          {
+            "number": 4,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 372
+          },
+          {
+            "number": 5,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 338
+          },
+          {
+            "number": 6,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 326
+          },
+          {
+            "number": 7,
+            "handicap": 12,
+            "par": 5,
+            "distance_m": 446
+          },
+          {
+            "number": 8,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 362
+          },
+          {
+            "number": 9,
+            "handicap": 14,
+            "par": 3,
+            "distance_m": 157
+          },
+          {
+            "number": 10,
+            "handicap": 16,
+            "par": 4,
+            "distance_m": 340
+          },
+          {
+            "number": 11,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 346
+          },
+          {
+            "number": 12,
+            "handicap": 5,
+            "par": 3,
+            "distance_m": 195
+          },
+          {
+            "number": 13,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 476
+          },
+          {
+            "number": 14,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 120
+          },
+          {
+            "number": 15,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 374
+          },
+          {
+            "number": 16,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 396
+          },
+          {
+            "number": 17,
+            "handicap": 10,
+            "par": 5,
+            "distance_m": 501
+          },
+          {
+            "number": 18,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 396
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_son_quint_golf?id=757",
+        "verified_date": "2026-09-19"
+      },
+      "notes": "RFEG current club page exposes the 18-hole Son Quint card with these values; sex/tee-color metadata is left neutral here because the accessible text does not label the selected 18-hole card consistently."
+    },
+    {
+      "slug": "son_servera",
+      "name": "Golf Son Servera",
+      "layout": "Son Servera",
+      "municipality": "Son Servera",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 72,
+        "distance_total_m": 6050,
+        "course_rating": 79.6,
+        "slope": 148,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 339
+          },
+          {
+            "number": 2,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 371
+          },
+          {
+            "number": 3,
+            "handicap": 12,
+            "par": 3,
+            "distance_m": 122
+          },
+          {
+            "number": 4,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 354
+          },
+          {
+            "number": 5,
+            "handicap": 1,
+            "par": 5,
+            "distance_m": 506
+          },
+          {
+            "number": 6,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 312
+          },
+          {
+            "number": 7,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 357
+          },
+          {
+            "number": 8,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 176
+          },
+          {
+            "number": 9,
+            "handicap": 13,
+            "par": 5,
+            "distance_m": 452
+          },
+          {
+            "number": 10,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 338
+          },
+          {
+            "number": 11,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 291
+          },
+          {
+            "number": 12,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 375
+          },
+          {
+            "number": 13,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 149
+          },
+          {
+            "number": 14,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 344
+          },
+          {
+            "number": 15,
+            "handicap": 9,
+            "par": 5,
+            "distance_m": 462
+          },
+          {
+            "number": 16,
+            "handicap": 14,
+            "par": 5,
+            "distance_m": 503
+          },
+          {
+            "number": 17,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 417
+          },
+          {
+            "number": 18,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 182
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/club_de_golf_son_servera?id=372",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "son_termes",
+      "name": "Golf Son Termes",
+      "layout": "Son Termes",
+      "municipality": "Bunyola",
+      "holes": 18,
+      "reference_tee": {
+        "name": "AMARILLAS",
+        "sex": "F",
+        "par_total": 70,
+        "distance_total_m": 5285,
+        "course_rating": 74.8,
+        "slope": 138,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 231
+          },
+          {
+            "number": 2,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 276
+          },
+          {
+            "number": 3,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 290
+          },
+          {
+            "number": 4,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 334
+          },
+          {
+            "number": 5,
+            "handicap": 3,
+            "par": 5,
+            "distance_m": 457
+          },
+          {
+            "number": 6,
+            "handicap": 7,
+            "par": 5,
+            "distance_m": 449
+          },
+          {
+            "number": 7,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 147
+          },
+          {
+            "number": 8,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 300
+          },
+          {
+            "number": 9,
+            "handicap": 11,
+            "par": 3,
+            "distance_m": 173
+          },
+          {
+            "number": 10,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 402
+          },
+          {
+            "number": 11,
+            "handicap": 12,
+            "par": 4,
+            "distance_m": 331
+          },
+          {
+            "number": 12,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 104
+          },
+          {
+            "number": 13,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 279
+          },
+          {
+            "number": 14,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 332
+          },
+          {
+            "number": 15,
+            "handicap": 14,
+            "par": 3,
+            "distance_m": 164
+          },
+          {
+            "number": 16,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 354
+          },
+          {
+            "number": 17,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 344
+          },
+          {
+            "number": 18,
+            "handicap": 16,
+            "par": 4,
+            "distance_m": 318
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/golf_son_termens_sa?id=389",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "son_vida",
+      "name": "Golf Son Vida",
+      "layout": "Son Vida",
+      "municipality": "Palma",
+      "holes": 18,
+      "reference_tee": {
+        "name": "AMARILLAS",
+        "sex": "F",
+        "par_total": 71,
+        "distance_total_m": 5538,
+        "course_rating": 76.2,
+        "slope": 139,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 258
+          },
+          {
+            "number": 2,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 259
+          },
+          {
+            "number": 3,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 332
+          },
+          {
+            "number": 4,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 139
+          },
+          {
+            "number": 5,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 362
+          },
+          {
+            "number": 6,
+            "handicap": 7,
+            "par": 5,
+            "distance_m": 449
+          },
+          {
+            "number": 7,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 298
+          },
+          {
+            "number": 8,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 132
+          },
+          {
+            "number": 9,
+            "handicap": 11,
+            "par": 4,
+            "distance_m": 309
+          },
+          {
+            "number": 10,
+            "handicap": 14,
+            "par": 3,
+            "distance_m": 198
+          },
+          {
+            "number": 11,
+            "handicap": 2,
+            "par": 5,
+            "distance_m": 483
+          },
+          {
+            "number": 12,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 137
+          },
+          {
+            "number": 13,
+            "handicap": 12,
+            "par": 5,
+            "distance_m": 502
+          },
+          {
+            "number": 14,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 327
+          },
+          {
+            "number": 15,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 368
+          },
+          {
+            "number": 16,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 125
+          },
+          {
+            "number": 17,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 400
+          },
+          {
+            "number": 18,
+            "handicap": 8,
+            "par": 5,
+            "distance_m": 460
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/son_vida_club_de_golf?id=817",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "t_golf_calvia",
+      "name": "T Golf Calvia",
+      "layout": "T Golf Calvia",
+      "municipality": "Calvià",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 72,
+        "distance_total_m": 6450,
+        "course_rating": 81.3,
+        "slope": 151,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 401
+          },
+          {
+            "number": 2,
+            "handicap": 7,
+            "par": 5,
+            "distance_m": 557
+          },
+          {
+            "number": 3,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 397
+          },
+          {
+            "number": 4,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 365
+          },
+          {
+            "number": 5,
+            "handicap": 13,
+            "par": 5,
+            "distance_m": 438
+          },
+          {
+            "number": 6,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 172
+          },
+          {
+            "number": 7,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 325
+          },
+          {
+            "number": 8,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 373
+          },
+          {
+            "number": 9,
+            "handicap": 11,
+            "par": 3,
+            "distance_m": 184
+          },
+          {
+            "number": 10,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 432
+          },
+          {
+            "number": 11,
+            "handicap": 6,
+            "par": 5,
+            "distance_m": 508
+          },
+          {
+            "number": 12,
+            "handicap": 10,
+            "par": 3,
+            "distance_m": 209
+          },
+          {
+            "number": 13,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 371
+          },
+          {
+            "number": 14,
+            "handicap": 16,
+            "par": 4,
+            "distance_m": 334
+          },
+          {
+            "number": 15,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 154
+          },
+          {
+            "number": 16,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 347
+          },
+          {
+            "number": 17,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 373
+          },
+          {
+            "number": 18,
+            "handicap": 12,
+            "par": 5,
+            "distance_m": 510
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/t_golf_%26_country_club_poniente?id=374",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "t_golf_palma",
+      "name": "T Golf Palma Puntiró",
+      "layout": "T Golf Palma",
+      "municipality": "Palma",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "F",
+        "par_total": 71,
+        "distance_total_m": 6027,
+        "course_rating": 78.4,
+        "slope": 144,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 7,
+            "par": 4,
+            "distance_m": 342
+          },
+          {
+            "number": 2,
+            "handicap": 12,
+            "par": 3,
+            "distance_m": 180
+          },
+          {
+            "number": 3,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 376
+          },
+          {
+            "number": 4,
+            "handicap": 9,
+            "par": 5,
+            "distance_m": 520
+          },
+          {
+            "number": 5,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 364
+          },
+          {
+            "number": 6,
+            "handicap": 17,
+            "par": 3,
+            "distance_m": 172
+          },
+          {
+            "number": 7,
+            "handicap": 13,
+            "par": 4,
+            "distance_m": 314
+          },
+          {
+            "number": 8,
+            "handicap": 6,
+            "par": 4,
+            "distance_m": 334
+          },
+          {
+            "number": 9,
+            "handicap": 14,
+            "par": 4,
+            "distance_m": 339
+          },
+          {
+            "number": 10,
+            "handicap": 10,
+            "par": 4,
+            "distance_m": 340
+          },
+          {
+            "number": 11,
+            "handicap": 11,
+            "par": 5,
+            "distance_m": 447
+          },
+          {
+            "number": 12,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 392
+          },
+          {
+            "number": 13,
+            "handicap": 18,
+            "par": 3,
+            "distance_m": 169
+          },
+          {
+            "number": 14,
+            "handicap": 16,
+            "par": 5,
+            "distance_m": 472
+          },
+          {
+            "number": 15,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 369
+          },
+          {
+            "number": 16,
+            "handicap": 8,
+            "par": 3,
+            "distance_m": 172
+          },
+          {
+            "number": 17,
+            "handicap": 15,
+            "par": 4,
+            "distance_m": 346
+          },
+          {
+            "number": 18,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 379
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/mallorca_puntiro?id=382",
+        "verified_date": "2026-09-19"
+      }
+    },
+    {
+      "slug": "vall_dor",
+      "name": "Vall d'Or Golf",
+      "layout": "Vall d'Or",
+      "municipality": "Felanitx",
+      "holes": 18,
+      "reference_tee": {
+        "name": "BLANCAS",
+        "sex": "M",
+        "par_total": 71,
+        "distance_total_m": 5538,
+        "course_rating": 70.1,
+        "slope": 134,
+        "holes": [
+          {
+            "number": 1,
+            "handicap": 7,
+            "par": 3,
+            "distance_m": 152
+          },
+          {
+            "number": 2,
+            "handicap": 1,
+            "par": 4,
+            "distance_m": 319
+          },
+          {
+            "number": 3,
+            "handicap": 13,
+            "par": 5,
+            "distance_m": 450
+          },
+          {
+            "number": 4,
+            "handicap": 15,
+            "par": 3,
+            "distance_m": 132
+          },
+          {
+            "number": 5,
+            "handicap": 9,
+            "par": 4,
+            "distance_m": 314
+          },
+          {
+            "number": 6,
+            "handicap": 3,
+            "par": 4,
+            "distance_m": 343
+          },
+          {
+            "number": 7,
+            "handicap": 5,
+            "par": 4,
+            "distance_m": 350
+          },
+          {
+            "number": 8,
+            "handicap": 17,
+            "par": 4,
+            "distance_m": 301
+          },
+          {
+            "number": 9,
+            "handicap": 11,
+            "par": 5,
+            "distance_m": 478
+          },
+          {
+            "number": 10,
+            "handicap": 4,
+            "par": 4,
+            "distance_m": 349
+          },
+          {
+            "number": 11,
+            "handicap": 12,
+            "par": 5,
+            "distance_m": 417
+          },
+          {
+            "number": 12,
+            "handicap": 14,
+            "par": 3,
+            "distance_m": 142
+          },
+          {
+            "number": 13,
+            "handicap": 10,
+            "par": 5,
+            "distance_m": 497
+          },
+          {
+            "number": 14,
+            "handicap": 18,
+            "par": 4,
+            "distance_m": 298
+          },
+          {
+            "number": 15,
+            "handicap": 16,
+            "par": 3,
+            "distance_m": 164
+          },
+          {
+            "number": 16,
+            "handicap": 2,
+            "par": 4,
+            "distance_m": 342
+          },
+          {
+            "number": 17,
+            "handicap": 8,
+            "par": 4,
+            "distance_m": 325
+          },
+          {
+            "number": 18,
+            "handicap": 6,
+            "par": 3,
+            "distance_m": 165
+          }
+        ]
+      },
+      "source": {
+        "type": "RFEG",
+        "url": "https://rfegolf.es/club/vall_d_or_golf_club?id=385",
+        "verified_date": "2026-09-19"
+      }
+    }
+  ]
+}

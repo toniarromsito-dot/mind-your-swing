@@ -325,21 +325,98 @@ model VoiceCallLog {
   @@index([userId, createdAt])
 }
 
-// Campo de golf. isDemo=true marca explícitamente que son datos de
-// demostración para el prototipo, nunca datos reales inventados — ver
-// README, la integración con una API real de campos queda para más
-// adelante.
+// Campo de golf. Los campos de demostración del prototipo inicial se
+// retiraron (ver git history) en cuanto llegó la primera carga de campos
+// reales (Mallorca, vía scripts/seed-mallorca-golf.mjs) — ya no existe
+// ningún dato inventado en esta tabla.
+//
+// `holes` (GolfCourseHole) es y sigue siendo el único juego de hoyos que
+// usan /play/new y createGame para crear una partida — no se toca en esta
+// fase. `layouts` es la estructura NUEVA y en paralelo (Campo → Recorrido
+// → Tee → Hoyo) para cuando un campo tenga varios recorridos (Santa
+// Ponsa I/II/III, Son Antem Este/Oeste...) y varios tees con su propio
+// Course Rating/Slope/distancias — todavía sin ningún caller: no cambia
+// nada de lo que ya funciona hasta que se conecte explícitamente.
 model GolfCourse {
   id       String  @id @default(cuid())
   name     String
   location String?
-  isDemo   Boolean @default(true)
+  /// Isla (p. ej. "Mallorca") — opcional, solo se rellena cuando se
+  /// verifica; no se infiere del nombre.
+  island   String?
+  /// País (p. ej. "España") — opcional, mismo criterio que `island`.
+  country  String?
+  /// Identificador estable para importadores idempotentes (seed de
+  /// Mallorca, y futuros de España/Europa/resto del mundo) — permite
+  /// volver a ejecutar el mismo seed sin crear duplicados.
+  slug     String? @unique
 
   createdAt DateTime @default(now())
 
   holes       GolfCourseHole[]
+  layouts     GolfCourseLayout[]
   games       Game[]
   tournaments Tournament[]
+}
+
+/// Un recorrido jugable dentro de un campo — la mayoría de campos solo
+/// tienen uno ("Recorrido 18"), pero algunos tienen varios recorridos
+/// independientes bajo el mismo club (p. ej. Santa Ponsa I/II/III, Son
+/// Antem Este/Oeste). Sin caller todavía: /play/new sigue leyendo
+/// GolfCourse.holes exactamente igual que antes.
+model GolfCourseLayout {
+  id        String  @id @default(cuid())
+  courseId  String
+  name      String
+  holeCount Int?
+
+  createdAt DateTime @default(now())
+
+  course GolfCourse      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tees   GolfCourseTee[]
+
+  @@unique([courseId, name])
+}
+
+/// Un tee (color/salida) dentro de un recorrido, con sus propios totales
+/// oficiales — nunca compartidos ni copiados de otro tee. Cualquier dato
+/// no verificado se deja NULL en vez de aproximarlo.
+model GolfCourseTee {
+  id            String @id @default(cuid())
+  layoutId      String
+  name          String
+  /// Sexo/categoría del tee cuando la fuente lo publica (p. ej. "M", "F")
+  /// — NULL cuando la fuente no lo especifica, nunca deducido.
+  category      String?
+  parTotal      Int?
+  distanceTotal Int?
+  /// Course Rating oficial de la RFEG para este tee, si está publicado.
+  courseRating  Float?
+  /// Slope oficial de la RFEG para este tee, si está publicado.
+  slope         Int?
+
+  createdAt DateTime @default(now())
+
+  layout GolfCourseLayout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  holes  GolfCourseTeeHole[]
+
+  @@unique([layoutId, name])
+}
+
+/// Detalle hoyo a hoyo de UN tee concreto — cada tee tiene su propia fila
+/// por hoyo (par/stroke index/distancia pueden variar entre tees del
+/// mismo recorrido), nunca se comparte entre tees.
+model GolfCourseTeeHole {
+  id       String @id @default(cuid())
+  teeId    String
+  number   Int
+  par      Int?
+  index    Int?
+  distance Int?
+
+  tee GolfCourseTee @relation(fields: [teeId], references: [id], onDelete: Cascade)
+
+  @@unique([teeId, number])
 }
 
 model GolfCourseHole {
