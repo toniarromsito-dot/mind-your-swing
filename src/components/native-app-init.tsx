@@ -35,7 +35,7 @@ export function NativeAppInit() {
     // login cae a una Custom Tab que redirige a
     // mindyourswing://auth-callback?token=... — este listener recoge ese
     // token y lo canjea por la sesión real dentro del propio WebView.
-    const listener = App.addListener("appUrlOpen", ({ url }) => {
+    const urlListener = App.addListener("appUrlOpen", ({ url }) => {
       try {
         const parsed = new URL(url);
         if (parsed.hostname !== "auth-callback" && !parsed.pathname.includes("auth-callback")) return;
@@ -46,8 +46,28 @@ export function NativeAppInit() {
       }
     });
 
+    // Modo remoto: el WebView no lleva la web empaquetada, así que un
+    // despliegue nuevo no llega solo — si el usuario nunca cierra la app
+    // del todo (lo normal: la deja en segundo plano), sigue viendo el
+    // JS/HTML que cargó la última vez que la abrió, aunque haya pasado
+    // días. Recargar al volver de segundo plano (nunca en el arranque en
+    // frío, solo en una reanudación real) hace que cada apertura traiga
+    // siempre la versión desplegada actual, sin depender de que fuerce el
+    // cierre de la app manualmente.
+    let hasBackgrounded = false;
+    const stateListener = App.addListener("appStateChange", ({ isActive }) => {
+      if (!isActive) {
+        hasBackgrounded = true;
+        return;
+      }
+      if (hasBackgrounded) {
+        window.location.reload();
+      }
+    });
+
     return () => {
-      listener.then((handle) => handle.remove());
+      urlListener.then((handle) => handle.remove());
+      stateListener.then((handle) => handle.remove());
     };
   }, []);
 
