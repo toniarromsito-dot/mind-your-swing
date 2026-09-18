@@ -4,12 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Check, Copy, Crown, Loader2, MapPin, Users, FileText } from "lucide-react";
+import { Crown, Loader2, MapPin, Users, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { MoodCheckin } from "@/components/mood-checkin";
 import { DetailsDrawer } from "@/components/details-drawer";
+import { InviteDrawer } from "@/components/invite-drawer";
 import { setBet, startGame } from "@/actions/games";
 import { cn } from "@/lib/utils";
 import { fmt } from "@/lib/i18n/format";
@@ -82,19 +83,10 @@ export function GameLobby({
   moodCheckinT: Dictionary["moodCheckin"];
 }) {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
   const [betText, setBetText] = useState(bet ?? "");
   const [showCustomBet, setShowCustomBet] = useState(Boolean(bet) && !BET_PRESETS.some((p) => t.betPresets[p.key] === bet));
   const [isStarting, startStarting] = useTransition();
   const [isSavingBet, startSavingBet] = useTransition();
-
-  function copyInviteLink() {
-    const url = `${window.location.origin}/play/join/${inviteCode}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
 
   function saveBet(next: string | null) {
     startSavingBet(async () => {
@@ -169,10 +161,7 @@ export function GameLobby({
               ))}
             </div>
             {players.length < playerCount && (
-              <Button type="button" variant="outline" size="sm" className="h-8 w-fit gap-2 text-xs" onClick={copyInviteLink}>
-                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-                {t.invite}
-              </Button>
+              <InviteDrawer inviteCode={inviteCode} course={course} t={t} />
             )}
           </CardContent>
         </Card>

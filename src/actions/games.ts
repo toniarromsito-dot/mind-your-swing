@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -319,10 +320,17 @@ export async function finishGame(gameId: string) {
 
   if (game.status === "IN_PROGRESS") {
     await prisma.game.update({ where: { id: gameId }, data: { status: "COMPLETED" } });
-    // En paralelo, no en serie — dos llamadas a Claude una detrás de otra
-    // dejaba al jugador mirando el spinner de "Guardando…" el doble de
-    // tiempo de lo necesario.
-    await Promise.all([generateGameInsight(gameId, session.user.id), updateMindMemory(session.user.id, gameId)]);
+    // Dos llamadas a Claude (insight + memoria) pueden tardar más de lo
+    // que permite la función serverless de Vercel si se esperan aquí —
+    // eso es lo que hacía que el resumen nunca llegase a tener análisis
+    // en producción (la función se cortaba antes de que Anthropic
+    // respondiera, aunque en local con timeouts largos parecía funcionar).
+    // after() las deja correr una vez ya se ha respondido al jugador; cada
+    // una revalida el resumen por su cuenta al terminar, así que aparece
+    // solo con recargar la pantalla un momento después.
+    after(() =>
+      Promise.all([generateGameInsight(gameId, session.user.id), updateMindMemory(session.user.id, gameId)])
+    );
   }
 
   revalidatePath(`/play/${gameId}`);
@@ -384,9 +392,9 @@ async function generateGameInsight(gameId: string, userId: string) {
           },
         ],
       },
-      // Límite defensivo: esto corre en el camino crítico de "terminar
-      // partida" — mejor un resumen sin insight que un jugador mirando el
-      // spinner indefinidamente si Anthropic tarda.
+      // Límite defensivo: aunque ya no bloquea la respuesta al jugador
+      // (corre dentro de after()), sigue evitando que una llamada colgada
+      // deje el proceso en segundo plano corriendo indefinidamente.
       { timeout: 20_000 }
     );
 
@@ -397,9 +405,15 @@ async function generateGameInsight(gameId: string, userId: string) {
 
     if (text.trim()) {
       await prisma.game.update({ where: { id: gameId }, data: { insight: text } });
+      // El jugador ya está en /resumen cuando esto termina (corre después
+      // de responder) — revalida para que aparezca solo con recargar.
+      revalidatePath(`/play/${gameId}/resumen`);
     }
-  } catch {
-    // Degradación silenciosa: el resumen simplemente no tendrá insight de IA.
+  } catch (err) {
+    // Degradación silenciosa de cara al jugador (el resumen simplemente no
+    // tendrá insight), pero el error queda en los logs del servidor —
+    // antes se perdía del todo y no había forma de diagnosticar por qué.
+    console.error("generateGameInsight failed", err);
   }
 }
 
@@ -445,7 +459,8 @@ async function updateMindMemory(userId: string, gameId: string) {
     if (text) {
       await prisma.user.update({ where: { id: userId }, data: { mindMemory: text } });
     }
-  } catch {
+  } catch (err) {
     // Degradación silenciosa: sin memoria actualizada, Mind sigue funcionando igual de bien puntualmente.
+    console.error("updateMindMemory failed", err);
   }
 }
