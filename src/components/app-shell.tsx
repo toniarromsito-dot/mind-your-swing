@@ -43,7 +43,8 @@ export function AppShell({
     pathname === "/play" ||
     pathname === "/play/join" ||
     pathname === "/play/new" ||
-    (pathname.startsWith("/play/") && pathname.endsWith("/resumen"));
+    (pathname.startsWith("/play/") && pathname.endsWith("/resumen")) ||
+    pathname === "/community";
 
   // Las 6 áreas del producto, ninguna oculta (brief: "no elimines ninguna
   // de estas áreas"), como una barra plana de peso igual — sin botón

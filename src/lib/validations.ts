@@ -102,9 +102,12 @@ export const profileSchema = z.object({
   language: z.enum(["es", "en", "de"]).optional(),
 });
 
+export const storyCategoryEnum = z.enum(["GENERAL", "CAMPO", "CONSEJO"]);
+
 export const storySchema = z.object({
   title: z.string().trim().min(3, "El título es demasiado corto").max(120),
   content: z.string().trim().min(20, "Cuenta un poco más").max(4000),
+  category: storyCategoryEnum.default("GENERAL"),
 });
 
 export const commentSchema = z.object({

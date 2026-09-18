@@ -14,6 +14,7 @@ export async function createStory(_prev: ActionState, formData: FormData): Promi
   const parsed = storySchema.safeParse({
     title: formData.get("title"),
     content: formData.get("content"),
+    category: formData.get("category") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };

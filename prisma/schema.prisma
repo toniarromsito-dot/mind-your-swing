@@ -169,6 +169,7 @@ model User {
   following     Follow[]       @relation("Following")
   followers     Follow[]       @relation("Followers")
   tournamentRegistrations TournamentRegistration[]
+  challengeParticipations ChallengeParticipant[]
 }
 
 /**
@@ -530,10 +531,11 @@ model Message {
 // Historias reales compartidas por jugadores de la app (no contenido
 // generado ni atribuido a golfistas reales externos — ver README).
 model Story {
-  id      String @id @default(cuid())
-  userId  String
-  title   String
-  content String @db.Text
+  id       String        @id @default(cuid())
+  userId   String
+  title    String
+  content  String        @db.Text
+  category StoryCategory @default(GENERAL)
 
   createdAt DateTime @default(now())
 
@@ -542,6 +544,13 @@ model Story {
   comments Comment[]
 
   @@index([createdAt])
+  @@index([category, createdAt])
+}
+
+enum StoryCategory {
+  GENERAL
+  CAMPO
+  CONSEJO
 }
 
 model Like {
@@ -568,4 +577,34 @@ model Comment {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([storyId, createdAt])
+}
+
+// Un reto comunitario por mes ("Reto del mes" en Comunidad). El progreso
+// mostrado es real: cuántos jugadores se han unido frente al objetivo de
+// participantes — nunca un porcentaje de mejora individual inventado, que
+// necesitaría trackear hándicap histórico por jugador (fuera de alcance).
+model CommunityChallenge {
+  id                 String   @id @default(cuid())
+  month              String // "2026-09"
+  title              String
+  description        String   @db.Text
+  targetParticipants Int
+  createdAt          DateTime @default(now())
+
+  participants ChallengeParticipant[]
+
+  @@unique([month])
+}
+
+model ChallengeParticipant {
+  id          String   @id @default(cuid())
+  challengeId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  challenge CommunityChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([challengeId])
 }

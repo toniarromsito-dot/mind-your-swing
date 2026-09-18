@@ -1,12 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Trophy, ListOrdered, ChevronRight } from "lucide-react";
+import { ChevronLeft, Trophy, ListOrdered, ChevronRight, CircleUserRound } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
-import { prisma } from "@/lib/prisma";
-import { listFollowingIds, listStoriesForFeed } from "@/lib/data/social";
-import { StoryForm } from "@/components/story-form";
-import { StoryCard, type StoryForCard } from "@/components/story-card";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  listFollowingIds,
+  listStoriesForFeed,
+  getCurrentChallenge,
+  hasJoinedChallenge,
+} from "@/lib/data/social";
+import { CommunityFeed } from "@/components/community-feed";
+import { ChallengeCard } from "@/components/challenge-card";
+import { NewPostDrawer } from "@/components/new-post-drawer";
+import type { StoryForCard } from "@/components/story-card";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { PageTransition } from "@/components/page-transition";
 
@@ -27,62 +32,49 @@ export default async function CommunityPage() {
   const userId = await requireUserId();
   const { t } = await getDictionary();
 
-  const [feed, friends, club, followingIds, me] = await Promise.all([
-    listStoriesForFeed("feed", userId),
+  const [all, friends, campo, consejo, followingIds, challenge] = await Promise.all([
+    listStoriesForFeed("all", userId),
     listStoriesForFeed("friends", userId),
-    listStoriesForFeed("club", userId),
+    listStoriesForFeed("campo", userId),
+    listStoriesForFeed("consejo", userId),
     listFollowingIds(userId),
-    prisma.user.findUnique({ where: { id: userId }, select: { club: true } }),
+    getCurrentChallenge(),
   ]);
-  const followingSet = new Set(followingIds);
-  const emptyClubText = me?.club
-    ? t.community.emptyClubNoStories
-    : t.community.emptyClub;
-
-  function renderStories(stories: StoryForCard[], emptyText: string) {
-    if (stories.length === 0) {
-      return (
-        <Card className="border-dashed">
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            {emptyText}
-          </CardContent>
-        </Card>
-      );
-    }
-    return (
-      <div className="flex flex-col gap-3">
-        {stories.map((story) => (
-          <StoryCard
-            key={story.id}
-            story={story}
-            viewerId={userId}
-            isFollowing={
-              story.userId === userId ? null : followingSet.has(story.userId)
-            }
-            t={t.community}
-            dateLocale={t.dateLocale}
-          />
-        ))}
-      </div>
-    );
-  }
+  const joined = await hasJoinedChallenge(challenge.id, userId);
 
   return (
     <PageTransition>
-      <div className="mx-auto flex max-w-2xl flex-col gap-6">
-        <div className="flex flex-col gap-4">
-          <div>
-            <h1 className="font-heading text-3xl font-semibold tracking-tight">
-              {t.community.title}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t.community.subtitle}
-            </p>
+      <div className="flex flex-col bg-background">
+        <div className="relative flex h-[26vh] min-h-[190px] shrink-0 flex-col justify-between overflow-hidden px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-4 sm:px-6">
+          <Image src="/images/play-hero.jpg" alt="" fill sizes="100vw" className="object-cover" priority />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/10 to-black/45" />
+          <div className="relative flex items-center justify-between">
+            <Link
+              href="/dashboard"
+              aria-label={t.nav.home}
+              className="flex size-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-sm"
+            >
+              <ChevronLeft className="size-5" />
+            </Link>
+            <Link
+              href="/perfil"
+              aria-label={t.nav.perfil}
+              className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm"
+            >
+              <CircleUserRound className="size-5" />
+            </Link>
           </div>
+          <div className="relative">
+            <h1 className="font-heading text-4xl font-bold text-white">{t.community.title}</h1>
+            <p className="mt-1 text-sm text-white/85">{t.community.heroTagline}</p>
+          </div>
+        </div>
+
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 pt-4 pb-24 sm:px-6">
           <div className="flex flex-wrap gap-2">
             <Link
               href="/community/tournaments"
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-secondary/40"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-secondary/40"
             >
               <Trophy className="size-4 text-primary" />
               {t.community.viewTournaments}
@@ -90,38 +82,39 @@ export default async function CommunityPage() {
             </Link>
             <Link
               href="/community/ranking"
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-secondary/40"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium transition-colors hover:border-primary hover:bg-secondary/40"
             >
               <ListOrdered className="size-4 text-primary" />
               {t.community.viewRanking}
               <ChevronRight className="size-3.5 text-muted-foreground" />
             </Link>
           </div>
+
+          <ChallengeCard
+            challengeId={challenge.id}
+            title={challenge.title}
+            description={challenge.description}
+            joinedCount={challenge._count.participants}
+            targetParticipants={challenge.targetParticipants}
+            initiallyJoined={joined}
+            t={t.community}
+          />
+
+          <CommunityFeed
+            viewerId={userId}
+            followingIds={followingIds}
+            stories={{
+              all: serialize(all),
+              friends: serialize(friends),
+              campo: serialize(campo),
+              consejo: serialize(consejo),
+            }}
+            t={t.community}
+            dateLocale={t.dateLocale}
+          />
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <StoryForm t={t.community} />
-          </CardContent>
-        </Card>
-
-        <Tabs defaultValue="feed">
-          <TabsList>
-            <TabsTrigger value="feed">{t.community.tabFeed}</TabsTrigger>
-            <TabsTrigger value="friends">{t.community.tabFriends}</TabsTrigger>
-            <TabsTrigger value="club">{t.community.tabClub}</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="feed" className="mt-4">
-            {renderStories(serialize(feed), t.community.empty)}
-          </TabsContent>
-          <TabsContent value="friends" className="mt-4">
-            {renderStories(serialize(friends), t.community.emptyFriends)}
-          </TabsContent>
-          <TabsContent value="club" className="mt-4">
-            {renderStories(serialize(club), emptyClubText)}
-          </TabsContent>
-        </Tabs>
+        <NewPostDrawer t={t.community} />
       </div>
     </PageTransition>
   );

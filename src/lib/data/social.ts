@@ -30,18 +30,14 @@ const storyInclude = {
 };
 
 /**
- * Feed / Amigos / Club — 3 pestañas honestas, no 4: un "Feed" y un
- * "Global" idénticos sin un algoritmo real de relevancia solo duplicarían
- * la misma lista con otro nombre, así que no se construye esa cuarta
- * pestaña. "Club" depende de que el jugador tenga rellenado su
- * `User.club` autodeclarado — si no lo tiene, la pestaña sale vacía en
- * vez de inventar compañeros de club.
+ * Todo / Amigos / Campos / Consejos — dos ejes ortogonales de filtro
+ * colapsados en una sola barra: "Amigos" filtra por grafo social (a quién
+ * sigues), "Campos"/"Consejos" filtran por la categoría real que el autor
+ * eligió al publicar (Story.category) — nunca por texto adivinado. "Todo"
+ * no filtra por categoría, para no duplicar "Campos"+"Consejos"+general
+ * como una pestaña idéntica con otro nombre.
  */
-export async function listStoriesForFeed(scope: "feed" | "friends" | "club", viewerId: string) {
-  if (scope === "feed") {
-    return prisma.story.findMany({ orderBy: { createdAt: "desc" }, take: 50, include: storyInclude });
-  }
-
+export async function listStoriesForFeed(scope: "all" | "friends" | "campo" | "consejo", viewerId: string) {
   if (scope === "friends") {
     const followingIds = await listFollowingIds(viewerId);
     return prisma.story.findMany({
@@ -52,12 +48,64 @@ export async function listStoriesForFeed(scope: "feed" | "friends" | "club", vie
     });
   }
 
-  const me = await prisma.user.findUnique({ where: { id: viewerId }, select: { club: true } });
-  if (!me?.club) return [];
-  return prisma.story.findMany({
-    where: { user: { club: me.club } },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: storyInclude,
+  if (scope === "campo" || scope === "consejo") {
+    return prisma.story.findMany({
+      where: { category: scope === "campo" ? "CAMPO" : "CONSEJO" },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: storyInclude,
+    });
+  }
+
+  return prisma.story.findMany({ orderBy: { createdAt: "desc" }, take: 50, include: storyInclude });
+}
+
+/**
+ * "Reto del mes": un reto real por mes (mes actual en formato "YYYY-MM"),
+ * creado la primera vez que alguien visita Comunidad ese mes si todavía
+ * no existe uno — nunca varios retos activos a la vez, nunca datos de
+ * progreso fabricados: el progreso mostrado es cuántos jugadores se han
+ * unido de verdad frente al objetivo, no una mejora de hándicap simulada
+ * (eso necesitaría trackear hándicap histórico por jugador, que no existe).
+ */
+function currentChallengeMonth() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+const DEFAULT_CHALLENGE_TARGET = 50;
+
+export async function getCurrentChallenge() {
+  const month = currentChallengeMonth();
+  const existing = await prisma.communityChallenge.findUnique({
+    where: { month },
+    include: { _count: { select: { participants: true } } },
   });
+  if (existing) return existing;
+
+  const created = await prisma.communityChallenge
+    .create({
+      data: {
+        month,
+        title: "Reto del mes",
+        description: "Juega al menos una vuelta este mes y súmate al reto de la comunidad.",
+        targetParticipants: DEFAULT_CHALLENGE_TARGET,
+      },
+      include: { _count: { select: { participants: true } } },
+    })
+    // Otra petición concurrente pudo crearlo primero (unique en month): en ese caso, léelo.
+    .catch(() =>
+      prisma.communityChallenge.findUniqueOrThrow({
+        where: { month },
+        include: { _count: { select: { participants: true } } },
+      })
+    );
+  return created;
+}
+
+export async function hasJoinedChallenge(challengeId: string, userId: string) {
+  const row = await prisma.challengeParticipant.findUnique({
+    where: { challengeId_userId: { challengeId, userId } },
+  });
+  return Boolean(row);
 }

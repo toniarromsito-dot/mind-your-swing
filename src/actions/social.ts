@@ -52,6 +52,18 @@ export async function addComment(storyId: string, content: string) {
   revalidatePath("/community");
 }
 
+export async function joinChallenge(challengeId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("No autenticado");
+
+  await prisma.challengeParticipant.upsert({
+    where: { challengeId_userId: { challengeId, userId: session.user.id } },
+    update: {},
+    create: { challengeId, userId: session.user.id },
+  });
+  revalidatePath("/community");
+}
+
 export async function deleteComment(commentId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("No autenticado");
