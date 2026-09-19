@@ -27,6 +27,10 @@ export const createGameSchema = z.object({
   mode: gameModeEnum,
   courseId: z.string().min(1).optional(),
   course: z.string().trim().min(2, "El nombre del campo es demasiado corto").max(120).optional(),
+  // Recorrido y tee elegidos — requeridos cuando courseId es un campo real
+  // (GolfCourse con GolfCourseLayout/GolfCourseTee); ver createGame.
+  courseLayoutId: z.string().min(1).optional(),
+  courseTeeId: z.string().min(1).optional(),
   date: z.coerce.date(),
   goal: z.string().trim().max(300).optional().or(z.literal("")),
   holeCount: z.coerce.number().int().refine((v) => v === 9 || v === 18, "Elige 9 o 18 hoyos").default(18),

@@ -105,18 +105,38 @@ export function getStandaloneMessages(userId: string) {
   });
 }
 
-export function listDemoCourses(query?: string) {
+/**
+ * Campos reales con su estructura de recorridos y tees, para el selector
+ * de /play/new. No incluye GolfCourseTeeHole (los hoyos hoyo a hoyo) —
+ * esos solo se necesitan en el servidor al crear la partida, ver
+ * getTeeForGameCreation.
+ */
+export function listRealGolfCourses(query?: string) {
   return prisma.golfCourse.findMany({
     where: query ? { name: { contains: query, mode: "insensitive" } } : undefined,
     orderBy: { name: "asc" },
-    include: { holes: { orderBy: { number: "asc" } } },
+    include: {
+      layouts: {
+        orderBy: { name: "asc" },
+        include: {
+          tees: {
+            orderBy: { name: "asc" },
+            select: { id: true, name: true, category: true, parTotal: true, distanceTotal: true, courseRating: true, slope: true },
+          },
+        },
+      },
+    },
   });
 }
 
-export function getCourseWithHoles(courseId: string) {
-  return prisma.golfCourse.findUnique({
-    where: { id: courseId },
-    include: { holes: { orderBy: { number: "asc" } } },
+/** El tee elegido, con sus hoyos reales — usado únicamente al crear la partida (nunca se fía de hoyos que mande el cliente). */
+export function getTeeForGameCreation(teeId: string) {
+  return prisma.golfCourseTee.findUnique({
+    where: { id: teeId },
+    include: {
+      holes: { orderBy: { number: "asc" } },
+      layout: { include: { course: true } },
+    },
   });
 }
 

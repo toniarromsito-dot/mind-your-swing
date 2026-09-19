@@ -14,12 +14,38 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import { fmt } from "@/lib/i18n/format";
 
-type DemoCourse = {
+type CourseTee = {
+  id: string;
+  name: string;
+  category: string | null;
+  parTotal: number | null;
+  distanceTotal: number | null;
+  courseRating: number | null;
+  slope: number | null;
+};
+
+type CourseLayout = {
+  id: string;
+  name: string;
+  holeCount: number | null;
+  tees: CourseTee[];
+};
+
+type RealCourse = {
   id: string;
   name: string;
   location: string | null;
-  holes: { number: number; par: number; index: number | null; distance: number | null }[];
+  layouts: CourseLayout[];
 };
+
+function teeMetaLabel(tee: CourseTee): string {
+  const parts: string[] = [];
+  if (tee.category) parts.push(tee.category);
+  if (tee.distanceTotal != null) parts.push(`${tee.distanceTotal} m`);
+  if (tee.courseRating != null) parts.push(`CR ${tee.courseRating}`);
+  if (tee.slope != null) parts.push(`Slope ${tee.slope}`);
+  return parts.join(" · ");
+}
 
 type InvitablePlayer = { id: string; name: string | null; image: string | null; handicap: number | null };
 
@@ -89,14 +115,16 @@ export function NewGameScreen({
   isPro,
   me,
 }: {
-  courses: DemoCourse[];
+  courses: RealCourse[];
   t: Dictionary["newGame"];
   playT: Dictionary["play"];
   isPro: boolean;
   me: { name: string | null; image: string | null; handicap: number | null };
 }) {
   const now = useMemo(() => new Date(), []);
-  const [selectedCourse, setSelectedCourse] = useState<DemoCourse | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<RealCourse | null>(null);
+  const [selectedLayout, setSelectedLayout] = useState<CourseLayout | null>(null);
+  const [selectedTee, setSelectedTee] = useState<CourseTee | null>(null);
   const [freeTextCourse, setFreeTextCourse] = useState("");
   const [courseQuery, setCourseQuery] = useState("");
   const [date, setDate] = useState(toDateInputValue(now));
@@ -112,9 +140,66 @@ export function NewGameScreen({
   const [mode, setMode] = useState<GameMode>("STROKE_PLAY");
 
   const [courseDrawerOpen, setCourseDrawerOpen] = useState(false);
+  const [layoutDrawerOpen, setLayoutDrawerOpen] = useState(false);
+  const [teeDrawerOpen, setTeeDrawerOpen] = useState(false);
   const [dateDrawerOpen, setDateDrawerOpen] = useState(false);
   const [playersDrawerOpen, setPlayersDrawerOpen] = useState(false);
   const [formatDrawerOpen, setFormatDrawerOpen] = useState(false);
+
+  // El recorrido solo tiene 9 hoyos reales para Pollença, Santa Ponsa III
+  // y Palma Pitch & Putt — "18 hoyos" sigue disponible, pero juega esa
+  // misma tarjeta de 9 dos veces (GameHole 10-18 clona 1-9 en el servidor,
+  // GolfCourseTeeHole nunca gana filas nuevas). Ver resolveGameHoles.
+  const layoutIsNineHoles = selectedLayout?.holeCount === 9;
+
+  // Por defecto se propone "9 hoyos" al elegir un recorrido de 9 (la
+  // opción más directa), pero el usuario puede cambiar a 18 libremente.
+  function selectLayoutHoleCount(layout: CourseLayout) {
+    if (layout.holeCount === 9) setHoleCount(9);
+  }
+
+  // Tras elegir un campo, si solo hay un recorrido se selecciona solo; si
+  // ese único recorrido además solo tiene un tee, se selecciona también y
+  // no hace falta abrir ningún otro drawer.
+  function pickCourse(c: RealCourse) {
+    setSelectedCourse(c);
+    setFreeTextCourse("");
+    setCourseDrawerOpen(false);
+    if (c.layouts.length === 1) {
+      pickLayout(c.layouts[0]);
+    } else {
+      setSelectedLayout(null);
+      setSelectedTee(null);
+      setLayoutDrawerOpen(true);
+    }
+  }
+
+  function pickLayout(layout: CourseLayout) {
+    setSelectedLayout(layout);
+    setLayoutDrawerOpen(false);
+    selectLayoutHoleCount(layout);
+    if (layout.tees.length === 1) {
+      setSelectedTee(layout.tees[0]);
+    } else {
+      setSelectedTee(null);
+      setTeeDrawerOpen(true);
+    }
+  }
+
+  function pickTee(tee: CourseTee) {
+    setSelectedTee(tee);
+    setTeeDrawerOpen(false);
+  }
+
+  const courseFieldValue = selectedCourse
+    ? [selectedCourse.name, selectedLayout?.name, selectedTee ? teeLabel(selectedTee) : null].filter(Boolean).join(" · ")
+    : freeTextCourse || "—";
+
+  function teeLabel(tee: CourseTee) {
+    return tee.category ? `${tee.name} (${tee.category})` : tee.name;
+  }
+
+  const courseSelectionComplete = selectedCourse ? Boolean(selectedLayout && selectedTee) : Boolean(freeTextCourse.trim());
 
   const [playerQuery, setPlayerQuery] = useState("");
   const [playerResults, setPlayerResults] = useState<InvitablePlayer[]>([]);
@@ -129,7 +214,7 @@ export function NewGameScreen({
   // así se aterriza directo en el lobby (/play/[id]) donde el botón
   // "Invitar" real (WhatsApp/email) ya funciona, sin duplicar esa lógica aquí.
   function handleInviteNow() {
-    if (!selectedCourse && !freeTextCourse.trim()) {
+    if (!courseSelectionComplete) {
       setInviteBlocked(true);
       return;
     }
@@ -215,7 +300,11 @@ export function NewGameScreen({
           <input type="hidden" name="playerCount" value={playerCount} />
           <input type="hidden" name="mode" value={mode} />
           {selectedCourse ? (
-            <input type="hidden" name="courseId" value={selectedCourse.id} />
+            <>
+              <input type="hidden" name="courseId" value={selectedCourse.id} />
+              {selectedLayout && <input type="hidden" name="courseLayoutId" value={selectedLayout.id} />}
+              {selectedTee && <input type="hidden" name="courseTeeId" value={selectedTee.id} />}
+            </>
           ) : (
             <input type="hidden" name="course" value={freeTextCourse} />
           )}
@@ -232,7 +321,7 @@ export function NewGameScreen({
           <SettingRow
             icon={MapPin}
             label={t.courseFieldLabel}
-            value={selectedCourse?.name ?? (freeTextCourse || "—")}
+            value={courseFieldValue}
             onClick={() => setCourseDrawerOpen(true)}
           />
 
@@ -317,7 +406,7 @@ export function NewGameScreen({
           <Button
             type="submit"
             size="lg"
-            disabled={pending || (!selectedCourse && !freeTextCourse.trim())}
+            disabled={pending || !courseSelectionComplete}
             className="h-12 gap-2 rounded-2xl text-base"
           >
             {pending ? t.creating : t.create}
@@ -346,11 +435,7 @@ export function NewGameScreen({
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedCourse(c);
-                    setFreeTextCourse("");
-                    setCourseDrawerOpen(false);
-                  }}
+                  onClick={() => pickCourse(c)}
                   className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary hover:bg-secondary/40"
                 >
                   <div>
@@ -358,12 +443,11 @@ export function NewGameScreen({
                     {c.location && <p className="text-xs text-muted-foreground">{c.location}</p>}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {c.holes.length} {t.holes}
+                    {c.layouts.length === 1 ? c.layouts[0].name : fmt(t.layoutsCountLabel, { n: c.layouts.length })}
                   </span>
                 </button>
               ))}
             </div>
-            <p className="rounded-lg bg-secondary/30 p-2 text-center text-xs text-muted-foreground">{t.demoDataNotice}</p>
             <div className="flex flex-col gap-2 border-t border-border pt-4">
               <p className="text-sm font-medium">{t.noCourseFound}</p>
               <div className="flex gap-2">
@@ -378,6 +462,8 @@ export function NewGameScreen({
                   onClick={() => {
                     if (!freeTextCourse.trim()) return;
                     setSelectedCourse(null);
+                    setSelectedLayout(null);
+                    setSelectedTee(null);
                     setCourseDrawerOpen(false);
                   }}
                 >
@@ -385,6 +471,52 @@ export function NewGameScreen({
                 </Button>
               </div>
             </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Recorrido */}
+      <Drawer open={layoutDrawerOpen} onOpenChange={setLayoutDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{t.layoutFieldLabel}</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-4">
+            <p className="text-sm text-muted-foreground">{t.chooseLayoutPrompt}</p>
+            {selectedCourse?.layouts.map((layout) => (
+              <button
+                key={layout.id}
+                type="button"
+                onClick={() => pickLayout(layout)}
+                className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary hover:bg-secondary/40"
+              >
+                <p className="font-medium">{layout.name}</p>
+                <span className="text-xs text-muted-foreground">{fmt(t.teesCountLabel, { n: layout.tees.length })}</span>
+              </button>
+            ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Tee de salida */}
+      <Drawer open={teeDrawerOpen} onOpenChange={setTeeDrawerOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{t.teeFieldLabel}</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-4">
+            <p className="text-sm text-muted-foreground">{t.chooseTeePrompt}</p>
+            {selectedLayout?.tees.map((tee) => (
+              <button
+                key={tee.id}
+                type="button"
+                onClick={() => pickTee(tee)}
+                className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary hover:bg-secondary/40"
+              >
+                <p className="font-medium">{tee.name}</p>
+                <span className="text-xs text-muted-foreground">{teeMetaLabel(tee)}</span>
+              </button>
+            ))}
           </div>
         </DrawerContent>
       </Drawer>
@@ -550,6 +682,9 @@ export function NewGameScreen({
                   </button>
                 ))}
               </div>
+              {layoutIsNineHoles && holeCount === 18 && (
+                <p className="text-xs text-muted-foreground">{t.nineHoleLayoutDoubledHint}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">

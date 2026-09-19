@@ -6,6 +6,8 @@ import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getTeeForGameCreation } from "@/lib/data/games";
+import { resolveGameHoles } from "@/lib/games/course-selection";
 import {
   addShotSchema,
   createGameSchema,
@@ -37,6 +39,8 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     mode: formData.get("mode"),
     courseId: formData.get("courseId") || undefined,
     course: formData.get("course") || undefined,
+    courseLayoutId: formData.get("courseLayoutId") || undefined,
+    courseTeeId: formData.get("courseTeeId") || undefined,
     date: formData.get("date"),
     goal: formData.get("goal") ?? "",
     holeCount: formData.get("holeCount") || 18,
@@ -48,32 +52,66 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     return { error: parsed.error.issues[0]?.message ?? "Datos inválidos" };
   }
 
-  const { playerCount, mode, courseId, course, date, goal, holeCount, playerIds } = parsed.data;
+  const { playerCount, mode, courseId, course, courseLayoutId, courseTeeId, date, goal, holeCount, playerIds } = parsed.data;
 
   let holesData: { number: number; par: number; index: number | null; distance: number | null }[];
   let courseName: string;
+  // Foto del recorrido/tee elegidos en el momento de crear — independiente
+  // de que GolfCourseLayout/GolfCourseTee cambien o se borren después.
+  let teeSnapshot: {
+    courseLayoutId: string | null;
+    courseTeeId: string | null;
+    layoutName: string | null;
+    teeName: string | null;
+    teeCategory: string | null;
+    teeCourseRating: number | null;
+    teeSlope: number | null;
+  } = {
+    courseLayoutId: null,
+    courseTeeId: null,
+    layoutName: null,
+    teeName: null,
+    teeCategory: null,
+    teeCourseRating: null,
+    teeSlope: null,
+  };
 
   if (courseId) {
-    const golfCourse = await prisma.golfCourse.findUniqueOrThrow({
-      where: { id: courseId },
-      include: { holes: { orderBy: { number: "asc" } } },
-    });
-    courseName = golfCourse.name;
-    holesData = golfCourse.holes.map((h) => ({
-      number: h.number,
-      par: h.par,
-      index: h.index,
-      distance: h.distance,
-    }));
+    // Un campo real (con recorridos/tees) exige elegir un tee concreto —
+    // nunca se cae de vuelta a GolfCourse.holes (vacío para todos los
+    // campos reales de Mallorca desde que sus hoyos viven en
+    // GolfCourseTeeHole). El tee se vuelve a leer del servidor: nunca se
+    // confía en hoyos que pudiera mandar el cliente.
+    if (!courseTeeId) {
+      return { error: "Elige un recorrido y un tee" };
+    }
+    const tee = await getTeeForGameCreation(courseTeeId);
+    if (!tee || tee.layout.courseId !== courseId || (courseLayoutId && tee.layoutId !== courseLayoutId)) {
+      return { error: "El tee elegido no es válido para este campo" };
+    }
+    courseName = tee.layout.course.name;
+    // En un recorrido con 9 hoyos reales (Pollença, Santa Ponsa III, Palma
+    // Pitch & Putt), "18 hoyos" juega esa misma tarjeta dos veces
+    // (GameHole 10-18 clona 1-9) — GolfCourseTeeHole nunca gana filas
+    // nuevas. Ver resolveGameHoles.
+    holesData = resolveGameHoles(tee.holes, holeCount).holes;
+    teeSnapshot = {
+      courseLayoutId: tee.layoutId,
+      courseTeeId: tee.id,
+      layoutName: tee.layout.name,
+      teeName: tee.name,
+      teeCategory: tee.category,
+      teeCourseRating: tee.courseRating,
+      teeSlope: tee.slope,
+    };
   } else {
     courseName = course!;
     holesData = Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 4, index: null, distance: null }));
-  }
-
-  // "9 hoyos" juega solo la primera vuelta (hoyos 1-9) — no hace falta que
-  // el usuario tenga tiempo para los 18 (ver brief).
-  if (holeCount === 9) {
-    holesData = holesData.slice(0, 9);
+    // "9 hoyos" juega solo la primera vuelta (hoyos 1-9) — no hace falta que
+    // el usuario tenga tiempo para los 18 (ver brief).
+    if (holeCount === 9) {
+      holesData = holesData.slice(0, 9);
+    }
   }
 
   // Jugadores reales elegidos por nombre al crear (además del creador),
@@ -91,6 +129,7 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     data: {
       courseId: courseId ?? null,
       course: courseName,
+      ...teeSnapshot,
       mode,
       playerCount,
       date,
@@ -350,14 +389,32 @@ export async function createRematch(gameId: string) {
   const amPlayer = source.players.some((p) => p.userId === session.user.id);
   if (!amPlayer) throw new Error("No perteneces a esta partida");
 
-  const holesData = source.golfCourse
-    ? source.golfCourse.holes.map((h) => ({ number: h.number, par: h.par, index: h.index, distance: h.distance }))
-    : Array.from({ length: source.totalHoles }, (_, i) => ({ number: i + 1, par: 4, index: null, distance: null }));
+  // Mismo tee que la partida original, si lo tenía (campo real con
+  // recorridos/tees) — re-lee GolfCourseTeeHole en vez de la vieja
+  // GolfCourse.holes, igual que createGame.
+  let holesData: { number: number; par: number; index: number | null; distance: number | null }[];
+  if (source.courseTeeId) {
+    const tee = await getTeeForGameCreation(source.courseTeeId);
+    holesData = tee
+      ? resolveGameHoles(tee.holes, source.totalHoles === 9 ? 9 : 18).holes
+      : Array.from({ length: source.totalHoles }, (_, i) => ({ number: i + 1, par: 4, index: null, distance: null }));
+  } else if (source.golfCourse) {
+    holesData = source.golfCourse.holes.map((h) => ({ number: h.number, par: h.par, index: h.index, distance: h.distance }));
+  } else {
+    holesData = Array.from({ length: source.totalHoles }, (_, i) => ({ number: i + 1, par: 4, index: null, distance: null }));
+  }
 
   const rematch = await prisma.game.create({
     data: {
       courseId: source.courseId,
       course: source.course,
+      courseLayoutId: source.courseLayoutId,
+      courseTeeId: source.courseTeeId,
+      layoutName: source.layoutName,
+      teeName: source.teeName,
+      teeCategory: source.teeCategory,
+      teeCourseRating: source.teeCourseRating,
+      teeSlope: source.teeSlope,
       mode: source.mode,
       playerCount: source.playerCount,
       date: new Date(),

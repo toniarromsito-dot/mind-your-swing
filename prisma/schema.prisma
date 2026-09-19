@@ -362,8 +362,8 @@ model GolfCourse {
 /// Un recorrido jugable dentro de un campo — la mayoría de campos solo
 /// tienen uno ("Recorrido 18"), pero algunos tienen varios recorridos
 /// independientes bajo el mismo club (p. ej. Santa Ponsa I/II/III, Son
-/// Antem Este/Oeste). Sin caller todavía: /play/new sigue leyendo
-/// GolfCourse.holes exactamente igual que antes.
+/// Antem Este/Oeste). /play/new lee esta estructura (no GolfCourse.holes)
+/// para campos reales; ver createGame en actions/games.ts.
 model GolfCourseLayout {
   id        String  @id @default(cuid())
   courseId  String
@@ -374,6 +374,7 @@ model GolfCourseLayout {
 
   course GolfCourse      @relation(fields: [courseId], references: [id], onDelete: Cascade)
   tees   GolfCourseTee[]
+  games  Game[]
 
   @@unique([courseId, name])
 }
@@ -399,6 +400,7 @@ model GolfCourseTee {
 
   layout GolfCourseLayout    @relation(fields: [layoutId], references: [id], onDelete: Cascade)
   holes  GolfCourseTeeHole[]
+  games  Game[]
 
   // Algunos recorridos (p. ej. Palma Pitch & Putt) publican el mismo
   // nombre de tee ("VERDES") con dos valoraciones oficiales distintas por
@@ -449,29 +451,50 @@ model GolfCourseHole {
 // "Empezar partida" pasa a true y arranca el Focus Mode sin más chrome
 // que el scorecard.
 model Game {
-  id          String     @id @default(cuid())
-  courseId    String?
-  course      String
-  mode        GameMode
-  playerCount Int        @default(1)
-  started     Boolean    @default(false)
-  date        DateTime
-  totalHoles  Int        @default(18)
-  goal        String?
-  bet         String?    @db.Text
-  status      GameStatus @default(IN_PROGRESS)
-  insight     String?    @db.Text
-  inviteCode  String     @unique
+  id             String     @id @default(cuid())
+  courseId       String?
+  course         String
+  /// Recorrido (GolfCourseLayout) elegido al crear la partida, si el campo
+  /// es uno de los reales con estructura de recorridos/tees. NULL para
+  /// partidas con campo en texto libre o partidas anteriores a esta
+  /// función — nunca se rellena a posteriori.
+  courseLayoutId String?
+  /// Tee (GolfCourseTee) elegido al crear la partida. Igual que
+  /// courseLayoutId, opcional y solo se fija en el momento de crear.
+  courseTeeId    String?
+  /// Foto del nombre del recorrido en el momento de crear la partida —
+  /// independiente de que GolfCourseLayout cambie o se borre después.
+  layoutName     String?
+  /// Foto del nombre del tee (color) en el momento de crear la partida.
+  teeName        String?
+  /// Foto de la categoría del tee (p. ej. "M"/"F"), si tenía una.
+  teeCategory    String?
+  /// Foto del Course Rating oficial del tee, si estaba publicado.
+  teeCourseRating Float?
+  /// Foto del Slope oficial del tee, si estaba publicado.
+  teeSlope       Int?
+  mode           GameMode
+  playerCount    Int        @default(1)
+  started        Boolean    @default(false)
+  date           DateTime
+  totalHoles     Int        @default(18)
+  goal           String?
+  bet            String?    @db.Text
+  status         GameStatus @default(IN_PROGRESS)
+  insight        String?    @db.Text
+  inviteCode     String     @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  golfCourse    GolfCourse?    @relation(fields: [courseId], references: [id])
-  holes         Hole[]
-  players       GamePlayer[]
-  moodEntries   MoodEntry[]
-  messages      Message[]
-  challengeWins ChallengeWin[]
+  golfCourse       GolfCourse?       @relation(fields: [courseId], references: [id])
+  golfCourseLayout GolfCourseLayout? @relation(fields: [courseLayoutId], references: [id], onDelete: SetNull)
+  golfCourseTee    GolfCourseTee?    @relation(fields: [courseTeeId], references: [id], onDelete: SetNull)
+  holes            Hole[]
+  players          GamePlayer[]
+  moodEntries      MoodEntry[]
+  messages         Message[]
+  challengeWins    ChallengeWin[]
 
   @@index([date])
 }

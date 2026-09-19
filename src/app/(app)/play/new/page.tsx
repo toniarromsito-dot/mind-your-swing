@@ -1,6 +1,6 @@
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
-import { listDemoCourses } from "@/lib/data/games";
+import { listRealGolfCourses } from "@/lib/data/games";
 import { NewGameScreen } from "@/components/new-game-screen";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { hasProAccess } from "@/lib/plan";
@@ -12,7 +12,7 @@ export default async function NewGamePage() {
       where: { id: userId },
       select: { plan: true, email: true, name: true, image: true, handicap: true },
     }),
-    listDemoCourses(),
+    listRealGolfCourses(),
   ]);
   const { t } = await getDictionary();
 
