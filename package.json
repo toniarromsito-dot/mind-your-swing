@@ -17,6 +17,8 @@
     "db:seed:golf-mallorca": "node scripts/seed-mallorca-golf.mjs",
     "db:import:golf-mallorca-verified": "node scripts/import-mallorca-golf-verified.mjs",
     "db:import:golf-mallorca-pending": "node scripts/import-mallorca-golf-pending-layouts.mjs",
+    "db:import:golf-mallorca-additional-tees": "node scripts/import-mallorca-golf-additional-tees.mjs",
+    "db:fix:golf-mallorca-tee-categories": "node scripts/fix-mallorca-golf-tee-categories.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
