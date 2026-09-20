@@ -9,6 +9,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { modesForPlayerCount, GAME_MODE_META } from "@/lib/games/modes";
+import { resolveGameHandicap } from "@/lib/games/handicap";
 import type { GameMode } from "@prisma/client";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
@@ -201,6 +202,25 @@ export function NewGameScreen({
 
   const courseSelectionComplete = selectedCourse ? Boolean(selectedLayout && selectedTee) : Boolean(freeTextCourse.trim());
 
+  // Vista previa del hándicap de juego, en cuanto hay tee elegido y el
+  // jugador tiene un Handicap Index declarado — misma función pura que usa
+  // el servidor al crear la partida (createGame), así el número que se ve
+  // aquí es exactamente el que se guardará.
+  const handicapPreview = useMemo(() => {
+    if (!selectedTee || me.handicap == null) return null;
+    return resolveGameHandicap(
+      me.handicap,
+      holeCount,
+      {
+        courseRating: selectedTee.courseRating,
+        slope: selectedTee.slope,
+        parTotal: selectedTee.parTotal,
+        teeHoleCount: selectedLayout?.holeCount === 9 ? 9 : selectedLayout?.holeCount === 18 ? 18 : null,
+      },
+      1
+    );
+  }, [selectedTee, selectedLayout, holeCount, me.handicap]);
+
   const [playerQuery, setPlayerQuery] = useState("");
   const [playerResults, setPlayerResults] = useState<InvitablePlayer[]>([]);
   const [isSearching, startSearching] = useTransition();
@@ -324,6 +344,25 @@ export function NewGameScreen({
             value={courseFieldValue}
             onClick={() => setCourseDrawerOpen(true)}
           />
+
+          {/* Vista previa simple del hándicap de juego — una sola línea,
+              sin Course Rating/Slope/fórmulas: eso vive solo en el
+              informe final de esta fase, nunca en la pantalla del
+              jugador. Solo aparece cuando hay tee elegido y HI declarado. */}
+          {selectedTee && me.handicap != null && (
+            <div className="rounded-3xl bg-card/95 px-4 py-3 text-center shadow-sm backdrop-blur-sm">
+              {handicapPreview?.available ? (
+                <>
+                  <p className="text-xs font-medium text-muted-foreground">{t.playingHandicapLabel}</p>
+                  <p className="font-heading text-lg font-semibold">
+                    {fmt(t.playingHandicapValue, { n: handicapPreview.playingHandicap })}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">{t.playingHandicapUnavailableHint}</p>
+              )}
+            </div>
+          )}
 
           <SettingRow
             icon={Calendar}

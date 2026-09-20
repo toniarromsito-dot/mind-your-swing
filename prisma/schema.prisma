@@ -473,6 +473,26 @@ model Game {
   teeCourseRating Float?
   /// Foto del Slope oficial del tee, si estaba publicado.
   teeSlope       Int?
+  /// Foto del par total del tee (GolfCourseTee.parTotal) en el momento de crear.
+  teeParTotal    Int?
+  /// Número real de hoyos del tee (9 o 18) — distinto de totalHoles, que es
+  /// cuántos hoyos se JUEGAN en esta partida (un recorrido de 9 puede
+  /// jugarse a 18 repitiendo la vuelta). Necesario para saber si el
+  /// hándicap de esta partida corresponde a una valoración de 9 hoyos
+  /// real del tee o exige una de 18 que no tenemos.
+  teeHoleCount   Int?
+  /// Handicap Index declarado por el creador en el momento de crear la
+  /// partida — foto, nunca se recalcula después aunque el jugador
+  /// actualice su Handicap Index más tarde.
+  handicapIndex     Float?
+  /// Course Handicap del creador para este tee (Handicap Index × Slope/113
+  /// + (Course Rating − Par), sin redondear a 54). Null si el tee no tiene
+  /// Course Rating/Slope verificados.
+  courseHandicap    Int?
+  /// Playing Handicap del creador = Course Handicap × handicapAllowance.
+  playingHandicap   Int?
+  /// Allowance aplicado (1.0 = 100%, stroke play individual en esta fase).
+  handicapAllowance Float?
   mode           GameMode
   playerCount    Int        @default(1)
   started        Boolean    @default(false)
@@ -506,6 +526,20 @@ model GamePlayer {
   gameId String
   userId String
   team   Team?
+
+  /// Foto del Handicap Index de ESTE jugador en el momento de incorporarse
+  /// a la partida (al crearla, en una revancha, o al unirse por código de
+  /// invitación) — nunca se recalcula después si el jugador actualiza su
+  /// Handicap Index más tarde. Fuente de verdad del hándicap por jugador;
+  /// los campos equivalentes en Game representan solo al creador y se
+  /// mantienen por compatibilidad.
+  handicapIndex     Float?
+  /// Foto del Course Handicap de este jugador para el tee de esta partida.
+  courseHandicap    Int?
+  /// Foto del Playing Handicap de este jugador (Course Handicap × allowance).
+  playingHandicap   Int?
+  /// Foto del allowance aplicado (1.0 = 100%, stroke play individual en esta fase).
+  handicapAllowance Float?
 
   joinedAt DateTime @default(now())
 

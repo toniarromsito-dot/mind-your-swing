@@ -18,6 +18,7 @@ import {
   computeTeamStrokeStandings,
 } from "@/lib/games/standings";
 import { holeResultLabel } from "@/lib/golf";
+import { gamePlayingHandicapForIndex } from "@/lib/games/handicap";
 import { createRematch } from "@/actions/games";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { fmt } from "@/lib/i18n/format";
@@ -40,7 +41,13 @@ export default async function GameSummaryPage({ params }: PageProps<"/play/[id]/
   const teamStandings =
     kind === "best-ball" ? computeBestBallStandings(players, scores) : computeTeamStrokeStandings(players, scores);
   const individualStandings = computeStrokeStandings(players, scores);
-  const handicapsByPlayerId = Object.fromEntries(game.players.map((p) => [p.id, p.user.handicap]));
+  // Playing Handicap CONGELADO al incorporarse a la partida
+  // (GamePlayer.playingHandicap) — fuente de verdad. Solo se recalcula en
+  // vivo como fallback para GamePlayer creados antes de esta foto por
+  // jugador (filas legacy con el campo null).
+  const handicapsByPlayerId = Object.fromEntries(
+    game.players.map((p) => [p.id, p.playingHandicap ?? gamePlayingHandicapForIndex(game, p.user.handicap)])
+  );
   const netStandings = usesTeams ? [] : computeNetStrokeStandings(players, scores, handicapsByPlayerId);
   const netByPlayerId = new Map(netStandings.map((s) => [s.playerId, s]));
 

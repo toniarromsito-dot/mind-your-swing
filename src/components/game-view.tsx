@@ -7,6 +7,7 @@ import { ChevronLeft, Loader2, MoreHorizontal } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
 import { MindQuickCard } from "@/components/mind-quick-card";
 import { finishGame } from "@/actions/games";
+import { gamePlayingHandicapForIndex } from "@/lib/games/handicap";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { fmt } from "@/lib/i18n/format";
@@ -15,10 +16,16 @@ type GameForView = {
   id: string;
   course: string;
   totalHoles: number;
+  teeCourseRating: number | null;
+  teeSlope: number | null;
+  teeParTotal: number | null;
+  teeHoleCount: number | null;
+  handicapAllowance: number | null;
   holes: { id: string; number: number; par: number; distance: number | null; index: number | null }[];
   players: {
     id: string;
     user: { name: string | null; handicap: number | null };
+    playingHandicap: number | null;
     scores: { holeId: string; strokes: number | null }[];
   }[];
 };
@@ -59,11 +66,15 @@ export function GameView({
         return {
           id: p.id,
           name: p.user.name ?? "Jugador",
-          handicap: p.user.handicap,
+          // Playing Handicap CONGELADO al incorporarse a la partida
+          // (GamePlayer.playingHandicap) — fuente de verdad. Solo se
+          // recalcula en vivo como fallback para GamePlayer creados antes
+          // de esta foto por jugador (filas legacy con el campo null).
+          handicap: p.playingHandicap ?? gamePlayingHandicapForIndex(game, p.user.handicap),
           strokes: score?.strokes ?? null,
         };
       }),
-    [game.players, hole.id]
+    [game, hole.id]
   );
 
   function goToNextHole() {

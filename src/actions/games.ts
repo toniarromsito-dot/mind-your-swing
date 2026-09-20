@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getTeeForGameCreation } from "@/lib/data/games";
 import { resolveGameHoles } from "@/lib/games/course-selection";
+import { resolveGameHandicap, resolvePlayerHandicapSnapshot, type GameHandicapContext } from "@/lib/games/handicap";
 import {
   addShotSchema,
   createGameSchema,
@@ -56,8 +57,9 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
 
   let holesData: { number: number; par: number; index: number | null; distance: number | null }[];
   let courseName: string;
-  // Foto del recorrido/tee elegidos en el momento de crear — independiente
-  // de que GolfCourseLayout/GolfCourseTee cambien o se borren después.
+  // Foto del recorrido/tee/hándicap elegidos en el momento de crear —
+  // independiente de que GolfCourseLayout/GolfCourseTee o el Handicap
+  // Index del creador cambien después.
   let teeSnapshot: {
     courseLayoutId: string | null;
     courseTeeId: string | null;
@@ -66,6 +68,12 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     teeCategory: string | null;
     teeCourseRating: number | null;
     teeSlope: number | null;
+    teeParTotal: number | null;
+    teeHoleCount: number | null;
+    handicapIndex: number | null;
+    courseHandicap: number | null;
+    playingHandicap: number | null;
+    handicapAllowance: number | null;
   } = {
     courseLayoutId: null,
     courseTeeId: null,
@@ -74,7 +82,25 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     teeCategory: null,
     teeCourseRating: null,
     teeSlope: null,
+    teeParTotal: null,
+    teeHoleCount: null,
+    handicapIndex: null,
+    courseHandicap: null,
+    playingHandicap: null,
+    handicapAllowance: null,
   };
+
+  // Jugadores reales elegidos por nombre al crear (además del creador),
+  // deduplicados y recortados a playerCount - 1: se añaden directamente
+  // como GamePlayer, igual que si ya hubieran usado el código de invitación.
+  const extraPlayerIds = [...new Set(playerIds ?? [])]
+    .filter((id) => id !== session.user.id)
+    .slice(0, Math.max(0, playerCount - 1));
+  const usesTeams = TEAM_MODES.includes(mode);
+  const allPlayerIds = [session.user.id, ...extraPlayerIds];
+
+  const players = await prisma.user.findMany({ where: { id: { in: allPlayerIds } }, select: { id: true, handicap: true } });
+  const handicapByUserId = new Map(players.map((p) => [p.id, p.handicap]));
 
   if (courseId) {
     // Un campo real (con recorridos/tees) exige elegir un tee concreto —
@@ -95,6 +121,13 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     // (GameHole 10-18 clona 1-9) — GolfCourseTeeHole nunca gana filas
     // nuevas. Ver resolveGameHoles.
     holesData = resolveGameHoles(tee.holes, holeCount).holes;
+    const teeHoleCount = tee.holes.length >= 18 ? 18 : 9;
+    const handicap = resolveGameHandicap(
+      handicapByUserId.get(session.user.id) ?? null,
+      holeCount,
+      { courseRating: tee.courseRating, slope: tee.slope, parTotal: tee.parTotal, teeHoleCount },
+      1
+    );
     teeSnapshot = {
       courseLayoutId: tee.layoutId,
       courseTeeId: tee.id,
@@ -103,6 +136,12 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
       teeCategory: tee.category,
       teeCourseRating: tee.courseRating,
       teeSlope: tee.slope,
+      teeParTotal: tee.parTotal,
+      teeHoleCount,
+      handicapIndex: handicap.available ? handicap.handicapIndex : null,
+      courseHandicap: handicap.available ? handicap.courseHandicap : null,
+      playingHandicap: handicap.available ? handicap.playingHandicap : null,
+      handicapAllowance: handicap.available ? handicap.allowance : null,
     };
   } else {
     courseName = course!;
@@ -114,14 +153,18 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
     }
   }
 
-  // Jugadores reales elegidos por nombre al crear (además del creador),
-  // deduplicados y recortados a playerCount - 1: se añaden directamente
-  // como GamePlayer, igual que si ya hubieran usado el código de invitación.
-  const extraPlayerIds = [...new Set(playerIds ?? [])]
-    .filter((id) => id !== session.user.id)
-    .slice(0, Math.max(0, playerCount - 1));
-  const usesTeams = TEAM_MODES.includes(mode);
-  const allPlayerIds = [session.user.id, ...extraPlayerIds];
+  // Foto del hándicap POR JUGADOR (fuente de verdad: GamePlayer). Se
+  // calcula con el mismo tee/campo que teeSnapshot (el de la partida), pero
+  // usando el Handicap Index individual de cada jugador — nunca el del
+  // creador aplicado a todos.
+  const handicapContext: GameHandicapContext = {
+    totalHoles: holesData.length,
+    teeCourseRating: teeSnapshot.teeCourseRating,
+    teeSlope: teeSnapshot.teeSlope,
+    teeParTotal: teeSnapshot.teeParTotal,
+    teeHoleCount: teeSnapshot.teeHoleCount,
+    handicapAllowance: 1,
+  };
 
   // started queda en su default (false): la partida arranca en el lobby,
   // no directamente en el scorecard — ver /play/[id]/page.tsx.
@@ -142,6 +185,7 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
           userId,
           // Mismo reparto que joinGame: los 2 primeros al equipo A, el resto al B.
           team: usesTeams ? (i < 2 ? "A" : "B") : null,
+          ...resolvePlayerHandicapSnapshot(handicapContext, handicapByUserId.get(userId) ?? null),
         })),
       },
     },
@@ -194,7 +238,22 @@ export async function joinGame(inviteCode: string) {
       const teamACount = game.players.filter((p) => p.team === "A").length;
       team = teamACount < 2 ? "A" : "B";
     }
-    await prisma.gamePlayer.create({ data: { gameId: game.id, userId: session.user.id, team } });
+    // Foto del hándicap de quien se une, con el Handicap Index que tiene
+    // HOY y el campo/tee ya congelado de esta partida — igual que
+    // resolveGameHandicapFromContext usa createGame, nunca el del creador.
+    const joiner = await prisma.user.findUnique({ where: { id: session.user.id }, select: { handicap: true } });
+    const handicapSnapshot = resolvePlayerHandicapSnapshot(
+      {
+        totalHoles: game.totalHoles,
+        teeCourseRating: game.teeCourseRating,
+        teeSlope: game.teeSlope,
+        teeParTotal: game.teeParTotal,
+        teeHoleCount: game.teeHoleCount,
+        handicapAllowance: game.handicapAllowance,
+      },
+      joiner?.handicap ?? null
+    );
+    await prisma.gamePlayer.create({ data: { gameId: game.id, userId: session.user.id, team, ...handicapSnapshot } });
   }
 
   revalidatePath("/play");
@@ -391,18 +450,77 @@ export async function createRematch(gameId: string) {
 
   // Mismo tee que la partida original, si lo tenía (campo real con
   // recorridos/tees) — re-lee GolfCourseTeeHole en vez de la vieja
-  // GolfCourse.holes, igual que createGame.
+  // GolfCourse.holes, igual que createGame. El hándicap se recalcula con
+  // el Handicap Index ACTUAL de quien pide la revancha (no se copia el
+  // de la partida anterior): la revancha es una partida nueva, y su foto
+  // de hándicap debe reflejar el Handicap Index declarado hoy.
   let holesData: { number: number; par: number; index: number | null; distance: number | null }[];
+  let handicapSnapshot: {
+    teeParTotal: number | null;
+    teeHoleCount: number | null;
+    handicapIndex: number | null;
+    courseHandicap: number | null;
+    playingHandicap: number | null;
+    handicapAllowance: number | null;
+  } = {
+    teeParTotal: null,
+    teeHoleCount: null,
+    handicapIndex: null,
+    courseHandicap: null,
+    playingHandicap: null,
+    handicapAllowance: null,
+  };
+  // Hándicap de CADA jugador de la partida original, con su Handicap Index
+  // ACTUAL (no el que tenían al crear la original) — la revancha es una
+  // partida nueva y su foto por jugador debe reflejar el perfil de hoy.
+  const currentHandicapByUserId = new Map(
+    (
+      await prisma.user.findMany({
+        where: { id: { in: source.players.map((p) => p.userId) } },
+        select: { id: true, handicap: true },
+      })
+    ).map((u) => [u.id, u.handicap])
+  );
   if (source.courseTeeId) {
     const tee = await getTeeForGameCreation(source.courseTeeId);
     holesData = tee
       ? resolveGameHoles(tee.holes, source.totalHoles === 9 ? 9 : 18).holes
       : Array.from({ length: source.totalHoles }, (_, i) => ({ number: i + 1, par: 4, index: null, distance: null }));
+    if (tee) {
+      const teeHoleCount = tee.holes.length >= 18 ? 18 : 9;
+      const handicap = resolveGameHandicap(
+        currentHandicapByUserId.get(session.user.id) ?? null,
+        source.totalHoles === 9 ? 9 : 18,
+        { courseRating: tee.courseRating, slope: tee.slope, parTotal: tee.parTotal, teeHoleCount },
+        1
+      );
+      handicapSnapshot = {
+        teeParTotal: tee.parTotal,
+        teeHoleCount,
+        handicapIndex: handicap.available ? handicap.handicapIndex : null,
+        courseHandicap: handicap.available ? handicap.courseHandicap : null,
+        playingHandicap: handicap.available ? handicap.playingHandicap : null,
+        handicapAllowance: handicap.available ? handicap.allowance : null,
+      };
+    }
   } else if (source.golfCourse) {
     holesData = source.golfCourse.holes.map((h) => ({ number: h.number, par: h.par, index: h.index, distance: h.distance }));
   } else {
     holesData = Array.from({ length: source.totalHoles }, (_, i) => ({ number: i + 1, par: 4, index: null, distance: null }));
   }
+
+  // Contexto de hándicap de la revancha (mismo campo/tee reconstruido más
+  // arriba), usado para congelar el Playing Handicap ACTUAL de cada
+  // jugador en su propio GamePlayer — nunca el del solicitante aplicado a
+  // todos.
+  const rematchHandicapContext: GameHandicapContext = {
+    totalHoles: holesData.length,
+    teeCourseRating: source.teeCourseRating,
+    teeSlope: source.teeSlope,
+    teeParTotal: handicapSnapshot.teeParTotal,
+    teeHoleCount: handicapSnapshot.teeHoleCount,
+    handicapAllowance: 1,
+  };
 
   const rematch = await prisma.game.create({
     data: {
@@ -415,13 +533,20 @@ export async function createRematch(gameId: string) {
       teeCategory: source.teeCategory,
       teeCourseRating: source.teeCourseRating,
       teeSlope: source.teeSlope,
+      ...handicapSnapshot,
       mode: source.mode,
       playerCount: source.playerCount,
       date: new Date(),
       totalHoles: holesData.length,
       inviteCode: generateInviteCode(),
       holes: { create: holesData },
-      players: { create: source.players.map((p) => ({ userId: p.userId, team: p.team })) },
+      players: {
+        create: source.players.map((p) => ({
+          userId: p.userId,
+          team: p.team,
+          ...resolvePlayerHandicapSnapshot(rematchHandicapContext, currentHandicapByUserId.get(p.userId) ?? null),
+        })),
+      },
     },
   });
 
