@@ -2,66 +2,75 @@
 
 import { useState } from "react";
 import { Browser } from "@capacitor/browser";
-import { Check, Copy, Mail, MessageCircle, Share2 } from "lucide-react";
+import { Check, Copy, MessageCircle, Share2 } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { fmt } from "@/lib/i18n/format";
+import { buildInviteMessage, buildInviteUrl, buildWhatsAppShareUrl } from "@/lib/games/invite";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 /**
- * "Invitar" no puede ser solo copiar el enlace en silencio (el jugador no
- * sabe que ha pasado nada) — aquí se ve exactamente a dónde va: WhatsApp,
- * email o copiar el enlace con confirmación visible. Si el navegador
- * soporta el share nativo del sistema (más apps, no solo estas dos), se
- * ofrece también como primera opción.
+ * "Invitar" desde el lobby: 3 acciones, nada más — WhatsApp primero (es lo
+ * que todo el mundo usa para quedar), Compartir enlace (share nativo del
+ * sistema si está disponible, con fallback a copiar) y Copiar enlace. Nada
+ * de una pantalla llena de botones ni de un email que casi nadie usa aquí.
  */
 export function InviteDrawer({
   inviteCode,
   course,
+  layoutName,
+  teeName,
+  holesLabel,
   t,
 }: {
   inviteCode: string;
   course: string;
+  layoutName: string | null;
+  teeName: string | null;
+  holesLabel: string;
   t: Dictionary["lobby"];
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [canShare, setCanShare] = useState(false);
 
   function buildUrl() {
-    return `${window.location.origin}/play/join/${inviteCode}`;
+    return buildInviteUrl(window.location.origin, inviteCode);
   }
 
   function buildMessage() {
-    return fmt(t.inviteMessage, { course, url: buildUrl() });
+    return buildInviteMessage(
+      { course, layoutName, teeName },
+      buildUrl(),
+      { intro: t.inviteIntro, holesLabel, joinLabel: t.inviteJoinLabel }
+    );
   }
 
-  function openDrawer() {
-    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
-    setOpen(true);
-  }
-
-  function shareNative() {
-    navigator.share({ text: buildMessage() }).catch(() => {});
+  function copyLink() {
+    navigator.clipboard
+      .writeText(buildUrl())
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
   }
 
   function openWhatsapp() {
     // window.open() en la WebView nativa carga wa.me como una página web
     // dentro de la app en vez de abrir WhatsApp — Browser.open() (Chrome
-    // Custom Tabs) sí respeta el enlace de la app y cambia a WhatsApp de
-    // verdad si está instalada; en la versión web hace un window.open normal.
-    Browser.open({ url: `https://wa.me/?text=${encodeURIComponent(buildMessage())}` });
+    // Custom Tabs) sí respeta el enlace y cambia a WhatsApp de verdad si
+    // está instalada; en la versión web hace un window.open normal.
+    Browser.open({ url: buildWhatsAppShareUrl(buildMessage()) });
   }
 
-  function openEmail() {
-    window.location.href = `mailto:?subject=${encodeURIComponent(t.inviteEmailSubject)}&body=${encodeURIComponent(buildMessage())}`;
-  }
-
-  function copyLink() {
-    navigator.clipboard.writeText(buildUrl()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  function shareLink() {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      navigator.share({ text: buildMessage() }).catch(() => {});
+      return;
+    }
+    // Sin share nativo del sistema (navegador de escritorio, WebView sin
+    // soporte): copiar el enlace es un resultado siempre útil, nunca un
+    // botón que no hace nada.
+    copyLink();
   }
 
   const rowClass =
@@ -69,7 +78,7 @@ export function InviteDrawer({
 
   return (
     <>
-      <Button type="button" variant="outline" size="sm" className="h-8 w-fit gap-2 text-xs" onClick={openDrawer}>
+      <Button type="button" variant="outline" size="sm" className="h-8 w-fit gap-2 text-xs" onClick={() => setOpen(true)}>
         <Share2 className="size-3.5" />
         {t.invite}
       </Button>
@@ -80,19 +89,13 @@ export function InviteDrawer({
             <DrawerTitle>{t.inviteTitle}</DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col gap-2 p-4">
-            {canShare && (
-              <button type="button" onClick={shareNative} className={rowClass}>
-                <Share2 className="size-4 text-primary" />
-                {t.inviteShare}
-              </button>
-            )}
             <button type="button" onClick={openWhatsapp} className={rowClass}>
               <MessageCircle className="size-4 text-primary" />
               {t.inviteWhatsapp}
             </button>
-            <button type="button" onClick={openEmail} className={rowClass}>
-              <Mail className="size-4 text-primary" />
-              {t.inviteEmail}
+            <button type="button" onClick={shareLink} className={rowClass}>
+              <Share2 className="size-4 text-primary" />
+              {t.inviteShare}
             </button>
             <button type="button" onClick={copyLink} className={rowClass}>
               {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4 text-primary" />}

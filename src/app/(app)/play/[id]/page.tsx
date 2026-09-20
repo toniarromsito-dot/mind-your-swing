@@ -4,6 +4,7 @@ import { getGameForPlayer } from "@/lib/data/games";
 import { GameLobby } from "@/components/game-lobby";
 import { GameView } from "@/components/game-view";
 import { getDictionary } from "@/lib/i18n/current-locale";
+import { fmt } from "@/lib/i18n/format";
 
 export default async function GamePage({ params }: PageProps<"/play/[id]">) {
   const { id } = await params;
@@ -24,6 +25,8 @@ export default async function GamePage({ params }: PageProps<"/play/[id]">) {
       <GameLobby
         gameId={game.id}
         course={game.course}
+        layoutName={game.layoutName}
+        teeName={game.teeName}
         totalHoles={game.holes.length}
         totalPar={totalPar}
         date={game.date.toISOString()}
@@ -41,6 +44,7 @@ export default async function GamePage({ params }: PageProps<"/play/[id]">) {
         bet={game.bet}
         t={t.lobby}
         playT={t.play}
+        holesLabel={fmt(t.summary.holesTotal, { total: game.holes.length })}
         dateLocale={t.dateLocale}
         moodLabels={t.mood}
         moodCheckinT={t.moodCheckin}

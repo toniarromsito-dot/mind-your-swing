@@ -9,6 +9,18 @@ export async function signInWithGoogle() {
   await signIn("google", { redirectTo: "/dashboard" });
 }
 
+/**
+ * Como signInWithGoogle, pero volviendo a una ruta concreta tras el login
+ * en vez de al dashboard — usado desde la pantalla de unirse a una partida
+ * (/play/join/[code]) cuando el invitado no tiene sesión, para que no
+ * pierda la invitación al iniciar sesión o registrarse. Se usa con
+ * .bind(null, callbackUrl), nunca directamente en un <form action>, porque
+ * un <form> sin bind pasaría el FormData del envío como si fuera la URL.
+ */
+export async function signInWithGoogleAndRedirect(callbackUrl: string) {
+  await signIn("google", { redirectTo: callbackUrl });
+}
+
 // Usado solo por /mobile-login (app nativa) — ver capacitor.config.ts y
 // src/app/app-entry. Todo ese login ocurre dentro de una Custom Tab, así
 // que las cookies de Google Auth se fijan y se leen en el mismo sitio, sin

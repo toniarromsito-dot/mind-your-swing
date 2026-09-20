@@ -50,6 +50,8 @@ function PlayerAvatar({ name, image, size = 40 }: { name: string; image: string 
 export function GameLobby({
   gameId,
   course,
+  layoutName,
+  teeName,
   totalHoles,
   totalPar,
   date,
@@ -61,12 +63,15 @@ export function GameLobby({
   bet,
   t,
   playT,
+  holesLabel,
   dateLocale,
   moodLabels,
   moodCheckinT,
 }: {
   gameId: string;
   course: string;
+  layoutName: string | null;
+  teeName: string | null;
   totalHoles: number;
   totalPar: number;
   date: string;
@@ -78,6 +83,8 @@ export function GameLobby({
   bet: string | null;
   t: Dictionary["lobby"];
   playT: Dictionary["play"];
+  /** "18 hoyos", ya resuelto server-side (fmt(t.summary.holesTotal, ...)) — t.summary trae funciones (holeLabel, chartHole...) que no se pueden pasar de un Server Component a este Client Component. */
+  holesLabel: string;
   dateLocale: string;
   moodLabels: Dictionary["mood"];
   moodCheckinT: Dictionary["moodCheckin"];
@@ -161,7 +168,14 @@ export function GameLobby({
               ))}
             </div>
             {players.length < playerCount && (
-              <InviteDrawer inviteCode={inviteCode} course={course} t={t} />
+              <InviteDrawer
+                inviteCode={inviteCode}
+                course={course}
+                layoutName={layoutName}
+                teeName={teeName}
+                holesLabel={holesLabel}
+                t={t}
+              />
             )}
           </CardContent>
         </Card>

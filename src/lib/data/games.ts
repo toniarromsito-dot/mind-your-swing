@@ -22,10 +22,32 @@ export function getGameForPlayer(gameId: string, userId: string) {
   });
 }
 
-export function getGameByInviteCode(inviteCode: string) {
+/**
+ * Vista pública y mínima de una partida por su código de invitación — para
+ * la pantalla de unirse, alcanzable SIN sesión (el invitado debe poder ver
+ * de qué partida se trata antes de iniciar sesión/registrarse). Expone
+ * solo lo necesario para identificarla: campo, recorrido, tee, hoyos,
+ * cuántos huecos quedan y el nombre de quien la creó — nunca su email, su
+ * hándicap, ni el resto de jugadores.
+ */
+export function getGamePreviewByInviteCode(inviteCode: string) {
   return prisma.game.findUnique({
     where: { inviteCode },
-    include: { players: { include: { user: { select: { id: true, name: true, image: true } } } } },
+    select: {
+      id: true,
+      course: true,
+      layoutName: true,
+      teeName: true,
+      totalHoles: true,
+      playerCount: true,
+      started: true,
+      players: {
+        orderBy: { joinedAt: "asc" },
+        take: 1,
+        select: { user: { select: { name: true } } },
+      },
+      _count: { select: { players: true } },
+    },
   });
 }
 
