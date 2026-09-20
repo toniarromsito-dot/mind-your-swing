@@ -28,13 +28,16 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   const followingSet = new Set(followingIds);
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6">
+    <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
       <div>
-        <Link href="/perfil" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="size-4" />
-          {t.perfil.backToProfile}
+        <Link
+          href="/perfil"
+          aria-label={t.perfil.backToProfile}
+          className="flex size-9 w-fit shrink-0 items-center justify-center rounded-full bg-secondary text-foreground active:bg-secondary/70"
+        >
+          <ChevronLeft className="size-5" />
         </Link>
-        <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight">{t.community.friendsTitle}</h1>
+        <h1 className="mt-3 font-heading text-3xl font-semibold tracking-tight">{t.community.friendsTitle}</h1>
       </div>
 
       <form method="GET" className="relative">
@@ -53,7 +56,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
           <p className="py-6 text-center text-sm text-muted-foreground">{t.community.noPlayersFound}</p>
         ) : (
           players.map((player) => (
-            <div key={player.id} className="flex items-center gap-3 rounded-2xl border border-border p-3">
+            <div key={player.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
               {player.image ? (
                 <Image src={player.image} alt={player.name ?? ""} width={40} height={40} className="rounded-full" />
               ) : (
