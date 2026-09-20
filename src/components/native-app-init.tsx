@@ -6,6 +6,7 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { App } from "@capacitor/app";
 import { SocialLogin } from "@capgo/capacitor-social-login";
+import { handleAndroidBackButton } from "@/lib/native/back-button";
 
 const PROD_ORIGIN = "https://mind-your-swing.vercel.app";
 
@@ -65,9 +66,26 @@ export function NativeAppInit() {
       }
     });
 
+    // Botón/gesto atrás de Android — un único listener global para toda
+    // la app (ver back-button.ts: registrarlo por pantalla dejaría el
+    // atrás muerto en el resto de la app en cuanto esa pantalla lo
+    // quitase). Las pantallas que necesitan interceptarlo (hoy, Focus
+    // Mode) registran su propio handler ahí, nunca aquí directamente.
+    const backButtonListener = Capacitor.getPlatform() === "android"
+      ? App.addListener("backButton", ({ canGoBack }) => {
+          handleAndroidBackButton(canGoBack, {
+            goBack: () => window.history.back(),
+            exitApp: () => {
+              App.exitApp().catch(() => {});
+            },
+          });
+        })
+      : null;
+
     return () => {
       urlListener.then((handle) => handle.remove());
       stateListener.then((handle) => handle.remove());
+      backButtonListener?.then((handle) => handle.remove());
     };
   }, []);
 

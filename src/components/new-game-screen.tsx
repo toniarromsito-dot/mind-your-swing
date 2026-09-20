@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { modesForPlayerCount, GAME_MODE_META } from "@/lib/games/modes";
 import { resolveGameHandicap } from "@/lib/games/handicap";
+import { groupTeesByColor } from "@/lib/games/course-selection";
 import type { GameMode } from "@prisma/client";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { cn } from "@/lib/utils";
@@ -38,15 +39,6 @@ type RealCourse = {
   location: string | null;
   layouts: CourseLayout[];
 };
-
-function teeMetaLabel(tee: CourseTee): string {
-  const parts: string[] = [];
-  if (tee.category) parts.push(tee.category);
-  if (tee.distanceTotal != null) parts.push(`${tee.distanceTotal} m`);
-  if (tee.courseRating != null) parts.push(`CR ${tee.courseRating}`);
-  if (tee.slope != null) parts.push(`Slope ${tee.slope}`);
-  return parts.join(" · ");
-}
 
 type InvitablePlayer = { id: string; name: string | null; image: string | null; handicap: number | null };
 
@@ -268,6 +260,11 @@ export function NewGameScreen({
     () => courses.filter((c) => c.name.toLowerCase().includes(courseQuery.toLowerCase())),
     [courses, courseQuery]
   );
+
+  // Agrupados por color (AMARILLAS, AZULES...) para que un recorrido con
+  // muchos tees (Alcanada tiene 12) se pueda escanear por grupos en vez de
+  // leer una lista plana fila a fila — ver groupTeesByColor.
+  const teeGroups = useMemo(() => groupTeesByColor(selectedLayout?.tees ?? []), [selectedLayout]);
 
   function syncModeToCount(nextCount: number) {
     const nextModes = modesForPlayerCount(nextCount);
@@ -530,7 +527,10 @@ export function NewGameScreen({
                 className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary hover:bg-secondary/40"
               >
                 <p className="font-medium">{layout.name}</p>
-                <span className="text-xs text-muted-foreground">{fmt(t.teesCountLabel, { n: layout.tees.length })}</span>
+                <span className="text-xs text-muted-foreground">
+                  {layout.holeCount != null && `${fmt(t.holeCountOption, { n: layout.holeCount })} · `}
+                  {fmt(t.teesCountLabel, { n: layout.tees.length })}
+                </span>
               </button>
             ))}
           </div>
@@ -543,18 +543,42 @@ export function NewGameScreen({
           <DrawerHeader>
             <DrawerTitle>{t.teeFieldLabel}</DrawerTitle>
           </DrawerHeader>
-          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
             <p className="text-sm text-muted-foreground">{t.chooseTeePrompt}</p>
-            {selectedLayout?.tees.map((tee) => (
-              <button
-                key={tee.id}
-                type="button"
-                onClick={() => pickTee(tee)}
-                className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary hover:bg-secondary/40"
-              >
-                <p className="font-medium">{tee.name}</p>
-                <span className="text-xs text-muted-foreground">{teeMetaLabel(tee)}</span>
-              </button>
+            {teeGroups.map((group) => (
+              <div key={group.colorName} className="flex flex-col gap-1.5">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{group.colorName}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {group.tees.map((tee) => (
+                    <button
+                      key={tee.id}
+                      type="button"
+                      onClick={() => pickTee(tee)}
+                      className={cn(
+                        "flex flex-col items-start gap-0.5 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary hover:bg-secondary/40",
+                        group.tees.length === 1 && "col-span-2"
+                      )}
+                    >
+                      <span className="flex w-full items-center justify-between gap-2">
+                        <span className="text-sm font-medium">{tee.category}</span>
+                        {tee.distanceTotal != null && (
+                          <span className="text-sm text-muted-foreground">{tee.distanceTotal} m</span>
+                        )}
+                      </span>
+                      {(tee.courseRating != null || tee.slope != null) && (
+                        <span className="text-xs text-muted-foreground">
+                          {[
+                            tee.courseRating != null ? `CR ${tee.courseRating}` : null,
+                            tee.slope != null ? `Slope ${tee.slope}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </DrawerContent>

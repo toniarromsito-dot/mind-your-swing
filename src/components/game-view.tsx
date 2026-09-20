@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ChevronLeft, Loader2, MoreHorizontal } from "lucide-react";
 import { SharedScorecard } from "@/components/shared-scorecard";
 import { MindQuickCard } from "@/components/mind-quick-card";
+import { FinishGameDrawer } from "@/components/finish-game-drawer";
 import { finishGame } from "@/actions/games";
 import { gamePlayingHandicapForIndex } from "@/lib/games/handicap";
+import { setBackButtonHandler } from "@/lib/native/back-button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { fmt } from "@/lib/i18n/format";
@@ -55,9 +57,21 @@ export function GameView({
   const [holeIndex, setHoleIndex] = useState(firstUnplayedIndex === -1 ? game.holes.length - 1 : firstUnplayedIndex);
   const router = useRouter();
   const [isFinishing, startFinishing] = useTransition();
+  const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
 
   const hole = game.holes[holeIndex];
   const isLastHole = holeIndex === game.holes.length - 1;
+
+  // Botón/gesto atrás de Android: mientras se está jugando, no debe salir
+  // de la partida directamente — muestra la misma confirmación que
+  // "Finalizar partida" del menú, en vez del comportamiento por defecto
+  // del WebView. Un único listener global vive en NativeAppInit (ver
+  // back-button.ts); aquí solo se registra/quita el handler mientras
+  // Focus Mode está montado, nunca el listener de Capacitor en sí.
+  useEffect(() => {
+    setBackButtonHandler(() => setConfirmFinishOpen(true));
+    return () => setBackButtonHandler(null);
+  }, []);
 
   const players = useMemo(
     () =>
@@ -88,8 +102,8 @@ export function GameView({
     }
   }
 
-  function finishEarly() {
-    if (!window.confirm(t.finishEarlyConfirm)) return;
+  function confirmFinish() {
+    setConfirmFinishOpen(false);
     startFinishing(async () => {
       await finishGame(game.id);
       router.push(`/play/${game.id}/resumen`);
@@ -128,18 +142,23 @@ export function GameView({
             <p className="truncate px-2 text-xs font-medium text-white/85">{game.course}</p>
             <div className="flex shrink-0 items-center gap-1.5">
               <MindQuickCard gameId={game.id} holeId={hole.id} t={t.quickCoach} />
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  aria-label={t.moreOptionsLabel}
-                  className="flex size-8 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
-                >
-                  <MoreHorizontal className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled>{t.keepPlaying}</DropdownMenuItem>
-                  {!isLastHole && <DropdownMenuItem onClick={finishEarly}>{t.finishEarly}</DropdownMenuItem>}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* En el último hoyo, guardar el resultado ya termina la
+                  partida — no hay ninguna acción útil que ofrecer aquí, así
+                  que el menú entero desaparece en vez de dejar un "⋯" sin
+                  nada dentro. */}
+              {!isLastHole && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    aria-label={t.moreOptionsLabel}
+                    className="flex size-8 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setConfirmFinishOpen(true)}>{t.finishEarly}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
           <div className="text-center text-white">
@@ -171,6 +190,8 @@ export function GameView({
           />
         )}
       </div>
+
+      <FinishGameDrawer open={confirmFinishOpen} onOpenChange={setConfirmFinishOpen} onConfirm={confirmFinish} t={t} />
     </div>
   );
 }

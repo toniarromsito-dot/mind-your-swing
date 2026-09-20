@@ -65,3 +65,60 @@ export function resolveGameHoles(teeHoles: TeeHoleInput[], requestedHoleCount: 9
   const secondLoop = nine.map((h, i) => toResolvedHole(h, i + 10));
   return { holes: [...firstLoop, ...secondLoop], effectiveHoleCount: 18, doubledNineHoles: true };
 }
+
+export type TeeForGrouping = {
+  id: string;
+  name: string;
+  category: string | null;
+};
+
+export type TeeGroup<T extends TeeForGrouping> = {
+  /** El nombre del tee, p. ej. "AMARILLAS" — el color, tal cual está guardado, nunca traducido ni renombrado. */
+  colorName: string;
+  tees: T[];
+};
+
+const FEMALE_CATEGORIES = new Set(["F", "MUJERES"]);
+
+function isFemaleCategory(category: string | null): boolean {
+  return category != null && FEMALE_CATEGORIES.has(category.trim().toUpperCase());
+}
+
+/**
+ * Agrupa los tees de un recorrido por color (su `name`) para poder
+ * presentarlos por grupos en vez de en una lista plana — un recorrido
+ * como Alcanada tiene 12 tees (6 colores × M/F) que, uno detrás de otro,
+ * obligan a leer fila a fila. Nunca cambia ni reordena los datos en sí
+ * (mismo `id`/`name`/`category` de siempre): solo decide en qué orden se
+ * presentan.
+ *
+ * Orden de los grupos: el de aparición en `tees` — la consulta que los
+ * trae (listRealGolfCourses) ya los pide alfabéticos por nombre, así que
+ * el resultado sale alfabético por color sin inventar un criterio de
+ * "dificultad" que no está definido en ningún sitio.
+ *
+ * Orden dentro de un grupo: masculino (M/HOMBRES) antes que femenino
+ * (F/MUJERES), sin tocar el valor de `category` — solo el orden de
+ * presentación cuando ambos existen para el mismo color (p. ej. "AZULES"
+ * en Santa Ponsa II tiene M y F).
+ */
+export function groupTeesByColor<T extends TeeForGrouping>(tees: T[]): TeeGroup<T>[] {
+  const groups: TeeGroup<T>[] = [];
+  const indexByColor = new Map<string, number>();
+
+  for (const tee of tees) {
+    let index = indexByColor.get(tee.name);
+    if (index == null) {
+      index = groups.length;
+      indexByColor.set(tee.name, index);
+      groups.push({ colorName: tee.name, tees: [] });
+    }
+    groups[index].tees.push(tee);
+  }
+
+  for (const group of groups) {
+    group.tees.sort((a, b) => Number(isFemaleCategory(a.category)) - Number(isFemaleCategory(b.category)));
+  }
+
+  return groups;
+}
