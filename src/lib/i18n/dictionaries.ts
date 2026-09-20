@@ -728,6 +728,7 @@ const es = {
     proVideosTitle: "Práctica avanzada",
     proLockedMessage: "Disponible con el plan Pro",
     comingSoon: "Próximamente",
+    proBadge: "Pro",
     freeVideos: [
       { title: "El agarre paso a paso", description: "Cómo colocar las manos antes de tu primer golpe.", url: null },
       { title: "Postura básica", description: "Cómo colocarte frente a la bola.", url: null },
@@ -1667,6 +1668,7 @@ const en: typeof es = {
     proVideosTitle: "Advanced practice",
     proLockedMessage: "Available with the Pro plan",
     comingSoon: "Coming soon",
+    proBadge: "Pro",
     freeVideos: [
       { title: "The grip, step by step", description: "How to place your hands before your first shot.", url: null },
       { title: "Basic posture", description: "How to set up in front of the ball.", url: null },
@@ -2646,6 +2648,7 @@ const de: typeof es = {
     proVideosTitle: "Fortgeschrittenes Training",
     proLockedMessage: "Verfügbar mit dem Pro-Plan",
     comingSoon: "Demnächst",
+    proBadge: "Pro",
     freeVideos: [
       { title: "Der Griff, Schritt für Schritt", description: "Wie du deine Hände vor deinem ersten Schlag platzierst.", url: null },
       { title: "Grundhaltung", description: "Wie du dich vor dem Ball aufstellst.", url: null },

@@ -9,6 +9,7 @@ export function VideoCard({
   locked,
   lockedMessage,
   comingSoonLabel,
+  proBadgeLabel,
 }: {
   title: string;
   description: string;
@@ -16,18 +17,22 @@ export function VideoCard({
   locked?: boolean;
   lockedMessage: string;
   comingSoonLabel: string;
+  /** Solo se muestra sobre la miniatura de un vídeo Pro — nunca fabricado, refleja el mismo `locked` que ya bloquea el vídeo. */
+  proBadgeLabel?: string;
 }) {
   const embedUrl = url ? getYouTubeEmbedUrl(url) : null;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="relative flex aspect-video items-center justify-center bg-secondary/40">
+    <div className="overflow-hidden rounded-3xl bg-card shadow-sm">
+      <div className="relative aspect-video bg-secondary/50">
         {locked ? (
           <Link
             href="/perfil"
-            className="flex flex-col items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            className="flex size-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground active:opacity-70"
           >
-            <Lock className="size-6" />
+            <span className="flex size-11 items-center justify-center rounded-full bg-background/80 text-foreground">
+              <Lock className="size-5" strokeWidth={1.6} />
+            </span>
             {lockedMessage}
           </Link>
         ) : embedUrl ? (
@@ -39,14 +44,21 @@ export function VideoCard({
             allowFullScreen
           />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
-            <PlayCircle className="size-6" />
+          <div className="flex size-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <span className="flex size-11 items-center justify-center rounded-full bg-background/80 text-foreground">
+              <PlayCircle className="size-5" strokeWidth={1.6} />
+            </span>
             {comingSoonLabel}
           </div>
         )}
+        {locked && proBadgeLabel && (
+          <span className="absolute top-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium tracking-[0.08em] text-white uppercase backdrop-blur-sm">
+            {proBadgeLabel}
+          </span>
+        )}
       </div>
       <div className="p-4">
-        <h3 className="font-heading text-base">{title}</h3>
+        <h3 className="font-heading text-base font-semibold tracking-tight">{title}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
     </div>

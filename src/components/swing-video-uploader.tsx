@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { MindMark } from "@/components/mind-mark";
 import { submitSwingVideo } from "@/actions/swing-videos";
 import { PoseExtractionError, extractPoseFramesFromVideo } from "@/lib/swing/pose-landmarker";
+import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type Step = "idle" | "uploading" | "analyzing" | "feedback" | "error";
@@ -77,7 +78,6 @@ export function SwingVideoUploader({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="swing-video-file">{t.chooseFile}</Label>
         <input
           ref={fileInputRef}
           id="swing-video-file"
@@ -85,9 +85,23 @@ export function SwingVideoUploader({
           accept="video/*"
           disabled={busy}
           onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium disabled:opacity-50"
+          className="sr-only"
         />
-        <p className="text-xs text-muted-foreground">{fileName ?? t.noFileChosen}</p>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={busy}
+          className={cn(
+            "flex flex-col items-center gap-2 rounded-3xl border border-dashed px-4 py-8 text-center transition-colors active:bg-secondary/50 disabled:opacity-50",
+            fileName ? "border-primary/40 bg-primary/5" : "border-border bg-secondary/30"
+          )}
+        >
+          <span className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <UploadCloud className="size-5" strokeWidth={1.6} />
+          </span>
+          <span className="max-w-full truncate px-2 text-sm font-medium">{fileName ?? t.chooseFile}</span>
+          <span className="text-xs text-muted-foreground">{fileName ? t.chooseFile : t.noFileChosen}</span>
+        </button>
       </div>
 
       <div className="flex flex-col gap-2">

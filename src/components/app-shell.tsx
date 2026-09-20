@@ -33,13 +33,28 @@ export function AppShell({
   // pantalla completa. /aprende/videos y /play/join también lo son, aunque
   // no son las pantallas principales: se llega a ellas desde un acceso
   // rápido de una pantalla inmersiva y necesitan la misma cabecera para no
-  // sentirse como una pantalla distinta. El resto de subpáginas (ejercicios
-  // de Aprende, historial de Jugar...) sigue con el chrome normal.
+  // sentirse como una pantalla distinta. Toda la sección Aprende es
+  // inmersiva (ver auditoría de diseño): sus subpáginas dibujan su propia
+  // cabecera ligera (AprendeBackLink + título) en vez de heredar el header
+  // y la barra inferior globales, que las hacían sentir como una pantalla
+  // heredada de una versión anterior. Los 4 ejercicios guiados ya se
+  // dibujaban a pantalla completa (GuidedExercise, z-40) por encima del
+  // chrome global; entran aquí también para no dejar ese chrome montado
+  // (aunque invisible) detrás suyo. El resto de subpáginas ajenas a
+  // Aprende (historial de Jugar...) sigue con el chrome normal.
   const isImmersivePage =
     pathname === "/dashboard" ||
     pathname === "/aprende" ||
-    pathname === "/coach" ||
+    pathname === "/aprende/ejercicios" ||
+    pathname === "/aprende/ejercicios/reset-mental" ||
+    pathname === "/aprende/ejercicios/respiracion" ||
+    pathname === "/aprende/ejercicios/visualizacion" ||
+    pathname === "/aprende/rutina" ||
+    pathname === "/aprende/explora" ||
+    pathname === "/aprende/academia" ||
+    pathname === "/aprende/tutoriales" ||
     pathname === "/aprende/videos" ||
+    pathname === "/coach" ||
     pathname === "/play" ||
     pathname === "/play/join" ||
     pathname === "/play/new" ||

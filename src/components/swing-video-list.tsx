@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Play, Loader2, ArrowRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { MindMark } from "@/components/mind-mark";
 import { cn } from "@/lib/utils";
 import type { SwingMetrics } from "@/lib/swing/scoring";
@@ -145,7 +144,7 @@ function PlayFeedbackButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={play}
       disabled={loading}
-      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+      className="flex items-center gap-1 text-xs text-muted-foreground active:text-foreground disabled:opacity-50"
     >
       {loading ? <Loader2 className="size-3 animate-spin" /> : <Play className="size-3" />}
       {label}
@@ -161,56 +160,54 @@ export function SwingVideoList({ videos, t, dateLocale }: { videos: SwingVideoIt
   return (
     <div className="flex flex-col gap-3">
       {videos.map((video) => (
-        <Card key={video.id}>
-          <CardContent className="flex flex-col gap-3 pt-6">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-xs text-muted-foreground">
-                {new Date(video.createdAt).toLocaleDateString(dateLocale, {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </p>
-              {video.score != null && <ScoreBadge score={video.score} />}
+        <div key={video.id} className="flex flex-col gap-3 rounded-3xl bg-card p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {new Date(video.createdAt).toLocaleDateString(dateLocale, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+            {video.score != null && <ScoreBadge score={video.score} />}
+          </div>
+
+          <video src={video.videoUrl} controls className="max-h-72 w-full rounded-2xl bg-black" />
+
+          {isSwingMetrics(video.metrics) && <SwingPhaseTimeline metrics={video.metrics} t={t} />}
+
+          {video.note && <p className="text-sm text-muted-foreground italic">&ldquo;{video.note}&rdquo;</p>}
+
+          {video.aiFeedback && (
+            <div className="flex flex-col gap-2 rounded-2xl bg-secondary/40 p-4">
+              <div className="flex items-center gap-2">
+                <MindMark size="sm" />
+                <p className="text-xs font-medium text-muted-foreground">{t.aiFeedbackLabel}</p>
+              </div>
+              <p className="text-sm whitespace-pre-wrap">{video.aiFeedback}</p>
+              <div className="flex items-center justify-between">
+                <PlayFeedbackButton text={video.aiFeedback} label={t.playAudio} />
+                <Link
+                  href="/aprende"
+                  className="flex items-center gap-1 text-xs font-medium text-primary active:underline"
+                >
+                  {t.practiceLinkLabel}
+                  <ArrowRight className="size-3" />
+                </Link>
+              </div>
             </div>
+          )}
 
-            <video src={video.videoUrl} controls className="max-h-72 w-full rounded-lg bg-black" />
-
-            {isSwingMetrics(video.metrics) && <SwingPhaseTimeline metrics={video.metrics} t={t} />}
-
-            {video.note && <p className="text-sm text-muted-foreground italic">&ldquo;{video.note}&rdquo;</p>}
-
-            {video.aiFeedback && (
-              <div className="flex flex-col gap-2 rounded-lg bg-secondary/40 p-3">
-                <div className="flex items-center gap-2">
-                  <MindMark size="sm" />
-                  <p className="text-xs font-medium text-muted-foreground">{t.aiFeedbackLabel}</p>
-                </div>
-                <p className="text-sm whitespace-pre-wrap">{video.aiFeedback}</p>
-                <div className="flex items-center justify-between">
-                  <PlayFeedbackButton text={video.aiFeedback} label={t.playAudio} />
-                  <Link
-                    href="/aprende"
-                    className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                  >
-                    {t.practiceLinkLabel}
-                    <ArrowRight className="size-3" />
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            {video.feedback ? (
-              <div className="flex flex-col gap-1.5 rounded-lg bg-primary/10 p-3">
-                <p className="text-xs font-medium text-primary">{t.manualFeedbackLabel}</p>
-                <p className="text-sm whitespace-pre-wrap">{video.feedback}</p>
-                <PlayFeedbackButton text={video.feedback} label={t.playAudio} />
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">{t.statusPending}</p>
-            )}
-          </CardContent>
-        </Card>
+          {video.feedback ? (
+            <div className="flex flex-col gap-1.5 rounded-2xl bg-primary/10 p-4">
+              <p className="text-xs font-medium text-primary">{t.manualFeedbackLabel}</p>
+              <p className="text-sm whitespace-pre-wrap">{video.feedback}</p>
+              <PlayFeedbackButton text={video.feedback} label={t.playAudio} />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">{t.statusPending}</p>
+          )}
+        </div>
       ))}
     </div>
   );

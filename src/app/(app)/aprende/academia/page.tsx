@@ -24,7 +24,7 @@ export default async function AcademyPage() {
   const technicalCount = t.coach.topics.length - 8;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
       <AprendeBackLink label={t.coach.title} />
 
       <div className="relative -mx-4 h-40 w-[calc(100%+2rem)] overflow-hidden sm:mx-0 sm:w-full sm:rounded-3xl">

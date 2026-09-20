@@ -54,7 +54,7 @@ export default async function ExercisesPage() {
   ];
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
       <AprendeBackLink label={t.coach.title} />
 
       <div className="relative -mx-4 h-40 w-[calc(100%+2rem)] overflow-hidden sm:mx-0 sm:w-full sm:rounded-3xl">
@@ -65,13 +65,15 @@ export default async function ExercisesPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t.exercises.hubSubtitle}</p>
       </div>
 
-      <div className="flex flex-col divide-y divide-border/60">
+      <div className="flex flex-col gap-2">
         {practiceTools.map((tool) => (
-          <Link key={tool.key} href={tool.href} className="flex items-center gap-3 py-3.5">
-            <div className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-secondary">
-              <div className="absolute inset-0 flex items-center justify-center text-primary">
-                <PlayCircle className="size-5" strokeWidth={1.5} />
-              </div>
+          <Link
+            key={tool.key}
+            href={tool.href}
+            className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm active:bg-secondary/30"
+          >
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <PlayCircle className="size-5" strokeWidth={1.5} />
             </div>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-medium">{tool.title}</span>
