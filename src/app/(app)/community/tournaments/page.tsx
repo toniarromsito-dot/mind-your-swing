@@ -1,9 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
+import type { TournamentParticipantStatus, TournamentStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/require-user";
-import { listMyTournaments, listPastTournaments, listUpcomingTournaments } from "@/lib/data/tournaments";
+import {
+  listClaimCandidates,
+  listMyTournaments,
+  listPastTournaments,
+  listUpcomingTournaments,
+} from "@/lib/data/tournaments";
 import { TournamentRegisterButton } from "@/components/tournament-register-button";
+import { TournamentClaimButton } from "@/components/tournament-claim-button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
@@ -15,13 +22,26 @@ const TOURNAMENT_PHOTOS = [DASHBOARD_PHOTOS.play, DASHBOARD_PHOTOS.community, DA
 const PILL_TAB_TRIGGER_CLASS =
   "h-auto flex-none rounded-full border-none px-4 py-2 text-sm font-medium text-foreground/70 data-active:bg-primary data-active:text-primary-foreground data-active:shadow-none active:bg-secondary/60 dark:data-active:border-transparent dark:data-active:bg-primary dark:data-active:text-primary-foreground";
 
+const PARTICIPANT_STATUS_LABEL_KEY: Record<TournamentParticipantStatus, keyof Dictionary["tournaments"]> = {
+  REGISTERED: "statusRegistered",
+  CANCELLED: "statusCancelled",
+  NO_SHOW: "statusNoShow",
+  REMOVED: "statusRemoved",
+};
+
 type TournamentForCard = {
   id: string;
   name: string;
   course: string;
   date: Date;
   format: string | null;
-  participants: { playerProfile: { userId: string | null } }[];
+  status: TournamentStatus;
+  hasCategories: boolean;
+  participants: {
+    status: TournamentParticipantStatus;
+    category: string | null;
+    playerProfile: { userId: string | null };
+  }[];
   results: {
     position: number | null;
     resultLabel: string | null;
@@ -29,13 +49,14 @@ type TournamentForCard = {
   }[];
 };
 
-function TournamentCard({
+async function TournamentCard({
   tournament,
   index,
   viewerId,
   t,
   dateLocale,
   showRegister,
+  showClaim,
   showResults,
 }: {
   tournament: TournamentForCard;
@@ -44,10 +65,17 @@ function TournamentCard({
   t: Dictionary["tournaments"];
   dateLocale: string;
   showRegister: boolean;
+  showClaim: boolean;
   showResults: boolean;
 }) {
-  const isRegistered = tournament.participants.some((p) => p.playerProfile.userId === viewerId);
+  const registeredCount = tournament.participants.filter((p) => p.status === "REGISTERED").length;
+  const myParticipant = tournament.participants.find((p) => p.playerProfile.userId === viewerId);
+  const isRegistered = myParticipant?.status === "REGISTERED";
+  const canRegister = tournament.status === "REGISTRATION_OPEN";
   const photo = TOURNAMENT_PHOTOS[index % TOURNAMENT_PHOTOS.length];
+
+  const candidates =
+    showClaim && !myParticipant ? await listClaimCandidates(tournament.id, viewerId) : [];
 
   return (
     <div className="overflow-hidden rounded-3xl bg-card shadow-sm">
@@ -56,20 +84,48 @@ function TournamentCard({
           <Image src={photo} alt="" fill sizes="56px" className="object-cover" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-heading text-base font-semibold">{tournament.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="truncate font-heading text-base font-semibold">{tournament.name}</p>
+            {tournament.status === "IN_PROGRESS" && (
+              <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                {t.statusInProgress}
+              </span>
+            )}
+          </div>
           <p className="truncate text-xs text-muted-foreground">{tournament.course}</p>
           <p className="text-xs text-muted-foreground">
             {tournament.date.toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" })}
             {tournament.format && ` · ${tournament.format}`}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground/70">
-            {fmt(t.participants, { n: tournament.participants.length })}
-          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground/70">{fmt(t.participants, { n: registeredCount })}</p>
+          {myParticipant && (
+            <p className="mt-0.5 text-xs font-medium text-foreground/80">
+              {t[PARTICIPANT_STATUS_LABEL_KEY[myParticipant.status]]}
+              {tournament.hasCategories &&
+                myParticipant.category &&
+                ` · ${fmt(t.categoryLabel, { category: myParticipant.category })}`}
+            </p>
+          )}
         </div>
-        {showRegister && (
+        {showRegister && (isRegistered || canRegister) && (
           <TournamentRegisterButton tournamentId={tournament.id} initiallyRegistered={isRegistered} t={t} />
         )}
       </div>
+
+      {candidates.length > 0 && (
+        <div className="flex flex-col gap-2 border-t border-border/50 px-4 pt-3 pb-4">
+          <p className="text-xs font-medium text-muted-foreground">{t.claimPrompt}</p>
+          {candidates.map((c) => (
+            <div key={c.id} className="flex items-center justify-between text-sm">
+              <span>
+                {c.playerProfile.firstName} {c.playerProfile.lastName}
+                {c.playerProfile.club && <span className="text-muted-foreground"> · {c.playerProfile.club}</span>}
+              </span>
+              <TournamentClaimButton participantId={c.id} t={t} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {showResults && (
         <div className="flex flex-col gap-1.5 border-t border-border/50 px-4 pt-3 pb-4">
@@ -102,7 +158,11 @@ export default async function TournamentsPage() {
     listPastTournaments(),
   ]);
 
-  function renderList(list: TournamentForCard[], emptyText: string, opts: { showRegister: boolean; showResults: boolean }) {
+  function renderList(
+    list: TournamentForCard[],
+    emptyText: string,
+    opts: { showRegister: boolean; showClaim: boolean; showResults: boolean }
+  ) {
     if (list.length === 0) {
       return (
         <div className="rounded-3xl border border-dashed border-border bg-card/60 p-8 text-center text-sm text-muted-foreground">
@@ -121,6 +181,7 @@ export default async function TournamentsPage() {
             t={t.tournaments}
             dateLocale={t.dateLocale}
             showRegister={opts.showRegister}
+            showClaim={opts.showClaim}
             showResults={opts.showResults}
           />
         ))}
@@ -156,13 +217,17 @@ export default async function TournamentsPage() {
         </TabsList>
 
         <TabsContent value="upcoming" className="mt-4">
-          {renderList(upcoming, t.tournaments.emptyUpcoming, { showRegister: true, showResults: false })}
+          {renderList(upcoming, t.tournaments.emptyUpcoming, {
+            showRegister: true,
+            showClaim: true,
+            showResults: false,
+          })}
         </TabsContent>
         <TabsContent value="mine" className="mt-4">
-          {renderList(mine, t.tournaments.emptyMine, { showRegister: true, showResults: false })}
+          {renderList(mine, t.tournaments.emptyMine, { showRegister: true, showClaim: false, showResults: false })}
         </TabsContent>
         <TabsContent value="results" className="mt-4">
-          {renderList(past, t.tournaments.emptyResults, { showRegister: false, showResults: true })}
+          {renderList(past, t.tournaments.emptyResults, { showRegister: false, showClaim: false, showResults: true })}
         </TabsContent>
       </Tabs>
     </div>
