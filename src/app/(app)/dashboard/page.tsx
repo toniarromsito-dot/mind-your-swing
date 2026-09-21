@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Users,
   TrendingUp,
+  Trophy,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/require-user";
@@ -17,6 +18,7 @@ import {
   getActiveGamesForUser,
   getMonthlyRelativeToPar,
 } from "@/lib/data/games";
+import { listMyTournaments } from "@/lib/data/tournaments";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { PageTransition } from "@/components/page-transition";
 import { GolferSwingIcon } from "@/components/golfer-swing-icon";
@@ -54,7 +56,7 @@ export default async function HomePage() {
   const { t } = await getDictionary();
   const h = t.home;
 
-  const [lastGame, activeGames, recentMoods, monthlyRelatives] =
+  const [lastGame, activeGames, recentMoods, monthlyRelatives, handicapUser, myTournaments] =
     await Promise.all([
       getLastCompletedGameForUser(userId),
       getActiveGamesForUser(userId),
@@ -65,7 +67,20 @@ export default async function HomePage() {
         select: { mood: true },
       }),
       getMonthlyRelativeToPar(userId),
+      prisma.user.findUnique({ where: { id: userId }, select: { handicap: true } }),
+      listMyTournaments(userId),
     ]);
+
+  // Próximo torneo en el que el jugador está REGISTERED — solo lectura de
+  // las queries ya existentes de Torneos (Fase A/B), sin heurísticas nuevas.
+  const now = new Date();
+  const nextTournament =
+    myTournaments
+      .filter((tour) => {
+        const myParticipation = tour.participants.find((p) => p.playerProfile.userId === userId);
+        return myParticipation?.status === "REGISTERED" && tour.date >= now;
+      })
+      .sort((a, b) => a.date.getTime() - b.date.getTime())[0] ?? null;
 
   const mentalScore = computeMentalScore(recentMoods);
   const mentalState = mentalScore
@@ -143,6 +158,17 @@ export default async function HomePage() {
           : h.mentalMonthlyBodyDeclining,
     });
   }
+  // Hándicap declarado/casual actual (User.handicap) — nunca el
+  // competitivo/oficial (PlayerProfile.handicap), que todavía no tiene
+  // ninguna fuente real. Siempre presente (aunque sea "—"): a diferencia
+  // de los tiles de arriba, no depende de tener partidas jugadas.
+  monthlyTiles.push({
+    key: "handicap",
+    icon: Gauge,
+    title: h.handicapLabel,
+    state: handicapUser?.handicap != null ? String(handicapUser.handicap) : "—",
+    description: h.handicapDescription,
+  });
 
   return (
     <PageTransition>
@@ -381,6 +407,35 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
+
+        {/* 2. Próximo torneo — prioridad más baja (punto 6), fuera del hero
+            a propósito: no compite por espacio con próxima vuelta/última
+            vuelta, y solo aparece cuando hay uno real (nunca un estado
+            vacío ocupando espacio para algo tan secundario). */}
+        {nextTournament && (
+          <Link
+            href="/community/tournaments"
+            className="mx-4 flex items-center gap-3 rounded-2xl border border-border bg-card p-4 sm:mx-6"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Trophy className="size-4" strokeWidth={1.5} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-muted-foreground">
+                {h.nextTournamentLabel}
+              </p>
+              <p className="truncate text-sm font-medium">{nextTournament.name}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {nextTournament.course} ·{" "}
+                {nextTournament.date.toLocaleDateString(t.dateLocale, {
+                  day: "numeric",
+                  month: "long",
+                })}
+              </p>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        )}
       </div>
     </PageTransition>
   );

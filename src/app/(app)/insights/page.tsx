@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -31,6 +32,9 @@ import {
   computeMentalTrendInsight,
   computeRecoveryInsight,
 } from "@/lib/insights";
+import { getPlayerStats } from "@/lib/data/player-stats";
+import { formatRelativeToPar } from "@/lib/golf";
+import { fmt } from "@/lib/i18n/format";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -57,6 +61,7 @@ export default async function InsightsPage() {
     current30,
     previous30,
     roundScoreTrend,
+    playerStats,
   ] = await Promise.all([
     getMentalTrendData(userId),
     getRecoveryEvents(userId),
@@ -64,9 +69,13 @@ export default async function InsightsPage() {
     getMentalEntriesBetween(userId, start30, now),
     getMentalEntriesBetween(userId, start60, start30),
     getRoundScoreTrend(userId),
+    getPlayerStats(userId),
   ]);
 
-  if (mentalEntries.length === 0) {
+  const hasMentalData = mentalEntries.length > 0;
+  const hasGameData = playerStats.completedRounds > 0;
+
+  if (!hasMentalData && !hasGameData) {
     return (
       <PageTransition>
         <div className="mx-auto flex max-w-2xl flex-col gap-6">
@@ -98,15 +107,14 @@ export default async function InsightsPage() {
     );
   }
 
-  const mentalScore = computeMentalScore(mentalEntries)!;
-  const mentalState = mentalStateFromScore(mentalScore.score);
-  const mentalTrend = computeMentalTrendInsight(mentalEntries);
-  const recovery = computeRecoveryInsight(recoveryEvents);
-  const closingPressure = computeClosingPressureInsight(
-    pressureData.close,
-    pressureData.rest
-  );
-  const percentChange = computeMentalPercentChange(current30, previous30);
+  const mentalScore = hasMentalData ? computeMentalScore(mentalEntries) : null;
+  const mentalState = mentalScore ? mentalStateFromScore(mentalScore.score) : null;
+  const mentalTrend = hasMentalData ? computeMentalTrendInsight(mentalEntries) : null;
+  const recovery = hasMentalData ? computeRecoveryInsight(recoveryEvents) : null;
+  const closingPressure = hasMentalData
+    ? computeClosingPressureInsight(pressureData.close, pressureData.rest)
+    : null;
+  const percentChange = hasMentalData ? computeMentalPercentChange(current30, previous30) : null;
 
   // Gráfica "Mental": cada check-in reciente reescalado a 0-100, en orden cronológico.
   const mentalChartData = [...mentalEntries]
@@ -201,18 +209,20 @@ export default async function InsightsPage() {
           </div>
         </div>
 
-        <MentalPerformanceCard
-          eyebrow={t.mind.mentalPerformanceTitle}
-          headerRight={
-            <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              {t.insights.last30DaysLabel}
-              <ChevronRight className="size-3" />
-            </span>
-          }
-          mentalScore={mentalScore}
-          mentalState={mentalState}
-          homeT={t.home}
-        />
+        {mentalScore && mentalState && (
+          <MentalPerformanceCard
+            eyebrow={t.mind.mentalPerformanceTitle}
+            headerRight={
+              <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                {t.insights.last30DaysLabel}
+                <ChevronRight className="size-3" />
+              </span>
+            }
+            mentalScore={mentalScore}
+            mentalState={mentalState}
+            homeT={t.home}
+          />
+        )}
 
         <div className="flex flex-col gap-3">
           <h2 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
@@ -304,6 +314,140 @@ export default async function InsightsPage() {
           </Tabs>
         </div>
 
+        {/* Tu juego — estadísticas profundas de partidas reales (Fase 9),
+            separadas a propósito de "Tendencias" (que es sobre ánimo/mental)
+            para no mezclar ambas fuentes de datos en el mismo bloque. */}
+        <div className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            {t.insights.statsTitle}
+          </h2>
+          {!hasGameData ? (
+            <Card className="border-dashed border-border/70 shadow-none">
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                {t.insights.statsEmpty}
+              </CardContent>
+            </Card>
+          ) : (
+            <Tabs defaultValue="summary">
+              <TabsList>
+                <TabsTrigger value="summary">{t.insights.statsTabSummary}</TabsTrigger>
+                <TabsTrigger value="results">{t.insights.statsTabResults}</TabsTrigger>
+                <TabsTrigger value="courses">{t.insights.statsTabCourses}</TabsTrigger>
+                <TabsTrigger value="holes">{t.insights.statsTabHoles}</TabsTrigger>
+                <TabsTrigger value="format">{t.insights.statsTabFormat}</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="summary" className="mt-4 flex flex-col gap-2">
+                <StatRow
+                  label={t.insights.statsAverageScore}
+                  value={
+                    playerStats.averageRelativeToPar != null
+                      ? formatRelativeToPar(Math.round(playerStats.averageRelativeToPar))
+                      : "—"
+                  }
+                />
+                <StatRow
+                  label={t.insights.statsTrendLabel}
+                  value={
+                    playerStats.trend
+                      ? playerStats.trend.trend === "up"
+                        ? t.insights.statsTrendUp
+                        : t.insights.statsTrendDown
+                      : "—"
+                  }
+                  sublabel={playerStats.trend ? undefined : t.insights.statsTrendUnavailable}
+                  icon={
+                    playerStats.trend ? (
+                      playerStats.trend.trend === "up" ? (
+                        <TrendingUp className="size-3.5 text-primary" />
+                      ) : (
+                        <TrendingDown className="size-3.5 text-muted-foreground" />
+                      )
+                    ) : undefined
+                  }
+                />
+                <StatRow
+                  label={t.insights.statsConsistency}
+                  value={
+                    playerStats.consistency
+                      ? fmt(t.insights.statsConsistencyValue, { n: Math.round(playerStats.consistency.stdDev) })
+                      : "—"
+                  }
+                  sublabel={playerStats.consistency ? undefined : t.insights.statsConsistencyUnavailable}
+                />
+              </TabsContent>
+
+              <TabsContent value="results" className="mt-4 flex flex-col gap-2">
+                {playerStats.bestRound && (
+                  <StatRow
+                    label={t.insights.statsBestRound}
+                    value={`${formatRelativeToPar(playerStats.bestRound.relativeToPar)} · ${playerStats.bestRound.course}`}
+                  />
+                )}
+                {playerStats.worstRound && playerStats.worstRound.gameId !== playerStats.bestRound?.gameId && (
+                  <StatRow
+                    label={t.insights.statsWorstRound}
+                    value={`${formatRelativeToPar(playerStats.worstRound.relativeToPar)} · ${playerStats.worstRound.course}`}
+                  />
+                )}
+                <p className="mt-2 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+                  {t.insights.statsDistribution}
+                </p>
+                <StatRow label={t.insights.statsPars} value={String(playerStats.breakdown.pars)} />
+                <StatRow label={t.insights.statsBirdies} value={String(playerStats.breakdown.birdies)} />
+                <StatRow label={t.insights.statsBogeys} value={String(playerStats.breakdown.bogeys)} />
+                <StatRow label={t.insights.statsDoubleBogeys} value={String(playerStats.breakdown.doubleBogeys)} />
+                <StatRow label={t.insights.statsOther} value={String(playerStats.breakdown.other)} />
+              </TabsContent>
+
+              <TabsContent value="courses" className="mt-4 flex flex-col gap-2">
+                {playerStats.byCourse.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">{t.insights.statsCoursesEmpty}</p>
+                ) : (
+                  playerStats.byCourse.map((c) => (
+                    <StatRow
+                      key={c.course}
+                      label={c.course}
+                      value={c.averageRelativeToPar != null ? formatRelativeToPar(Math.round(c.averageRelativeToPar)) : "—"}
+                      sublabel={fmt(t.insights.statsRoundsCount, { n: c.roundsCount })}
+                    />
+                  ))
+                )}
+              </TabsContent>
+
+              <TabsContent value="holes" className="mt-4 flex flex-col gap-2">
+                {playerStats.byHolePar.map((h) => (
+                  <StatRow
+                    key={h.par}
+                    label={`Par ${h.par}`}
+                    value={
+                      h.averageRelativeToPar != null
+                        ? formatRelativeToPar(Math.round(h.averageRelativeToPar * 10) / 10)
+                        : t.insights.statsNotEnoughSample
+                    }
+                    sublabel={fmt(t.insights.statsHolesCount, { n: h.holesPlayed })}
+                  />
+                ))}
+              </TabsContent>
+
+              <TabsContent value="format" className="mt-4 flex flex-col gap-2">
+                {playerStats.byFormat.map((f) => (
+                  <StatRow
+                    key={f.totalHoles}
+                    label={f.totalHoles === 9 ? t.insights.statsFormatNine : t.insights.statsFormatEighteen}
+                    value={
+                      f.averageRelativeToPar != null
+                        ? formatRelativeToPar(Math.round(f.averageRelativeToPar))
+                        : t.insights.statsNotEnoughSample
+                    }
+                    sublabel={fmt(t.insights.statsRoundsCount, { n: f.roundsCount })}
+                  />
+                ))}
+              </TabsContent>
+            </Tabs>
+          )}
+        </div>
+
         {keyInsights.length > 0 && (
           <div className="flex flex-col gap-3">
             <h2 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
@@ -370,5 +514,31 @@ export default async function InsightsPage() {
         </div>
       </div>
     </PageTransition>
+  );
+}
+
+/** Fila etiqueta/valor reutilizada en las pestañas de "Tu juego" — mismo patrón que la tarjeta de mejor vuelta de Perfil. */
+function StatRow({
+  label,
+  value,
+  sublabel,
+  icon,
+}: {
+  label: string;
+  value: string;
+  sublabel?: string;
+  icon?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-border/70 px-4 py-3">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">{label}</p>
+        {sublabel && <p className="text-xs text-muted-foreground">{sublabel}</p>}
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        {icon}
+        <p className="font-heading text-base font-semibold">{value}</p>
+      </div>
+    </div>
   );
 }
