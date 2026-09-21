@@ -40,11 +40,11 @@ export function AppShell({
   // heredada de una versión anterior. Los 4 ejercicios guiados ya se
   // dibujaban a pantalla completa (GuidedExercise, z-40) por encima del
   // chrome global; entran aquí también para no dejar ese chrome montado
-  // (aunque invisible) detrás suyo. /community/friends y /community/ranking
-  // entran por el mismo motivo (ver auditorías de Comunidad y Clasificación):
-  // cada una dibuja su propia flecha de vuelta en vez de heredar el chrome
-  // global. El resto de subpáginas ajenas a Aprende/Comunidad (historial de
-  // Jugar, Torneos...) sigue con el chrome normal.
+  // (aunque invisible) detrás suyo. /community/friends, /community/ranking y
+  // /community/tournaments entran por el mismo motivo (ver auditorías de
+  // Comunidad, Clasificación y Torneos): cada una dibuja su propia flecha de
+  // vuelta en vez de heredar el chrome global. El resto de subpáginas ajenas
+  // a Aprende/Comunidad (historial de Jugar...) sigue con el chrome normal.
   const isImmersivePage =
     pathname === "/dashboard" ||
     pathname === "/aprende" ||
@@ -64,7 +64,8 @@ export function AppShell({
     (pathname.startsWith("/play/") && pathname.endsWith("/resumen")) ||
     pathname === "/community" ||
     pathname === "/community/friends" ||
-    pathname === "/community/ranking";
+    pathname === "/community/ranking" ||
+    pathname === "/community/tournaments";
 
   // Las 6 áreas del producto, ninguna oculta (brief: "no elimines ninguna
   // de estas áreas"), como una barra plana de peso igual — sin botón
