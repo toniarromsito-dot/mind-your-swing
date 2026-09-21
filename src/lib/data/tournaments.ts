@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/prisma";
 
 const tournamentInclude = {
-  registrations: { select: { userId: true } },
+  // Solo participantes activos cuentan como "inscrito"/en el contador —
+  // los CANCELLED/NO_SHOW/REMOVED siguen en la tabla pero no aquí.
+  participants: {
+    where: { status: "REGISTERED" as const },
+    select: { playerProfile: { select: { userId: true } } },
+  },
   results: {
-    include: { player: { select: { firstName: true, lastName: true } } },
+    include: {
+      participant: { include: { playerProfile: { select: { firstName: true, lastName: true } } } },
+    },
     orderBy: { position: "asc" as const },
   },
 };
@@ -24,10 +31,10 @@ export function listPastTournaments() {
   });
 }
 
-/** "Mis torneos": donde el jugador está inscrito, futuros o pasados. */
+/** "Mis torneos": donde el jugador tiene una participación activa, futuros o pasados. */
 export function listMyTournaments(userId: string) {
   return prisma.tournament.findMany({
-    where: { registrations: { some: { userId } } },
+    where: { participants: { some: { status: "REGISTERED", playerProfile: { userId } } } },
     orderBy: { date: "desc" },
     include: tournamentInclude,
   });

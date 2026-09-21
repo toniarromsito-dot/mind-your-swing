@@ -21,8 +21,12 @@ type TournamentForCard = {
   course: string;
   date: Date;
   format: string | null;
-  registrations: { userId: string }[];
-  results: { position: number | null; resultLabel: string | null; player: { firstName: string; lastName: string } }[];
+  participants: { playerProfile: { userId: string | null } }[];
+  results: {
+    position: number | null;
+    resultLabel: string | null;
+    participant: { playerProfile: { firstName: string; lastName: string } };
+  }[];
 };
 
 function TournamentCard({
@@ -42,7 +46,7 @@ function TournamentCard({
   showRegister: boolean;
   showResults: boolean;
 }) {
-  const isRegistered = tournament.registrations.some((r) => r.userId === viewerId);
+  const isRegistered = tournament.participants.some((p) => p.playerProfile.userId === viewerId);
   const photo = TOURNAMENT_PHOTOS[index % TOURNAMENT_PHOTOS.length];
 
   return (
@@ -59,7 +63,7 @@ function TournamentCard({
             {tournament.format && ` · ${tournament.format}`}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground/70">
-            {fmt(t.participants, { n: tournament.registrations.length })}
+            {fmt(t.participants, { n: tournament.participants.length })}
           </p>
         </div>
         {showRegister && (
@@ -76,7 +80,7 @@ function TournamentCard({
               <div key={i} className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground">{r.position ?? "—"}.</span>
-                  {r.player.firstName} {r.player.lastName}
+                  {r.participant.playerProfile.firstName} {r.participant.playerProfile.lastName}
                 </span>
                 {r.resultLabel && <span className="text-xs text-muted-foreground">{r.resultLabel}</span>}
               </div>

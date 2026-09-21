@@ -13,9 +13,40 @@ export function getPlayerProfileByUserId(userId: string) {
   return prisma.playerProfile.findUnique({
     where: { userId },
     include: {
-      results: { include: { tournament: true }, orderBy: { createdAt: "desc" } },
+      // TournamentResult ya no cuelga directamente de PlayerProfile (Fase A):
+      // pasa por TournamentParticipant, que es quien tiene la identidad.
+      participations: {
+        include: { tournament: true, results: { orderBy: { createdAt: "desc" } } },
+        orderBy: { createdAt: "desc" },
+      },
       handicapHistory: { orderBy: { recordedAt: "desc" } },
     },
+  });
+}
+
+/**
+ * Garantiza que exista un PlayerProfile vinculado a ESTE User, para el flujo
+ * de autoinscripción a un torneo desde la propia cuenta de MYS — nunca usa
+ * el matching débil por nombre+club de `findOrCreatePlayerProfile` (ese
+ * fallback es solo para una futura importación externa; usarlo aquí podría
+ * reclamar por error el perfil de otra persona con el mismo nombre). Si el
+ * jugador no tiene nombre en su perfil, falla con un mensaje claro en vez
+ * de inventar uno.
+ */
+export async function ensurePlayerProfileForUser(userId: string) {
+  const existing = await prisma.playerProfile.findUnique({ where: { userId } });
+  if (existing) return existing;
+
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, club: true } });
+  const name = user.name?.trim();
+  if (!name) {
+    throw new Error("Añade tu nombre en el perfil antes de inscribirte en un torneo.");
+  }
+  const [firstName, ...rest] = name.split(/\s+/);
+  const lastName = rest.join(" ");
+
+  return prisma.playerProfile.create({
+    data: { userId, firstName, lastName, club: user.club ?? undefined },
   });
 }
 
@@ -62,19 +93,19 @@ export async function findOrCreatePlayerProfile(params: {
  */
 export async function recordTournamentResult(params: {
   tournamentId: string;
-  playerProfileId: string;
+  participantId: string;
   position?: number | null;
   strokes?: number | null;
   stablefordPts?: number | null;
   resultLabel?: string | null;
   newHandicap?: number | null;
 }) {
-  const { tournamentId, playerProfileId, position, strokes, stablefordPts, resultLabel, newHandicap } = params;
+  const { tournamentId, participantId, position, strokes, stablefordPts, resultLabel, newHandicap } = params;
 
   const result = await prisma.tournamentResult.create({
     data: {
       tournamentId,
-      playerId: playerProfileId,
+      participantId,
       position: position ?? undefined,
       strokes: strokes ?? undefined,
       stablefordPts: stablefordPts ?? undefined,
@@ -83,11 +114,15 @@ export async function recordTournamentResult(params: {
   });
 
   if (newHandicap != null) {
+    const participant = await prisma.tournamentParticipant.findUniqueOrThrow({
+      where: { id: participantId },
+      select: { playerProfileId: true },
+    });
     await prisma.$transaction([
       prisma.handicapEntry.create({
-        data: { playerId: playerProfileId, handicap: newHandicap, source: `torneo:${tournamentId}` },
+        data: { playerId: participant.playerProfileId, handicap: newHandicap, source: `torneo:${tournamentId}` },
       }),
-      prisma.playerProfile.update({ where: { id: playerProfileId }, data: { handicap: newHandicap } }),
+      prisma.playerProfile.update({ where: { id: participant.playerProfileId }, data: { handicap: newHandicap } }),
     ]);
   }
 

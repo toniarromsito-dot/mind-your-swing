@@ -125,6 +125,54 @@ enum SwingVideoStatus {
   REVIEWED
 }
 
+// ---------- Torneos — Fase A (identidad competitiva + participación) ----------
+// Ver docs de arquitectura de la sesión: el torneo puede organizarse fuera de
+// MYS (campo/club/federación); estos enums son deliberadamente los mínimos
+// aprobados para esta fase — el cálculo de posición, el cierre y el hándicap
+// conectado llegan en fases posteriores.
+
+enum TournamentSource {
+  MANUAL
+  IMPORTED
+  CLUB_SYNC
+  EXTERNAL_PROVIDER
+}
+
+enum TournamentStatus {
+  DRAFT
+  REGISTRATION_OPEN
+  IN_PROGRESS
+  FINISHED
+  CANCELLED
+}
+
+enum TournamentParticipantStatus {
+  REGISTERED
+  CANCELLED
+  NO_SHOW
+  REMOVED
+}
+
+/// Confianza del enlace entre un TournamentParticipant y su PlayerProfile/User
+/// — nunca se sube a LICENSE_VERIFIED automáticamente por nombre+club.
+enum IdentityConfidence {
+  UNVERIFIED
+  PLAYER_CONFIRMED
+  LICENSE_VERIFIED
+}
+
+enum TournamentResultStatus {
+  PROVISIONAL
+  FINAL
+  DISQUALIFIED
+}
+
+enum LicenseVerificationStatus {
+  UNVERIFIED
+  SELF_DECLARED
+  VERIFIED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -168,8 +216,13 @@ model User {
   comments      Comment[]
   following     Follow[]       @relation("Following")
   followers     Follow[]       @relation("Followers")
-  tournamentRegistrations TournamentRegistration[]
   challengeParticipations ChallengeParticipant[]
+
+  /// Torneos que este usuario organiza (Tournament.organizerId) — ver Fase A.
+  organizedTournaments Tournament[] @relation("TournamentOrganizer")
+  /// Auditoría mínima de quién resolvió/corrigió el enlace identidad↔participante
+  /// de un TournamentParticipant (rematching) — ver Fase A.
+  matchedTournamentParticipants TournamentParticipant[] @relation("TournamentParticipantMatchedBy")
 }
 
 /**
@@ -208,8 +261,14 @@ model PlayerProfile {
   userId String? @unique
   user   User?   @relation(fields: [userId], references: [id])
 
-  results         TournamentResult[]
-  handicapHistory HandicapEntry[]
+  /// Participaciones en torneos (Fase A) — el resultado de cada una cuelga de
+  /// TournamentParticipant.results, no directamente de aquí: TournamentResult
+  /// ya no tiene una relación propia a PlayerProfile (ver TournamentResult).
+  participations       TournamentParticipant[]
+  handicapHistory       HandicapEntry[]
+  /// Identidad federativa (licencia) — modelo preparado, sin ningún proveedor
+  /// integrado todavía. Ver FederationIdentity.
+  federationIdentities  FederationIdentity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -219,6 +278,9 @@ model PlayerProfile {
   @@index([lastName, firstName])
 }
 
+/// El torneo puede nacer dentro de MYS (source=MANUAL) o fuera (importado,
+/// sincronizado desde el software de un club, o —en el futuro— integrado
+/// directamente con una federación). Ver docs de arquitectura de Torneos.
 model Tournament {
   id           String   @id @default(cuid())
   name         String
@@ -228,49 +290,114 @@ model Tournament {
   /// Texto libre: "Stableford Individual", "Medal Play", "Parejas Better Ball"...
   format       String?
 
-  golfCourse    GolfCourse?              @relation(fields: [golfCourseId], references: [id])
-  results       TournamentResult[]
-  registrations TournamentRegistration[]
-  createdAt     DateTime                 @default(now())
+  status TournamentStatus @default(DRAFT)
+  source TournamentSource @default(MANUAL)
+  /// Solo se rellenan cuando source != MANUAL — el par identifica el torneo
+  /// de forma estable en el sistema de origen (idempotencia de una futura
+  /// sincronización, ver Fase H).
+  externalProvider String?
+  externalId       String?
+  /// Si el torneo divide su clasificación en categorías. Opcional a
+  /// propósito: la mayoría de torneos amateur no las tienen.
+  hasCategories Boolean @default(false)
+  /// Responsable del torneo dentro de MYS — opcional porque un torneo
+  /// importado/sincronizado puede no tener todavía ningún User de MYS
+  /// gestionándolo. Sin sistema de permisos todavía (ver Fase E).
+  organizerId String?
+
+  golfCourse   GolfCourse?             @relation(fields: [golfCourseId], references: [id])
+  organizer    User?                   @relation("TournamentOrganizer", fields: [organizerId], references: [id])
+  results      TournamentResult[]
+  participants TournamentParticipant[]
+  createdAt    DateTime                @default(now())
+
+  @@unique([externalProvider, externalId])
 }
 
-/**
- * "Me apunto" a un torneo — intención de participar, nunca historial
- * competitivo. Solo TournamentResult (creado por el futuro importador de
- * resultados reales) construye el historial oficial; inscribirse aquí no
- * crea ni toca un PlayerProfile.
- */
-model TournamentRegistration {
-  id           String   @id @default(cuid())
-  tournamentId String
-  userId       String
-  createdAt    DateTime @default(now())
+/// Sustituye conceptualmente a TournamentRegistration: representa "esta
+/// persona forma parte oficialmente de este torneo", venga de donde venga
+/// esa lista (autoinscripción, importación, sincronización...). Cuelga
+/// siempre de un PlayerProfile — nunca directamente de un User, porque un
+/// participante puede existir sin cuenta de MYS todavía.
+model TournamentParticipant {
+  id              String @id @default(cuid())
+  tournamentId    String
+  playerProfileId String
 
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status             TournamentParticipantStatus @default(REGISTERED)
+  /// Confianza del enlace con el PlayerProfile — nunca LICENSE_VERIFIED por
+  /// una heurística de nombre; solo por licencia real o confirmación propia
+  /// del jugador (ver Fase A, "matching / claim").
+  identityConfidence IdentityConfidence          @default(UNVERIFIED)
+  /// Categoría en la que compite (solo relevante si Tournament.hasCategories).
+  category           String?
 
-  @@unique([tournamentId, userId])
-}
+  /// Referencia a la vuelta oficial de ESTE participante — deliberadamente
+  /// SIN relación Prisma a Game todavía (ver nota de Fase A más abajo): el
+  /// modelo Game no se toca en esta fase. Se conectará como relación real
+  /// en la Fase C junto con Game.tournamentId.
+  gameId String? @unique
 
-// Un resultado real de un jugador en un torneo — esto es lo único que
-// construye "historial competitivo oficial". Nunca se crea desde
-// actions/games.ts (partidas casuales).
-model TournamentResult {
-  id           String @id @default(cuid())
-  tournamentId String
-  playerId     String
+  /// Id de este participante en el sistema de origen, si vino importado.
+  externalParticipantId String?
 
-  position      Int?
-  strokes       Int?
-  stablefordPts Int?
-  resultLabel   String? // texto libre para modalidades que no sean stroke/stableford
-
-  tournament Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  player     PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /// Trazabilidad mínima de un rematching (desvincular/re-vincular la
+  /// identidad) — quién y cuándo, sin tabla de auditoría dedicada todavía.
+  matchedAt       DateTime?
+  matchedByUserId String?
 
   createdAt DateTime @default(now())
 
-  @@unique([tournamentId, playerId])
+  tournament    Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerProfile PlayerProfile       @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  matchedByUser User?               @relation("TournamentParticipantMatchedBy", fields: [matchedByUserId], references: [id])
+  results       TournamentResult[]
+
+  @@unique([tournamentId, playerProfileId])
+  @@unique([tournamentId, externalParticipantId])
+  @@index([tournamentId, status])
+}
+
+/// El resultado oficial de UN participante en UN torneo — lo único que
+/// construye "historial competitivo oficial". Cuelga de TournamentParticipant
+/// (nunca directamente de PlayerProfile): la identidad ya vive en el
+/// participante, no se duplica aquí. gameId es opcional y de trazabilidad —
+/// un resultado importado/manual puede no tener ninguna Game de MYS detrás.
+model TournamentResult {
+  id            String @id @default(cuid())
+  tournamentId  String
+  participantId String
+
+  /// Vuelta de MYS que originó este resultado, si la hay. Sin relación
+  /// Prisma a Game todavía por el mismo motivo que TournamentParticipant.gameId
+  /// (ver nota de Fase A) — se conecta de verdad en la Fase C.
+  gameId String? @unique
+
+  strokes          Int? // bruto
+  netScore         Int?
+  stablefordPts    Int?
+  resultLabel      String? // texto libre para modalidades que no sean stroke/stableford/neto
+  /// Copia congelada de la categoría del participante EN ESE MOMENTO — no se
+  /// actualiza si el participante cambia de categoría después (ver docs).
+  categorySnapshot String?
+  position         Int?
+  status           TournamentResultStatus @default(PROVISIONAL)
+
+  /// Trazabilidad mínima de una corrección posterior a FINAL — sin tabla de
+  /// auditoría dedicada todavía (ver Fase E).
+  correctedAt      DateTime?
+  correctionReason String?
+
+  externalResultId String?
+
+  tournament  Tournament            @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participant TournamentParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tournamentId, participantId])
+  @@unique([tournamentId, externalResultId])
+  @@index([tournamentId, status])
 }
 
 // Evolución del hándicap oficial a lo largo del tiempo, un punto por
@@ -280,9 +407,48 @@ model HandicapEntry {
   playerId   String
   handicap   Float
   recordedAt DateTime @default(now())
-  source     String? // p. ej. "torneo:<id>", "federación", "manual"
+  source     String? // p. ej. "torneo:<id>", "federación", "manual" — texto libre a propósito
+  /// Identificador de este cambio en el sistema de origen, si lo hay
+  /// (idempotencia de una futura sincronización).
+  externalRef String?
+  /// Si este valor viene confirmado por una fuente oficial (club/federación)
+  /// frente a uno introducido manualmente sin más respaldo — es lo que
+  /// permite mostrar "Fuente: oficial" en la UI cuando de verdad corresponda.
+  verified    Boolean  @default(false)
 
   player PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+/// Identidad federativa (licencia) de un jugador — deliberadamente separada
+/// de User (nunca acoplada al login) y de PlayerProfile.handicap (una cosa es
+/// "quién es oficialmente" y otra "qué hándicap tiene"). Modelo preparado sin
+/// ningún proveedor integrado todavía — ver Fase H.
+model FederationIdentity {
+  id                 String                     @id @default(cuid())
+  playerProfileId    String
+  /// Nombre de la federación/entidad — texto controlado, no enum cerrado:
+  /// no sabemos hoy cuántas fuentes distintas habrá en el futuro.
+  federationProvider String
+  licenseNumber      String
+  verificationStatus LicenseVerificationStatus  @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  verificationSource String?
+  /// Id de esta identidad en el sistema de origen, si lo hay.
+  externalId         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  playerProfile PlayerProfile @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+
+  // Un jugador no tiene dos licencias registradas de la misma federación...
+  @@unique([playerProfileId, federationProvider])
+  // ...y una licencia (número dentro de una federación) no puede pertenecer
+  // a dos PlayerProfile distintos — unicidad incondicional, no solo cuando
+  // verificationStatus = VERIFIED (más simple, sin índice parcial manual;
+  // ver documento de especificación, Decisión abierta 6).
+  @@unique([federationProvider, licenseNumber])
+  @@index([licenseNumber])
 }
 
 // Vídeo de swing subido por un jugador (plan Pro). Recibe una puntuación
