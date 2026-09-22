@@ -23,13 +23,19 @@ export default async function SettingsPage({
   searchParams: Promise<{ checkout?: string }>;
 }) {
   const userId = await requireUserId();
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    include: { subscription: true },
+  });
   const { t } = await getDictionary();
   const { checkout } = await searchParams;
 
   const owner = isOwnerEmail(user.email);
   const minutesUsed = await getVoiceMinutesUsedThisPeriod(userId);
   const minutesIncluded = INCLUDED_VOICE_MINUTES[user.plan];
+  const subscription = user.subscription;
+  const isTrialing = subscription?.status === "TRIALING";
+  const isPastDue = subscription?.status === "PAST_DUE";
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -69,6 +75,37 @@ export default async function SettingsPage({
             </span>
           </div>
 
+          {!owner && user.plan === "PRO" && subscription?.currentPeriodEnd && (
+            <p className="text-xs text-muted-foreground">
+              {isTrialing
+                ? fmt(t.perfil.trialActive, {
+                    date: subscription.currentPeriodEnd.toLocaleDateString(t.dateLocale, {
+                      day: "numeric",
+                      month: "long",
+                    }),
+                  })
+                : subscription.cancelAtPeriodEnd
+                  ? fmt(t.perfil.cancelAtPeriodEnd, {
+                      date: subscription.currentPeriodEnd.toLocaleDateString(t.dateLocale, {
+                        day: "numeric",
+                        month: "long",
+                      }),
+                    })
+                  : fmt(t.perfil.renewsOn, {
+                      date: subscription.currentPeriodEnd.toLocaleDateString(t.dateLocale, {
+                        day: "numeric",
+                        month: "long",
+                      }),
+                    })}
+            </p>
+          )}
+
+          {!owner && isPastDue && (
+            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
+              {t.perfil.pastDueWarning}
+            </p>
+          )}
+
           {owner ? null : isStripeConfigured() ? (
             user.plan === "PRO" ? (
               <form action={createPortalSession}>
@@ -82,12 +119,24 @@ export default async function SettingsPage({
                   <p className="text-sm font-medium text-primary">{t.landing.premiumTagline}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{t.landing.premiumBody}</p>
                 </div>
-                <form action={createCheckoutSession} className="flex flex-col items-start gap-1.5">
-                  <Button type="submit" size="sm">
-                    {t.perfil.upgrade}
-                  </Button>
-                  <span className="text-xs text-muted-foreground">{t.perfil.proPrice}</span>
-                </form>
+                <div className="flex flex-col gap-2">
+                  <form action={createCheckoutSession.bind(null, "MONTHLY")}>
+                    <Button type="submit" size="sm" className="w-full justify-center">
+                      {t.perfil.upgradeMonthly}
+                    </Button>
+                  </form>
+                  <form action={createCheckoutSession.bind(null, "ANNUAL")}>
+                    <Button type="submit" size="sm" variant="secondary" className="w-full justify-center">
+                      {t.perfil.upgradeAnnual}
+                      <span className="ml-1.5 text-[10px] font-semibold opacity-80">
+                        {t.perfil.annualSavings}
+                      </span>
+                    </Button>
+                  </form>
+                  {!subscription?.hasUsedTrial && (
+                    <p className="text-center text-xs text-muted-foreground">{t.perfil.trialNote}</p>
+                  )}
+                </div>
               </div>
             )
           ) : (

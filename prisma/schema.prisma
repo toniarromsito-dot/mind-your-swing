@@ -120,6 +120,33 @@ enum Plan {
   PRO
 }
 
+// ---------- Suscripción / entitlement (Fase 11B — Subscription Foundation) ----------
+// Stripe es el único proveedor implementado hoy. El enum deja sitio a
+// futuros proveedores (Apple/Google) sin forzar un rediseño: cuando lleguen,
+// se añaden como nuevos valores, nunca como una tabla paralela.
+enum SubscriptionProvider {
+  STRIPE
+}
+
+// Normaliza los `status` de Stripe (incomplete/incomplete_expired/trialing/
+// active/past_due/canceled/unpaid, y el más reciente "paused") a un conjunto
+// propio y estable — así ningún caller depende de los strings exactos que
+// use el proveedor. Ver normalizeStripeStatus() en src/lib/stripe.ts.
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+}
+
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
 enum SwingVideoStatus {
   PENDING
   REVIEWED
@@ -193,16 +220,16 @@ model User {
   // src/actions/games.ts (updateMindMemory) y coach/context.ts.
   mindMemory String? @db.Text
 
-  // Suscripción / Stripe
-  plan                     Plan      @default(FREE)
-  stripeCustomerId         String?   @unique
-  stripeSubscriptionId     String?   @unique
-  stripeSubscriptionStatus String?
-  currentPeriodEnd         DateTime?
+  // plan es un resumen/caché derivado de Subscription (ver hasProAccess() en
+  // src/lib/plan.ts) — nunca se escribe a mano fuera del sync de webhook.
+  // Se mantiene aquí (en vez de solo en Subscription) para no obligar a un
+  // JOIN en cada comprobación de acceso Pro.
+  plan Plan @default(FREE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  subscription  Subscription?
   accounts      Account[]
   sessions      Session[]
   gamePlayers   GamePlayer[]
@@ -223,6 +250,69 @@ model User {
   /// Auditoría mínima de quién resolvió/corrigió el enlace identidad↔participante
   /// de un TournamentParticipant (rematching) — ver Fase A.
   matchedTournamentParticipants TournamentParticipant[] @relation("TournamentParticipantMatchedBy")
+}
+
+/**
+ * Una fila por usuario (relación 1:1 real, ver @unique en userId) con el
+ * estado de su suscripción en el proveedor de pago. `User.plan` es el
+ * resumen derivado que lee hasProAccess(); esta tabla es la fuente de
+ * verdad de la que ese resumen se recalcula (ver syncSubscription() en
+ * src/app/api/stripe/webhook/route.ts).
+ *
+ * hasUsedTrial vive aquí (no en User) porque es un hecho ligado al ciclo de
+ * vida de ESTA suscripción, no a la cuenta en abstracto: una vez concedido
+ * el trial de 3 días, queda marcado para siempre y ningún checkout
+ * posterior (mismo usuario, mismo Stripe customer) puede volver a
+ * concederlo — cerrar sesión, cambiar de dispositivo o crear otra sesión de
+ * checkout no lo reinician porque nada de eso toca esta fila.
+ *
+ * lastEventAt guarda el `created` (timestamp) del último evento de webhook
+ * aplicado — permite descartar un evento que llegue más tarde pero
+ * represente un estado más antiguo (entrega fuera de orden), sin depender
+ * de que Stripe garantice el orden de entrega.
+ */
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider                SubscriptionProvider @default(STRIPE)
+  providerCustomerId      String               @unique
+  providerSubscriptionId  String?              @unique
+  status                  SubscriptionStatus   @default(INCOMPLETE)
+  billingInterval         BillingInterval?
+  priceId                 String?
+  currentPeriodEnd        DateTime?
+  cancelAtPeriodEnd       Boolean              @default(false)
+  trialEnd                DateTime?
+  hasUsedTrial            Boolean              @default(false)
+  lastEventAt             DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events SubscriptionEvent[]
+}
+
+/**
+ * Histórico inmutable de eventos de webhook ya procesados. providerEventId
+ * es único a propósito: es el mecanismo real de idempotencia — un evento
+ * reentregado por Stripe (mismo event.id) choca contra esa restricción y el
+ * webhook lo trata como ya procesado sin volver a aplicar cambios. Nunca se
+ * actualiza ni se borra una fila existente, solo se insertan nuevas.
+ */
+model SubscriptionEvent {
+  id              String   @id @default(cuid())
+  provider        SubscriptionProvider
+  providerEventId String   @unique
+  eventType       String
+  receivedAt      DateTime @default(now())
+  rawPayload      Json
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([subscriptionId])
 }
 
 /**
