@@ -72,7 +72,10 @@ function createGameFormData(opts: {
   const fd = new FormData();
   const playerCount = opts.playerCount ?? 1 + (opts.playerIds?.length ?? 0);
   fd.set("playerCount", String(playerCount));
-  fd.set("mode", playerCount > 1 ? "DUEL" : "SOLO");
+  // STROKE_PLAY (no DUEL): modo gratuito — este archivo prueba el snapshot de
+  // hándicap, no el bypass de modos Pro (ver games.mode-access.integration.test.ts,
+  // Fase 11A), y el creador de estos fixtures no tiene por qué tener plan Pro.
+  fd.set("mode", playerCount > 1 ? "STROKE_PLAY" : "SOLO");
   fd.set("courseId", opts.courseId);
   fd.set("courseLayoutId", opts.courseLayoutId);
   fd.set("courseTeeId", opts.courseTeeId);

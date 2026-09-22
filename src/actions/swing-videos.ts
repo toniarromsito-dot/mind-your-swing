@@ -5,12 +5,17 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
 import { hasProAccess } from "@/lib/plan";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { getCurrentLocale } from "@/lib/i18n/current-locale";
 import { dictionaries } from "@/lib/i18n/dictionaries";
 import { computeSwingMetrics, InsufficientPoseDataError, type PoseFrame } from "@/lib/swing/scoring";
 import { generateSwingFeedback } from "@/lib/swing/feedback";
 
 export type SubmitSwingVideoResult = { error: string } | { id: string; score: number; aiFeedback: string };
+
+// Fase 11A: cada envío dispara una llamada real a Claude — sin límite,
+// un usuario Pro podría generar coste ilimitado solo reenviando vídeos.
+const SUBMIT_SWING_VIDEO_RATE_LIMIT = { windowMs: 10 * 60_000, maxRequests: 5 };
 
 /**
  * Recibe el vídeo ya subido (URL de Vercel Blob) y los keypoints de pose
@@ -33,6 +38,11 @@ export async function submitSwingVideo(input: {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
   if (!hasProAccess(user)) {
     return { error: t.proRequiredError };
+  }
+
+  const rl = checkRateLimit(`swing-video-submit:${session.user.id}`, SUBMIT_SWING_VIDEO_RATE_LIMIT);
+  if (!rl.allowed) {
+    return { error: t.rateLimitError };
   }
 
   let metrics;

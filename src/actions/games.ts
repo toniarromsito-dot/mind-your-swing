@@ -9,6 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { getTeeForGameCreation } from "@/lib/data/games";
 import { resolveGameHoles } from "@/lib/games/course-selection";
 import { resolveGameHandicap, resolvePlayerHandicapSnapshot, type GameHandicapContext } from "@/lib/games/handicap";
+import { assertModeAllowed } from "@/lib/games/mode-access";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   addShotSchema,
   createGameSchema,
@@ -22,6 +24,15 @@ import { buildSystemPrompt } from "@/lib/coach/prompt";
 import { getCoachContext } from "@/lib/coach/context";
 import type { GameMode } from "@prisma/client";
 
+// Fase 11A — límites razonables para operaciones con coste variable
+// (creación/finalización de partidas), dentro del limiter en memoria ya
+// existente. Ver rate-limit.ts para cómo migrar a un store compartido.
+// Son control técnico de abuso/costes, no límites comerciales FREE/PRO.
+// finishGame puede disparar hasta 2 llamadas a Claude por partida
+// terminada (ver after() más abajo), de ahí el límite más estricto.
+const CREATE_GAME_RATE_LIMIT = { windowMs: 10 * 60_000, maxRequests: 5 };
+const FINISH_GAME_RATE_LIMIT = { windowMs: 10 * 60_000, maxRequests: 5 };
+
 export type ActionState = { error?: string } | undefined;
 
 // Modos con equipos fijos A/B a 4 jugadores.
@@ -34,6 +45,11 @@ function generateInviteCode(): string {
 export async function createGame(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await auth();
   if (!session?.user?.id) redirect("/");
+
+  const rl = checkRateLimit(`create-game:${session.user.id}`, CREATE_GAME_RATE_LIMIT);
+  if (!rl.allowed) {
+    return { error: "Estás creando partidas demasiado rápido. Espera unos minutos e inténtalo de nuevo." };
+  }
 
   const raw = {
     playerCount: formData.get("playerCount"),
@@ -99,8 +115,22 @@ export async function createGame(_prev: ActionState, formData: FormData): Promis
   const usesTeams = TEAM_MODES.includes(mode);
   const allPlayerIds = [session.user.id, ...extraPlayerIds];
 
-  const players = await prisma.user.findMany({ where: { id: { in: allPlayerIds } }, select: { id: true, handicap: true } });
+  const players = await prisma.user.findMany({
+    where: { id: { in: allPlayerIds } },
+    select: { id: true, handicap: true, plan: true, email: true },
+  });
   const handicapByUserId = new Map(players.map((p) => [p.id, p.handicap]));
+
+  // Fase 11A: el modo elegido nunca se confía tal cual del FormData — se
+  // revalida aquí con el plan REAL de quien crea (leído de la propia BD,
+  // no de la sesión ni de nada que mande el cliente). El `disabled` del
+  // botón en new-game-screen.tsx es solo UX.
+  const creator = players.find((p) => p.id === session.user.id);
+  try {
+    assertModeAllowed(creator ?? { plan: "FREE", email: null }, mode);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Modo no permitido" };
+  }
 
   if (courseId) {
     // Un campo real (con recorridos/tees) exige elegir un tee concreto —
@@ -411,6 +441,15 @@ export async function finishGame(gameId: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("No autenticado");
 
+  // Fase 11A: finalizar dispara 2 llamadas a Claude (ver after() más abajo)
+  // — crear y terminar partidas en bucle no debe poder generarlas sin
+  // límite. La sincronización offline (sync.ts) nunca reintenta una
+  // llamada que lanzó un error no-de-red, así que este throw no rompe ese
+  // flujo: se propaga tal cual como "error" permanente, igual que
+  // cualquier otro rechazo del servidor.
+  const rl = checkRateLimit(`finish-game:${session.user.id}`, FINISH_GAME_RATE_LIMIT);
+  if (!rl.allowed) throw new Error("Estás finalizando partidas demasiado rápido. Espera unos minutos e inténtalo de nuevo.");
+
   const player = await prisma.gamePlayer.findFirst({ where: { gameId, userId: session.user.id } });
   if (!player) throw new Error("No perteneces a esta partida");
 
@@ -447,6 +486,15 @@ export async function createRematch(gameId: string) {
   });
   const amPlayer = source.players.some((p) => p.userId === session.user.id);
   if (!amPlayer) throw new Error("No perteneces a esta partida");
+
+  // Fase 11A: la revancha hereda el modo de la partida original — si ese
+  // modo es Pro, quien pide la revancha debe tener acceso Pro ÉL MISMO
+  // (su plan actual, no el de quien creó la partida original).
+  const requester = await prisma.user.findUniqueOrThrow({
+    where: { id: session.user.id },
+    select: { plan: true, email: true },
+  });
+  assertModeAllowed(requester, source.mode);
 
   // Mismo tee que la partida original, si lo tenía (campo real con
   // recorridos/tees) — re-lee GolfCourseTeeHole en vez de la vieja
