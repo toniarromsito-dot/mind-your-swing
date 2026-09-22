@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
-import { saveHoleScores } from "@/actions/games";
 import { holeResultLabel } from "@/lib/golf";
 import { strokesReceivedOnHole } from "@/lib/games/handicap";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -17,20 +15,24 @@ const STROKE_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1);
  * la mano toca el número de golpes de cada compañero, uno detrás de otro,
  * y guarda al instante — nada de steppers, selector de palo ni botón
  * "Guardar" aparte. Ver brief: "miro → toco → guardado → siguiente
- * hoyo", vuelto a esto tras comprobar que el registro golpe a golpe
- * (palo por palo) estorbaba más de lo que ayudaba en la práctica.
+ * hoyo".
+ *
+ * Offline-First: `recordScore` escribe local-first (nunca espera al
+ * servidor — ver useOfflineGame) y no lanza nunca, así que la confirmación
+ * en pantalla es inmediata tanto online como offline; la sincronización
+ * real ocurre en segundo plano.
  */
 export function SharedScorecard({
-  gameId,
   hole,
   players,
+  recordScore,
   onSaved,
   t,
   golfResult,
 }: {
-  gameId: string;
   hole: { id: string; number: number; par: number; distance: number | null; index: number | null };
   players: ScorecardPlayer[];
+  recordScore: (holeId: string, playerId: string, strokes: number | null, putts: number | null) => void;
   onSaved: () => void;
   t: Dictionary["playGame"];
   golfResult: Dictionary["golfResult"];
@@ -40,32 +42,23 @@ export function SharedScorecard({
     return firstUnset === -1 ? 0 : firstUnset;
   });
   const [confirmation, setConfirmation] = useState<{ strokes: number; label: string } | null>(null);
-  const [isBusy, setIsBusy] = useState(false);
 
   const player = players[playerIndex];
   const strokesReceived =
     hole.index != null && player.handicap != null ? strokesReceivedOnHole(player.handicap, hole.index) : 0;
 
   function pick(strokes: number) {
-    if (isBusy) return;
-    setIsBusy(true);
-    saveHoleScores({ gameId, holeId: hole.id, entries: [{ playerId: player.id, strokes, putts: null, club: null }] })
-      .then(() => {
-        setConfirmation({ strokes, label: holeResultLabel(hole.par, strokes, golfResult) });
-        setTimeout(() => {
-          setConfirmation(null);
-          setIsBusy(false);
-          if (playerIndex + 1 < players.length) {
-            setPlayerIndex((i) => i + 1);
-          } else {
-            onSaved();
-          }
-        }, 1100);
-      })
-      .catch((err) => {
-        setIsBusy(false);
-        toast.error(err instanceof Error ? err.message : t.saveError);
-      });
+    if (confirmation) return;
+    recordScore(hole.id, player.id, strokes, null);
+    setConfirmation({ strokes, label: holeResultLabel(hole.par, strokes, golfResult) });
+    setTimeout(() => {
+      setConfirmation(null);
+      if (playerIndex + 1 < players.length) {
+        setPlayerIndex((i) => i + 1);
+      } else {
+        onSaved();
+      }
+    }, 1100);
   }
 
   if (confirmation) {
@@ -111,7 +104,6 @@ export function SharedScorecard({
           <button
             key={n}
             type="button"
-            disabled={isBusy}
             onClick={() => pick(n)}
             className="flex aspect-square items-center justify-center rounded-2xl bg-secondary font-heading text-2xl font-semibold text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
           >

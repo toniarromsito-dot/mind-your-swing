@@ -7,6 +7,8 @@ import { SplashScreen } from "@capacitor/splash-screen";
 import { App } from "@capacitor/app";
 import { SocialLogin } from "@capgo/capacitor-social-login";
 import { handleAndroidBackButton } from "@/lib/native/back-button";
+import { getActiveLocalGameId } from "@/lib/offline/store";
+import { getConnectivity } from "@/lib/offline/connectivity";
 
 const PROD_ORIGIN = "https://mind-your-swing.vercel.app";
 
@@ -55,15 +57,32 @@ export function NativeAppInit() {
     // frío, solo en una reanudación real) hace que cada apertura traiga
     // siempre la versión desplegada actual, sin depender de que fuerce el
     // cierre de la app manualmente.
+    //
+    // Offline-First (Fase aprobada): esta recarga es justo lo que borraría
+    // el Focus Mode en memoria de una vuelta en curso — si además no hay
+    // red en ese momento, el WebView ni siquiera podría recargar la página
+    // remota (ver audit, limitación de Capacitor remote mode). Por eso,
+    // cuando hay una partida activa guardada localmente Y no hay
+    // conectividad real en el momento de reanudar, se salta esta recarga
+    // — el jugador sigue exactamente donde estaba, con el scorecard
+    // local-first ya cargado en memoria. Fuera de ese caso concreto, el
+    // comportamiento no cambia.
     let hasBackgrounded = false;
     const stateListener = App.addListener("appStateChange", ({ isActive }) => {
       if (!isActive) {
         hasBackgrounded = true;
         return;
       }
-      if (hasBackgrounded) {
+      if (!hasBackgrounded) return;
+
+      (async () => {
+        const activeGameId = await getActiveLocalGameId().catch(() => null);
+        if (activeGameId) {
+          const connectivity = await getConnectivity().catch(() => "offline" as const);
+          if (connectivity === "offline") return; // proteger la vuelta en curso: no recargar
+        }
         window.location.reload();
-      }
+      })();
     });
 
     // Botón/gesto atrás de Android — un único listener global para toda
