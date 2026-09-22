@@ -276,7 +276,7 @@ export function CoachChat({
           e.preventDefault();
           send(input);
         }}
-        className="flex items-end gap-2 border-t border-border pt-3"
+        className="mt-1 flex items-end gap-2 rounded-2xl border border-border bg-card px-2.5 py-2 shadow-sm transition-shadow focus-within:border-ring/50 focus-within:ring-3 focus-within:ring-ring/20"
       >
         <Textarea
           value={input}
@@ -289,7 +289,7 @@ export function CoachChat({
           }}
           placeholder={t.inputPlaceholder}
           rows={1}
-          className="min-h-10 flex-1 resize-none"
+          className="min-h-8 flex-1 resize-none border-0 bg-transparent px-1 py-1 shadow-none focus-visible:ring-0"
           disabled={sending}
         />
         <Button type="submit" size="icon" disabled={sending || !input.trim()}>

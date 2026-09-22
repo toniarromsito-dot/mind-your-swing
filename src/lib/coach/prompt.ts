@@ -1,5 +1,6 @@
 import { MOOD_LABELS } from "@/lib/mood";
-import type { CoachContext } from "./types";
+import { formatRelativeToPar } from "@/lib/golf";
+import type { CoachContext, CoachPlayerStats } from "./types";
 
 /**
  * Identidad y reglas de comportamiento del compañero. Centralizado aquí a
@@ -20,7 +21,9 @@ Reglas de estilo:
 - Frases cortas y directas. El jugador te lee entre golpes, no tiene tiempo de leer párrafos.
 - Nunca uses jerga clínica ni sermones largos.
 - Termina casi siempre con una acción concreta y pequeña que el jugador pueda hacer ya (una respiración, una frase de autocharla, un foco para el siguiente golpe).
-- No repitas mecánicamente el nombre del jugador en cada mensaje.`;
+- No repitas mecánicamente el nombre del jugador en cada mensaje.
+
+Regla crítica sobre datos: nunca presentes como hecho una estadística que no esté disponible en el contexto de abajo. Si no tienes datos suficientes sobre algo (una tendencia, un campo con pocas vueltas, un tipo de hoyo), dilo claramente en vez de inventarlo o inferirlo. No fabriques cifras de fairways, GIR, distancia de golpes, palos, Stableford real, hándicap oficial WHS ni "strokes gained" — nada de eso existe en esta app todavía.`;
 
 const PHASE_GUIDANCE: Record<CoachContext["phase"], string> = {
   standalone: `Contexto: no hay ninguna partida activa ahora mismo. El jugador ha venido a hablar contigo por su cuenta (MIND) — puede ser antes de jugar, después de una sesión de práctica, o simplemente porque necesita hablar. Puedes ser algo más elaborado que durante una partida, pero sigue siendo breve y directo.`,
@@ -36,25 +39,118 @@ const TONE_GUIDANCE: Record<CoachContext["tone"], string> = {
   FRIEND: "Personalidad FRIEND: tono cercano y natural, como un amigo con criterio que juega contigo. Cálido, informal, cercano. Tuteo.",
 };
 
+/**
+ * Estadísticas históricas — siempre después del contexto inmediato de
+ * partida (si lo hay), como contexto secundario. Cuando no hay partida
+ * (standalone), este es el bloque principal de datos disponible. Cada
+ * línea se omite si el campo correspondiente es `null` — nunca se
+ * rellena con un valor inventado ni con un "sin datos" que el modelo
+ * pudiera confundir con una cifra real.
+ */
+function renderPlayerStatsLines(stats: CoachPlayerStats): string[] {
+  const lines: string[] = [];
+
+  if (stats.completedRounds === 0) {
+    lines.push(
+      `Estadísticas históricas: el jugador todavía no tiene ninguna vuelta completada registrada en la app. No inventes vueltas, resultados ni tendencias anteriores.`
+    );
+    return lines;
+  }
+
+  lines.push(`--- Estadísticas históricas reales del jugador (${stats.completedRounds} vuelta(s) completada(s) en la app) ---`);
+
+  if (stats.recentRound) {
+    lines.push(
+      `Última vuelta: ${stats.recentRound.course}, ${stats.recentRound.totalHoles} hoyos, ${stats.recentRound.date.toISOString().slice(0, 10)}.`
+    );
+  }
+  if (stats.averageStrokesPerHole != null) {
+    lines.push(`Media de golpes por hoyo: ${stats.averageStrokesPerHole.toFixed(2)}.`);
+  }
+  if (stats.averageRelativeToPar != null) {
+    lines.push(`Resultado medio relativo al par: ${formatRelativeToPar(stats.averageRelativeToPar)}.`);
+  }
+  if (stats.bestRound) {
+    lines.push(`Mejor vuelta registrada: ${stats.bestRound.course} (${formatRelativeToPar(stats.bestRound.relativeToPar)}).`);
+  }
+  if (stats.worstRound) {
+    lines.push(`Peor vuelta registrada: ${stats.worstRound.course} (${formatRelativeToPar(stats.worstRound.relativeToPar)}).`);
+  }
+  if (stats.consistency) {
+    lines.push(
+      `Consistencia (desviación estándar del resultado relativo al par, sobre ${stats.consistency.sampleSize} vueltas): ${stats.consistency.stdDev.toFixed(1)} golpes.`
+    );
+  }
+  if (stats.trend) {
+    lines.push(
+      `Tendencia reciente: ${stats.trend.trend === "up" ? "mejorando" : "empeorando"} (diferencia de ${Math.abs(stats.trend.diff)} golpes entre la mitad más reciente de vueltas y la anterior).`
+    );
+  }
+
+  const b = stats.breakdown;
+  if (b.pars + b.birdies + b.bogeys + b.doubleBogeys + b.other > 0) {
+    lines.push(
+      `Desglose histórico de hoyos jugados: ${b.pars} par(es), ${b.birdies} birdie(s) o mejor, ${b.bogeys} bogey(s), ${b.doubleBogeys} doble(s) bogey(s), ${b.other} otro(s) resultado(s) (águila o mejor, o triple bogey o peor — no asumas cuál sin más contexto).`
+    );
+  }
+
+  const coursesWithAverage = stats.byCourse.filter((c) => c.averageRelativeToPar != null);
+  if (coursesWithAverage.length > 0) {
+    lines.push(`Rendimiento por campo (solo campos con muestra suficiente):`);
+    for (const c of coursesWithAverage) {
+      lines.push(`- ${c.course}: ${formatRelativeToPar(c.averageRelativeToPar!)} de media (${c.roundsCount} vuelta(s)).`);
+    }
+  }
+
+  const parsWithAverage = stats.byHolePar.filter((p) => p.averageRelativeToPar != null);
+  if (parsWithAverage.length > 0) {
+    lines.push(`Rendimiento por par de hoyo (solo pares con muestra suficiente):`);
+    for (const p of parsWithAverage) {
+      lines.push(`- Par ${p.par}: ${formatRelativeToPar(p.averageRelativeToPar!)} de media (${p.holesPlayed} hoyo(s)).`);
+    }
+  }
+
+  const formatsWithAverage = stats.byFormat.filter((f) => f.averageRelativeToPar != null);
+  if (formatsWithAverage.length > 0) {
+    lines.push(`Rendimiento por formato (solo formatos con muestra suficiente):`);
+    for (const f of formatsWithAverage) {
+      lines.push(`- ${f.totalHoles} hoyos: ${formatRelativeToPar(f.averageRelativeToPar!)} de media (${f.roundsCount} vuelta(s)).`);
+    }
+  }
+
+  return lines;
+}
+
 function renderContextBlock(ctx: CoachContext): string {
   const lines: string[] = [];
   lines.push(`<contexto>`);
   lines.push(`Jugador: ${ctx.playerName}`);
+  if (ctx.playerHandicap != null) {
+    lines.push(`Handicap actual declarado en la app (no es el hándicap oficial WHS): ${ctx.playerHandicap}`);
+  }
 
   if (ctx.game) {
     lines.push(`Campo: ${ctx.game.course}`);
     lines.push(`Modo de juego: ${ctx.game.mode}`);
     lines.push(`Hoyos totales: ${ctx.game.totalHoles}`);
     if (ctx.game.goal) lines.push(`Objetivo del día: ${ctx.game.goal}`);
+    if (ctx.game.playingHandicap != null) lines.push(`Playing Handicap del jugador en esta partida: ${ctx.game.playingHandicap}`);
   }
 
   if (ctx.currentHole) {
     const h = ctx.currentHole;
     lines.push(
-      `Hoyo actual: ${h.number} (par ${h.par}${h.distance ? `, ${h.distance}m` : ""})`
+      `Hoyo actual: ${h.number} (par ${h.par}${h.distance ? `, ${h.distance}m` : ""}${h.index != null ? `, stroke index ${h.index}` : ""})`
     );
     if (h.strokes != null) lines.push(`Golpes registrados en este hoyo (de este jugador): ${h.strokes}`);
     if (h.putts != null) lines.push(`Putts en este hoyo: ${h.putts}`);
+    if (h.strokesReceived != null) {
+      lines.push(
+        h.strokesReceived > 0
+          ? `Golpes de hándicap que recibe en este hoyo: ${h.strokesReceived}.`
+          : `No recibe golpes de hándicap en este hoyo.`
+      );
+    }
   }
 
   if (ctx.gameProgress) {
@@ -74,6 +170,13 @@ function renderContextBlock(ctx: CoachContext): string {
       );
     }
   }
+
+  // Estadísticas históricas — SIEMPRE después del contexto inmediato de
+  // partida (campo/hoyo actual/progreso/desglose de arriba), nunca antes:
+  // durante una partida, la situación inmediata manda; el histórico es
+  // apoyo. Fuera de una partida no hay nada por delante, así que este
+  // bloque pasa a ser el contenido principal de forma natural.
+  lines.push(...renderPlayerStatsLines(ctx.playerStats));
 
   if (ctx.mindMemory) {
     lines.push(`Memoria de partidas anteriores con este jugador: ${ctx.mindMemory}`);

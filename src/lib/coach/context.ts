@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { hasProAccess } from "@/lib/plan";
 import { computeRoundBreakdown, formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
-import type { CoachContext, CoachPhase } from "./types";
+import { strokesReceivedOnHole } from "@/lib/games/handicap";
+import { getPlayerStats } from "@/lib/data/player-stats";
+import type { PlayerStats } from "@/lib/player-stats";
+import type { CoachContext, CoachPhase, CoachPlayerStats } from "./types";
 
 const RECENT_MOOD_LIMIT = 5;
 const HISTORY_ENTRIES_LIMIT = 20;
@@ -57,6 +60,35 @@ async function buildHistorySummary(userId: string, excludeGameId?: string): Prom
   return null;
 }
 
+/**
+ * Proyecta `PlayerStats` (Fase 9) al subconjunto que ve el Coach — Fase 10.
+ * Nunca recalcula: solo selecciona campos y quita `gameId` (id interno sin
+ * valor conversacional). Los mínimos de muestra ya vienen aplicados por
+ * player-stats.ts: un campo `null` aquí simplemente se propaga tal cual.
+ */
+function projectPlayerStats(stats: PlayerStats): CoachPlayerStats {
+  return {
+    completedRounds: stats.completedRounds,
+    recentRound: stats.recentRound
+      ? { course: stats.recentRound.course, date: stats.recentRound.date, totalHoles: stats.recentRound.totalHoles }
+      : null,
+    bestRound: stats.bestRound
+      ? { course: stats.bestRound.course, date: stats.bestRound.date, relativeToPar: stats.bestRound.relativeToPar }
+      : null,
+    worstRound: stats.worstRound
+      ? { course: stats.worstRound.course, date: stats.worstRound.date, relativeToPar: stats.worstRound.relativeToPar }
+      : null,
+    averageStrokesPerHole: stats.averageStrokesPerHole,
+    averageRelativeToPar: stats.averageRelativeToPar,
+    consistency: stats.consistency,
+    trend: stats.trend,
+    breakdown: stats.breakdown,
+    byCourse: stats.byCourse,
+    byHolePar: stats.byHolePar,
+    byFormat: stats.byFormat,
+  };
+}
+
 function derivePhase(status: "IN_PROGRESS" | "COMPLETED", hasCurrentHole: boolean): CoachPhase {
   if (status === "COMPLETED") return "post_partida";
   return hasCurrentHole ? "durante_partida" : "pre_partida";
@@ -103,12 +135,19 @@ export async function getCoachContext(params: {
   const swingAnalysis =
     swingVideos.length > 0 ? { count: swingVideos.length, latestScore: swingVideos[0].score } : null;
 
+  // Fase 10: estadísticas históricas reales, siempre cargadas (con o sin
+  // partida activa) — misma fuente que Insights/Dashboard (Fase 9), nunca
+  // recalculada aquí.
+  const playerStats = projectPlayerStats(await getPlayerStats(userId));
+  const playerHandicap = user.handicap ?? null;
+
   if (!gameId) {
     return {
       phase: "standalone",
       playerName: user.name ?? "jugador/a",
       tone: user.coachTone,
       language: user.language,
+      playerHandicap,
       game: null,
       currentHole: null,
       gameProgress: null,
@@ -116,6 +155,7 @@ export async function getCoachContext(params: {
       historySummary,
       mindMemory,
       swingAnalysis,
+      playerStats,
     };
   }
 
@@ -145,11 +185,13 @@ export async function getCoachContext(params: {
     playerName: user.name ?? "jugador/a",
     tone: user.coachTone,
     language: user.language,
+    playerHandicap,
     game: {
       course: myPlayer.game.course,
       totalHoles: myPlayer.game.totalHoles,
       goal: myPlayer.game.goal,
       mode: myPlayer.game.mode,
+      playingHandicap: myPlayer.playingHandicap ?? null,
     },
     currentHole: currentHole
       ? {
@@ -158,6 +200,11 @@ export async function getCoachContext(params: {
           distance: currentHole.distance,
           strokes: currentHole.myScore?.strokes ?? null,
           putts: currentHole.myScore?.putts ?? null,
+          index: currentHole.index ?? null,
+          strokesReceived:
+            myPlayer.playingHandicap != null && currentHole.index != null
+              ? strokesReceivedOnHole(myPlayer.playingHandicap, currentHole.index)
+              : null,
         }
       : null,
     gameProgress:
@@ -173,5 +220,6 @@ export async function getCoachContext(params: {
     historySummary,
     mindMemory,
     swingAnalysis,
+    playerStats,
   };
 }
