@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
+import { getVoiceCreditStatus } from "@/lib/voice/credits";
 import type Stripe from "stripe";
 
 /**
@@ -64,6 +65,22 @@ function makeEvent(
   createdAt = Math.floor(Date.now() / 1000)
 ): Stripe.Event {
   return { id, type, created: createdAt, data: { object: data } } as unknown as Stripe.Event;
+}
+
+function makeVoicePackCheckoutEvent(
+  id: string,
+  overrides: { customer?: string; metadata?: Record<string, string> | null } = {}
+): Stripe.Event {
+  return makeEvent(id, "checkout.session.completed", {
+    id: `cs_pack_${Math.random().toString(36).slice(2, 10)}`,
+    mode: "payment",
+    subscription: null,
+    customer: overrides.customer ?? "cus_voice_pack_default",
+    metadata:
+      overrides.metadata === null
+        ? null
+        : { product: "voice_pack_60min", ...(overrides.metadata ?? { userId: "unset" }) },
+  });
 }
 
 function req(event: Stripe.Event) {
@@ -321,5 +338,90 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
     const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
     expect(sub.status).toBe("ACTIVE");
     expect(sub.hasUsedTrial).toBe(true);
+  });
+
+  // ---- Fase 11E — pack de Voice (compra one-time, mode: "payment") ----
+
+  it("18. un pago confirmado del pack acredita exactamente 3600s (60 min)", async () => {
+    const user = await makeUserWithSubscription("voice-pack-credit", "cus_voice_pack_18");
+    await prisma.user.update({ where: { id: user.id }, data: { plan: "PRO" } });
+
+    const event = makeVoicePackCheckoutEvent("evt_voice_pack_18", {
+      customer: "cus_voice_pack_18",
+      metadata: { userId: user.id },
+    });
+    const res = await POST(req(event));
+    expect(res.status).toBe(200);
+
+    const status = await getVoiceCreditStatus(user.id, "PRO");
+    expect(status.purchasedRemainingSeconds).toBe(3600);
+  });
+
+  it("19. un reenvío del mismo webhook de pack (mismo event.id) acredita una sola vez", async () => {
+    const user = await makeUserWithSubscription("voice-pack-replay", "cus_voice_pack_19");
+    await prisma.user.update({ where: { id: user.id }, data: { plan: "PRO" } });
+
+    const event = makeVoicePackCheckoutEvent("evt_voice_pack_19", {
+      customer: "cus_voice_pack_19",
+      metadata: { userId: user.id },
+    });
+
+    const first = await POST(req(event));
+    expect(first.status).toBe(200);
+    const second = await POST(req(event));
+    expect(second.status).toBe(200);
+    expect(await second.json()).toMatchObject({ duplicate: true });
+
+    const status = await getVoiceCreditStatus(user.id, "PRO");
+    expect(status.purchasedRemainingSeconds).toBe(3600); // no 7200
+  });
+
+  it("dos compras DISTINTAS (dos packs reales) sí acreditan las dos — la idempotencia es por evento, no por producto", async () => {
+    const user = await makeUserWithSubscription("voice-pack-two-real", "cus_voice_pack_two");
+    await prisma.user.update({ where: { id: user.id }, data: { plan: "PRO" } });
+
+    await POST(req(makeVoicePackCheckoutEvent("evt_voice_pack_two_a", { customer: "cus_voice_pack_two", metadata: { userId: user.id } })));
+    await POST(req(makeVoicePackCheckoutEvent("evt_voice_pack_two_b", { customer: "cus_voice_pack_two", metadata: { userId: user.id } })));
+
+    const status = await getVoiceCreditStatus(user.id, "PRO");
+    expect(status.purchasedRemainingSeconds).toBe(7200); // dos packs reales, las dos cuentan
+  });
+
+  it("20. metadata.userId que no coincide con el usuario del customer → NO se acredita a nadie", async () => {
+    const owner = await makeUserWithSubscription("voice-pack-owner", "cus_voice_pack_20");
+    const impostor = await makeUserWithSubscription("voice-pack-impostor", "cus_voice_pack_20_impostor");
+    await prisma.user.update({ where: { id: owner.id }, data: { plan: "PRO" } });
+    await prisma.user.update({ where: { id: impostor.id }, data: { plan: "PRO" } });
+
+    // El customer real es el del owner, pero la metadata dice el userId del impostor.
+    const event = makeVoicePackCheckoutEvent("evt_voice_pack_20", {
+      customer: "cus_voice_pack_20",
+      metadata: { userId: impostor.id },
+    });
+    const res = await POST(req(event));
+    expect(res.status).toBe(200); // no revienta, solo se descarta
+
+    expect((await getVoiceCreditStatus(owner.id, "PRO")).purchasedRemainingSeconds).toBe(0);
+    expect((await getVoiceCreditStatus(impostor.id, "PRO")).purchasedRemainingSeconds).toBe(0);
+  });
+
+  it("usuario que ya no es Pro en el momento de acreditar el pack → NO se acredita", async () => {
+    const user = await makeUserWithSubscription("voice-pack-no-longer-pro", "cus_voice_pack_not_pro");
+    // Deliberadamente se queda en FREE — simula que canceló entre el pago y el webhook.
+
+    const event = makeVoicePackCheckoutEvent("evt_voice_pack_not_pro", {
+      customer: "cus_voice_pack_not_pro",
+      metadata: { userId: user.id },
+    });
+    const res = await POST(req(event));
+    expect(res.status).toBe(200);
+
+    expect((await getVoiceCreditStatus(user.id, "FREE")).purchasedRemainingSeconds).toBe(0);
+  });
+
+  it("evento de pack sin metadata.userId se descarta sin lanzar", async () => {
+    const event = makeVoicePackCheckoutEvent("evt_voice_pack_no_metadata", { metadata: null });
+    const res = await POST(req(event));
+    expect(res.status).toBe(200);
   });
 });

@@ -3,8 +3,57 @@ import type Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { billingIntervalFromPriceId, isProStatus, normalizeStripeStatus, stripe } from "@/lib/stripe";
+import { canUseFeature } from "@/lib/entitlements";
+import { creditVoicePurchasedSeconds, VOICE_PACK_SECONDS } from "@/lib/voice/credits";
 
 export const runtime = "nodejs";
+
+const VOICE_PACK_PRODUCT = "voice_pack_60min";
+
+/**
+ * Fase 11E — acredita un pack de Voice tras un pago único confirmado
+ * (mode: "payment", nunca una suscripción). La idempotencia frente a un
+ * reenvío de Stripe ya está resuelta ANTES de llegar aquí: providerEventId
+ * es único en SubscriptionEvent y esa fila se inserta incondicionalmente
+ * para CUALQUIER evento al principio de POST(), reutilizado tal cual, sin
+ * ningún mecanismo nuevo.
+ *
+ * Verificación de integridad explícita: el customerId de la propia sesión
+ * de Stripe debe resolver a la MISMA Subscription cuyo userId coincide con
+ * metadata.userId. Si no coinciden, no se acredita a nadie — nunca un
+ * fallback inseguro a "acreditar de todos modos".
+ */
+async function creditVoicePackFromCheckout(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId;
+  if (!userId) {
+    console.error("Webhook de Stripe: compra de pack de Voice sin metadata.userId. Pack NO acreditado.");
+    return;
+  }
+
+  const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+  if (!customerId) {
+    console.error("Webhook de Stripe: compra de pack de Voice sin customer. Pack NO acreditado.");
+    return;
+  }
+
+  const subscriptionRow = await prisma.subscription.findUnique({ where: { providerCustomerId: customerId } });
+  if (!subscriptionRow || subscriptionRow.userId !== userId) {
+    console.error(
+      `Webhook de Stripe: metadata.userId (${userId}) no coincide con el usuario del customer ${customerId} — evento de integridad. Pack NO acreditado.`
+    );
+    return;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !canUseFeature(user, "VOICE_PRO")) {
+    console.error(
+      `Webhook de Stripe: usuario ${userId} ya no cumple Pro en el momento de acreditar el pack de Voice. Pack NO acreditado.`
+    );
+    return;
+  }
+
+  await creditVoicePurchasedSeconds(userId, VOICE_PACK_SECONDS);
+}
 
 /**
  * Aplica el estado de una Stripe Subscription a nuestra tabla Subscription +
@@ -157,6 +206,8 @@ export async function POST(req: Request) {
               : session.subscription.id;
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           await upsertSubscriptionFromStripe(subscription, eventCreatedAt);
+        } else if (session.mode === "payment" && session.metadata?.product === VOICE_PACK_PRODUCT) {
+          await creditVoicePackFromCheckout(session);
         }
         break;
       }

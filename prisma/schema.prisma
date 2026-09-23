@@ -237,6 +237,8 @@ model User {
   messages      Message[]
   stories       Story[]
   voiceCallLogs VoiceCallLog[]
+  voiceCreditPeriods    VoiceCreditPeriod[]
+  voicePurchasedBalance VoicePurchasedBalance?
   swingVideos   SwingVideo[]
   swingAiCreditPeriods SwingAiCreditPeriod[]
   playerProfile PlayerProfile?
@@ -596,17 +598,57 @@ model SwingAiCreditPeriod {
   @@unique([userId, period])
 }
 
-// Registro de duración de cada llamada de voz con el coach, para aplicar
-// los minutos incluidos en cada plan (ver src/lib/billing.ts).
+// Registro de duración de cada llamada de voz con el coach — historial/
+// auditoría, NO fuente de saldo (ver VoiceCreditPeriod/VoicePurchasedBalance
+// más abajo y src/lib/voice/credits.ts, Fase 11E). Se mantiene tal cual
+// existía antes de esta fase; solo se le añade `conversationId`.
 model VoiceCallLog {
   id              String   @id @default(cuid())
   userId          String
   durationSeconds Int
   createdAt       DateTime @default(now())
 
+  /// Fase 11E — id real de conversación de ElevenLabs (conversation.getId()
+  /// del SDK, ver call-coach.tsx). Nullable: las filas históricas anteriores
+  /// a esta fase no lo tienen y no se les inventa uno por backfill. Único
+  /// cuando existe — es la clave real de idempotencia: un segundo insert
+  /// con el mismo conversationId (reintento técnico, o dos requests
+  /// concurrentes de la misma llamada) nunca vuelve a descontar saldo.
+  conversationId String? @unique
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+/// Fase 11E — minutos INCLUIDOS de Voice por periodo natural ("YYYY-MM",
+/// mismo patrón que SwingAiCreditPeriod). Una fila por (userId, period);
+/// se crea bajo demanda la primera vez que hace falta, nunca por cron. El
+/// límite (FREE/PRO) se deriva del plan actual en src/lib/voice/credits.ts
+/// — no se guarda aquí como dato mutable, precisamente para que cambiar de
+/// plan no requiera tocar filas ya existentes.
+model VoiceCreditPeriod {
+  id              String @id @default(cuid())
+  userId          String
+  period          String
+  consumedSeconds Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+}
+
+/// Fase 11E — minutos COMPRADOS de Voice (packs de 60 min / 6,99 €, compra
+/// única de Stripe, nunca suscripción). Una fila por usuario; nunca caduca
+/// ni se reinicia por periodo. Solo crece por una compra confirmada
+/// (webhook de Stripe) y solo decrece por consumo real — nunca puede quedar
+/// negativo (ver tryConsumeVoiceCredit en src/lib/voice/credits.ts).
+model VoicePurchasedBalance {
+  id               String @id @default(cuid())
+  userId           String @unique
+  remainingSeconds Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Campo de golf. Los campos de demostración del prototipo inicial se

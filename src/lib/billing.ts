@@ -1,36 +1,34 @@
 import type { Plan } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { getVoiceCreditStatus, VOICE_INCLUDED_SECONDS } from "@/lib/voice/credits";
 
 /**
- * Minutos de llamada de voz incluidos por plan y por periodo. El periodo
- * se aproxima al mes natural (no al ciclo exacto de facturación de Stripe)
- * para no depender de una llamada extra a Stripe en cada chequeo — una
- * simplificación razonable para el volumen de esta app.
+ * Minutos de llamada de voz incluidos por plan — reexportado en minutos
+ * (no segundos) solo para no romper a quien ya lo importaba así (p.ej. la
+ * UI de ajustes). La fuente de verdad real, en segundos, vive en
+ * src/lib/voice/credits.ts (Fase 11E) junto con el resto de la lógica de
+ * saldo (incluidos + comprados).
  */
 export const INCLUDED_VOICE_MINUTES: Record<Plan, number> = {
-  FREE: 5,
-  PRO: 40,
+  FREE: VOICE_INCLUDED_SECONDS.FREE / 60,
+  PRO: VOICE_INCLUDED_SECONDS.PRO / 60,
 };
 
-export function getBillingPeriodStart(): Date {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1);
-}
-
-export async function getVoiceMinutesUsedThisPeriod(userId: string): Promise<number> {
-  const periodStart = getBillingPeriodStart();
-  const result = await prisma.voiceCallLog.aggregate({
-    where: { userId, createdAt: { gte: periodStart } },
-    _sum: { durationSeconds: true },
-  });
-  return (result._sum.durationSeconds ?? 0) / 60;
-}
-
+/**
+ * ¿Puede este usuario empezar una llamada ahora? Considera el saldo TOTAL
+ * disponible — incluidos + comprados (Fase 11E) — nunca solo lo incluido.
+ * Esto es un guard de UX/producto, no una reserva: el consumo real y
+ * definitivo se decide al registrar la duración (ver
+ * tryConsumeVoiceCredit en voice/credits.ts), no aquí.
+ */
 export async function canStartVoiceCall(
   userId: string,
   plan: Plan
 ): Promise<{ allowed: boolean; minutesUsed: number; minutesIncluded: number }> {
-  const minutesUsed = await getVoiceMinutesUsedThisPeriod(userId);
-  const minutesIncluded = INCLUDED_VOICE_MINUTES[plan];
-  return { allowed: minutesUsed < minutesIncluded, minutesUsed, minutesIncluded };
+  const status = await getVoiceCreditStatus(userId, plan);
+  const totalRemainingSeconds = status.includedRemainingSeconds + status.purchasedRemainingSeconds;
+  return {
+    allowed: totalRemainingSeconds > 0,
+    minutesUsed: (status.includedLimitSeconds - status.includedRemainingSeconds) / 60,
+    minutesIncluded: status.includedLimitSeconds / 60,
+  };
 }

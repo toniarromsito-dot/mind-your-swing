@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { Prisma, type BillingInterval } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isProStatus, isStripeConfigured, proPriceId, stripe } from "@/lib/stripe";
+import { isProStatus, isStripeConfigured, isVoicePackConfigured, proPriceId, stripe, voicePackPriceId } from "@/lib/stripe";
+import { canUseFeature } from "@/lib/entitlements";
 
 async function getOrCreateStripeCustomerId(userId: string, email: string, name: string | null) {
   const user = await prisma.user.findUniqueOrThrow({
@@ -93,6 +94,53 @@ export async function createCheckoutSession(interval: BillingInterval) {
     // cerrar sesión, cambiar de dispositivo o crear otro checkout no lo
     // reinicia.
     subscription_data: subscriptionRow.hasUsedTrial ? undefined : { trial_period_days: 3 },
+  });
+
+  if (checkoutSession.url) redirect(checkoutSession.url);
+}
+
+/**
+ * Fase 11E — pack de Voice: 60 min por 6,99 €, compra ÚNICA (mode:
+ * "payment"), nunca una suscripción. A diferencia de createCheckoutSession,
+ * NO bloquea una segunda compra si el usuario ya tiene un pack — comprar
+ * dos packs legítimamente es válido (ver spec: "si realmente paga dos
+ * packs, debe recibir dos packs"), lo único que no puede pasar es que UN
+ * pago se acredite dos veces (eso lo cierra la idempotencia del webhook,
+ * no esto).
+ */
+export async function createVoicePackCheckoutSession() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/");
+  if (!isVoicePackConfigured()) throw new Error("Los packs de Voice no están configurados todavía.");
+
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
+  if (!canUseFeature(user, "VOICE_PRO")) {
+    throw new Error("Los packs de Voice requieren el plan Pro.");
+  }
+
+  // Reutiliza el customer YA existente (creado al suscribirse) — un pack
+  // nunca crea un customer de Stripe nuevo. Si todavía no existe ninguna
+  // Subscription (nunca ha pasado por checkout de Pro), no hay customer al
+  // que asociar el pack — no se improvisa uno.
+  const subscriptionRow = await prisma.subscription.findUnique({ where: { userId: session.user.id } });
+  if (!subscriptionRow) throw new Error("No tienes ninguna suscripción todavía.");
+
+  const priceId = voicePackPriceId();
+  if (!priceId) throw new Error("Los packs de Voice no están configurados todavía.");
+
+  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+
+  const checkoutSession = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer: subscriptionRow.providerCustomerId,
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: `${baseUrl}/settings?voicePack=success`,
+    cancel_url: `${baseUrl}/settings?voicePack=cancel`,
+    // Identificación inequívoca para el webhook — nunca se infiere solo de
+    // la ausencia de session.subscription (session.mode ya lo distingue,
+    // pero metadata.product deja explícito de qué producto se trata si en
+    // el futuro hay más de un tipo de compra one-time).
+    metadata: { userId: session.user.id, product: "voice_pack_60min" },
   });
 
   if (checkoutSession.url) redirect(checkoutSession.url);

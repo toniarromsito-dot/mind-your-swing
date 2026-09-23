@@ -39,6 +39,18 @@ export function billingIntervalFromPriceId(priceId: string | null | undefined): 
   return null;
 }
 
+// Fase 11E — pack de Voice: compra ÚNICA (mode: "payment"), nunca una
+// suscripción, así que deliberadamente NO se exige junto a
+// isStripeConfigured() (los packs deben poder activarse/desactivarse sin
+// afectar al checkout de Pro, y viceversa).
+export function isVoicePackConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_VOICE_PACK_PRICE_ID);
+}
+
+export function voicePackPriceId(): string | undefined {
+  return process.env.STRIPE_VOICE_PACK_PRICE_ID;
+}
+
 /**
  * Normaliza los `status` que devuelve Stripe (incomplete, incomplete_expired,
  * trialing, active, past_due, canceled, unpaid y, en cuentas más nuevas,

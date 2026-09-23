@@ -4,10 +4,10 @@ import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { ProfileForm } from "@/components/profile-form";
 import { signOutAction } from "@/actions/profile";
-import { createCheckoutSession, createPortalSession } from "@/actions/stripe";
-import { isStripeConfigured } from "@/lib/stripe";
+import { createCheckoutSession, createPortalSession, createVoicePackCheckoutSession } from "@/actions/stripe";
+import { isStripeConfigured, isVoicePackConfigured } from "@/lib/stripe";
 import { isAdminEmail, isOwnerEmail } from "@/lib/admin";
-import { getVoiceMinutesUsedThisPeriod, INCLUDED_VOICE_MINUTES } from "@/lib/billing";
+import { getVoiceCreditStatus } from "@/lib/voice/credits";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/lib/i18n/current-locale";
@@ -20,7 +20,7 @@ import { fmt } from "@/lib/i18n/format";
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; voicePack?: string }>;
 }) {
   const userId = await requireUserId();
   const user = await prisma.user.findUniqueOrThrow({
@@ -28,11 +28,13 @@ export default async function SettingsPage({
     include: { subscription: true },
   });
   const { t } = await getDictionary();
-  const { checkout } = await searchParams;
+  const { checkout, voicePack } = await searchParams;
 
   const owner = isOwnerEmail(user.email);
-  const minutesUsed = await getVoiceMinutesUsedThisPeriod(userId);
-  const minutesIncluded = INCLUDED_VOICE_MINUTES[user.plan];
+  const voiceCredits = await getVoiceCreditStatus(userId, user.plan);
+  const minutesUsed = (voiceCredits.includedLimitSeconds - voiceCredits.includedRemainingSeconds) / 60;
+  const minutesIncluded = voiceCredits.includedLimitSeconds / 60;
+  const purchasedMinutesAvailable = Math.floor(voiceCredits.purchasedRemainingSeconds / 60);
   const subscription = user.subscription;
   const isTrialing = subscription?.status === "TRIALING";
   const isPastDue = subscription?.status === "PAST_DUE";
@@ -58,6 +60,16 @@ export default async function SettingsPage({
           {t.perfil.checkoutCancelled}
         </p>
       )}
+      {voicePack === "success" && (
+        <p className="rounded-xl border border-primary/30 bg-secondary/40 p-3 text-sm">
+          {t.perfil.voicePackSuccess}
+        </p>
+      )}
+      {voicePack === "cancel" && (
+        <p className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
+          {t.perfil.voicePackCancelled}
+        </p>
+      )}
 
       <Card>
         <CardHeader>
@@ -74,6 +86,20 @@ export default async function SettingsPage({
                 : fmt(t.perfil.minutesUsed, { used: Math.round(minutesUsed), included: minutesIncluded })}
             </span>
           </div>
+
+          {!owner && user.plan === "PRO" && purchasedMinutesAvailable > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {fmt(t.perfil.purchasedMinutesAvailable, { minutes: purchasedMinutesAvailable })}
+            </p>
+          )}
+
+          {!owner && user.plan === "PRO" && isVoicePackConfigured() && (
+            <form action={createVoicePackCheckoutSession}>
+              <Button type="submit" variant="outline" size="sm" className="w-full justify-center">
+                {t.perfil.buyVoicePack}
+              </Button>
+            </form>
+          )}
 
           {!owner && user.plan === "PRO" && subscription?.currentPeriodEnd && (
             <p className="text-xs text-muted-foreground">

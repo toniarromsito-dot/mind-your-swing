@@ -15,14 +15,31 @@ export function CallCoach(props: { gameId?: string | null; holeId?: string | nul
   );
 }
 
-function logCallDuration(startedAt: number | null) {
+// Fase 11E: conversationId real de ElevenLabs (conversation.getId() del
+// SDK, no un id inventado) — es la clave de idempotencia del backend. Si
+// por lo que sea no está disponible en este punto del ciclo de vida, la
+// llamada NO se registra (se pierde ese tramo de saldo, igual que ya
+// ocurría en el "best effort" anterior) en vez de mandar un id fabricado.
+function logCallDuration(startedAt: number | null, getConversationId: () => string) {
   if (startedAt == null) return;
   const durationSeconds = Math.round((Date.now() - startedAt) / 1000);
   if (durationSeconds <= 0) return;
+
+  let conversationId: string;
+  try {
+    conversationId = getConversationId();
+  } catch {
+    conversationId = "";
+  }
+  if (!conversationId) {
+    console.error("Voice: conversationId no disponible al colgar — esta llamada no se registra.");
+    return;
+  }
+
   fetch("/api/voice/log", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ durationSeconds }),
+    body: JSON.stringify({ durationSeconds, conversationId }),
     keepalive: true,
   }).catch(() => {
     // best-effort: si falla, en el peor caso ese tramo no cuenta para el límite mensual
@@ -44,7 +61,7 @@ function CallCoachInner({
   const conversation = useConversation({
     onError: () => toast.error(t.callError),
     onDisconnect: () => {
-      logCallDuration(callStartRef.current);
+      logCallDuration(callStartRef.current, () => conversation.getId());
       callStartRef.current = null;
     },
   });

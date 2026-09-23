@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
  * Créditos de Swing AI — Fase 11D. 8 análisis válidos por mes, PRO
  * únicamente. El periodo es el mes natural ("YYYY-MM"), no el ciclo exacto
  * de facturación de Stripe — misma simplificación ya usada y documentada
- * para los minutos de Voice (ver getBillingPeriodStart en billing.ts) y
- * para el reto mensual de Comunidad (currentChallengeMonth en
+ * para los minutos de Voice (ver currentVoicePeriod en voice/credits.ts,
+ * Fase 11E) y para el reto mensual de Comunidad (currentChallengeMonth en
  * data/social.ts). Se elige a propósito: desacopla el crédito de si la
  * suscripción es mensual o anual, de si está en trial, o de cuándo canceló
  * y volvió — todo eso ya lo resuelve hasProAccess()/canUseFeature() antes
