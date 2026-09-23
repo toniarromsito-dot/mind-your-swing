@@ -2,7 +2,7 @@ import Image from "next/image";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/lib/i18n/current-locale";
-import { hasProAccess } from "@/lib/plan";
+import { canUseFeature } from "@/lib/entitlements";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 import { VideoCard } from "@/components/video-card";
 import { AprendeBackLink } from "@/components/aprende-back-link";
@@ -11,7 +11,7 @@ export default async function TutorialsPage() {
   const userId = await requireUserId();
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true, email: true } });
   const { t } = await getDictionary();
-  const isPro = hasProAccess(user);
+  const isPro = canUseFeature(user, "LEARN_VIDEOS");
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">

@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
-import { Heart, MessageCircle, Send, X } from "lucide-react";
+import { Heart, Lock, MessageCircle, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { toggleLike, addComment, deleteComment } from "@/actions/social";
 import { StoryDeleteButton } from "@/components/story-delete-button";
 import { FollowButton } from "@/components/follow-button";
 import { cn } from "@/lib/utils";
+import { fmt } from "@/lib/i18n/format";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export type StoryForCard = {
@@ -18,25 +19,38 @@ export type StoryForCard = {
   userId: string;
   user: { id: string; name: string | null; image: string | null };
   likes: { userId: string }[];
+  /**
+   * `items` es `null` cuando el servidor decidió que este viewer no tiene
+   * acceso Pro — Comunidad (Fase 11C). No es un valor que este componente
+   * pueda "desbloquear" localmente: el contenido real de las respuestas
+   * nunca llega aquí en ese caso, ver src/lib/data/social.ts.
+   */
   comments: {
-    id: string;
-    content: string;
-    createdAt: string;
-    userId: string;
-    user: { id: string; name: string | null; image: string | null };
-  }[];
+    count: number;
+    items:
+      | {
+          id: string;
+          content: string;
+          createdAt: string;
+          userId: string;
+          user: { id: string; name: string | null; image: string | null };
+        }[]
+      | null;
+  };
 };
 
 export function StoryCard({
   story,
   viewerId,
   isFollowing,
+  isPro,
   t,
   dateLocale,
 }: {
   story: StoryForCard;
   viewerId: string;
   isFollowing: boolean | null;
+  isPro: boolean;
   t: Dictionary["community"];
   dateLocale: string;
 }) {
@@ -122,8 +136,8 @@ export function StoryCard({
           onClick={() => setShowComments((s) => !s)}
           className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors active:text-foreground"
         >
-          <MessageCircle className="size-4" />
-          {story.comments.length}
+          {story.comments.items === null ? <Lock className="size-4" /> : <MessageCircle className="size-4" />}
+          {story.comments.count}
         </button>
         {isMine && (
           <span className="ml-auto">
@@ -132,47 +146,64 @@ export function StoryCard({
         )}
       </div>
 
-      {showComments && (
-        <div className="flex flex-col gap-2 border-t border-border pt-3">
-          {story.comments.map((c) => (
-            <div key={c.id} className="flex items-start justify-between gap-2">
-              <p className="text-sm">
-                <span className="font-medium">{c.user.name}</span> <span className="text-muted-foreground">{c.content}</span>
-              </p>
-              {c.userId === viewerId && (
+      {showComments &&
+        (story.comments.items === null ? (
+          <div className="flex flex-col items-center gap-2 border-t border-border pt-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              {story.comments.count > 0
+                ? fmt(t.commentsLocked, { count: story.comments.count })
+                : t.commentsLockedEmpty}
+            </p>
+            <a
+              href="/settings"
+              className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground"
+            >
+              {t.commentsUnlockCta}
+            </a>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            {story.comments.items.map((c) => (
+              <div key={c.id} className="flex items-start justify-between gap-2">
+                <p className="text-sm">
+                  <span className="font-medium">{c.user.name}</span> <span className="text-muted-foreground">{c.content}</span>
+                </p>
+                {c.userId === viewerId && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteComment(c.id)}
+                    aria-label="Delete comment"
+                    className="shrink-0 text-muted-foreground/60 active:text-destructive"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+            {isPro ? (
+              <div className="flex gap-2">
+                <input
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleComment();
+                  }}
+                  placeholder={t.commentPlaceholder}
+                  className="flex-1 rounded-full border border-border bg-background px-3.5 py-1.5 text-sm outline-none focus:border-primary"
+                />
                 <button
                   type="button"
-                  onClick={() => handleDeleteComment(c.id)}
-                  aria-label="Delete comment"
-                  className="shrink-0 text-muted-foreground/60 active:text-destructive"
+                  onClick={handleComment}
+                  disabled={isPending || commentText.trim().length === 0}
+                  aria-label={t.commentSubmit}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
                 >
-                  <X className="size-3.5" />
+                  <Send className="size-3.5" />
                 </button>
-              )}
-            </div>
-          ))}
-          <div className="flex gap-2">
-            <input
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleComment();
-              }}
-              placeholder={t.commentPlaceholder}
-              className="flex-1 rounded-full border border-border bg-background px-3.5 py-1.5 text-sm outline-none focus:border-primary"
-            />
-            <button
-              type="button"
-              onClick={handleComment}
-              disabled={isPending || commentText.trim().length === 0}
-              aria-label={t.commentSubmit}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
-            >
-              <Send className="size-3.5" />
-            </button>
+              </div>
+            ) : null}
           </div>
-        </div>
-      )}
+        ))}
     </div>
   );
 }

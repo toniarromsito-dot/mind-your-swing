@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
-import { hasProAccess } from "@/lib/plan";
+import { canUseFeature } from "@/lib/entitlements";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getCurrentLocale } from "@/lib/i18n/current-locale";
 import { dictionaries } from "@/lib/i18n/dictionaries";
@@ -36,7 +36,7 @@ export async function submitSwingVideo(input: {
   if (!session?.user?.id) return { error: "No autenticado" };
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
-  if (!hasProAccess(user)) {
+  if (!canUseFeature(user, "SWING_AI")) {
     return { error: t.proRequiredError };
   }
 

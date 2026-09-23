@@ -21,7 +21,10 @@ export const GAME_MODE_META: Record<GameMode, ModeMeta> = {
   POINTS: { standingsKind: "points", usesTeams: false, usesChallenges: false, allowedPlayerCounts: [3, 4], pro: false },
   TWO_VS_TWO: { standingsKind: "team-stroke", usesTeams: true, usesChallenges: false, allowedPlayerCounts: [4], pro: false },
   BEST_BALL: { standingsKind: "best-ball", usesTeams: true, usesChallenges: false, allowedPlayerCounts: [4], pro: true },
-  SCRAMBLE: { standingsKind: "team-stroke", usesTeams: true, usesChallenges: false, allowedPlayerCounts: [4], pro: true },
+  // Fase 11C: Scramble pasa a FREE (decisión de producto ya cerrada en la
+  // especificación Free/Pro) — sigue usando equipos como Best Ball/Team
+  // Duel, pero ya no requiere Pro para crearlo.
+  SCRAMBLE: { standingsKind: "team-stroke", usesTeams: true, usesChallenges: false, allowedPlayerCounts: [4], pro: false },
   TEAM_DUEL: { standingsKind: "team-stroke", usesTeams: true, usesChallenges: false, allowedPlayerCounts: [4], pro: true },
 };
 

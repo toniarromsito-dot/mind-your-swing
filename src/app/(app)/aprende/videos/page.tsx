@@ -10,7 +10,7 @@ import { SwingVideoList } from "@/components/swing-video-list";
 import { SwingRecordFlow } from "@/components/swing-record-flow";
 import { ProUpsell } from "@/components/pro-upsell";
 import { MindMark } from "@/components/mind-mark";
-import { hasProAccess } from "@/lib/plan";
+import { canUseFeature } from "@/lib/entitlements";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 
 // Inmersiva como Coach/Aprende/Home (ver isImmersivePage en app-shell.tsx):
@@ -73,7 +73,7 @@ export default async function SwingVideosPage() {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true, email: true } });
   const { t } = await getDictionary();
 
-  if (!hasProAccess(user)) {
+  if (!canUseFeature(user, "SWING_AI")) {
     return (
       <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         <VideosHeader backLabel={t.nav.learn} />

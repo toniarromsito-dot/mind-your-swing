@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canUseFeature } from "@/lib/entitlements";
 import { commentSchema } from "@/lib/validations";
+import { getDictionary } from "@/lib/i18n/current-locale";
 
 export async function followUser(targetUserId: string) {
   const session = await auth();
@@ -44,6 +46,16 @@ export async function toggleLike(storyId: string) {
 export async function addComment(storyId: string, content: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("No autenticado");
+
+  // Comunidad (Fase 11C): las respuestas/comentarios son Pro tanto para
+  // leer como para publicar. Se comprueba ANTES de validar/tocar la base de
+  // datos — la UI ya oculta el formulario para FREE (ver story-card.tsx),
+  // pero esto es lo que de verdad lo impide si se llama directamente.
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
+  if (!canUseFeature(user, "COMMUNITY_REPLIES")) {
+    const { t } = await getDictionary();
+    throw new Error(t.community.commentsProRequired);
+  }
 
   const parsed = commentSchema.safeParse({ content });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Comentario inválido");

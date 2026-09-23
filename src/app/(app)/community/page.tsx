@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, Trophy, ListOrdered, ChevronRight, CircleUserRound } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
+import { prisma } from "@/lib/prisma";
+import { canUseFeature } from "@/lib/entitlements";
 import {
   listFollowingIds,
   listStoriesForFeed,
@@ -21,10 +23,14 @@ function serialize(
   return stories.map((s) => ({
     ...s,
     createdAt: s.createdAt.toISOString(),
-    comments: s.comments.map((c) => ({
-      ...c,
-      createdAt: c.createdAt.toISOString(),
-    })),
+    comments: {
+      count: s.comments.count,
+      items:
+        s.comments.items?.map((c) => ({
+          ...c,
+          createdAt: c.createdAt.toISOString(),
+        })) ?? null,
+    },
   }));
 }
 
@@ -32,11 +38,14 @@ export default async function CommunityPage() {
   const userId = await requireUserId();
   const { t } = await getDictionary();
 
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const isPro = canUseFeature(user, "COMMUNITY_REPLIES");
+
   const [all, friends, campo, consejo, followingIds, challenge] = await Promise.all([
-    listStoriesForFeed("all", userId),
-    listStoriesForFeed("friends", userId),
-    listStoriesForFeed("campo", userId),
-    listStoriesForFeed("consejo", userId),
+    listStoriesForFeed("all", userId, isPro),
+    listStoriesForFeed("friends", userId, isPro),
+    listStoriesForFeed("campo", userId, isPro),
+    listStoriesForFeed("consejo", userId, isPro),
     listFollowingIds(userId),
     getCurrentChallenge(),
   ]);
@@ -103,6 +112,7 @@ export default async function CommunityPage() {
           <CommunityFeed
             viewerId={userId}
             followingIds={followingIds}
+            isPro={isPro}
             stories={{
               all: serialize(all),
               friends: serialize(friends),

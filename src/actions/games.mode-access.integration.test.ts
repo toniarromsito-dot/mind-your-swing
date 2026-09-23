@@ -23,7 +23,7 @@ vi.mock("next/navigation", () => ({
 // que enganchar eso (ver Fase 9). Se mockea como no-op.
 vi.mock("next/server", () => ({ after: vi.fn() }));
 
-const { createGame, createRematch, finishGame } = await import("@/actions/games");
+const { createGame, createRematch, finishGame, joinGame } = await import("@/actions/games");
 const { submitSwingVideo } = await import("@/actions/swing-videos");
 
 async function runIgnoringRedirect(fn: () => Promise<unknown>) {
@@ -47,8 +47,11 @@ const PLAYER_COUNT_FOR_MODE: Record<GameMode, number> = {
   SCRAMBLE: 4,
   TEAM_DUEL: 4,
 };
-const PRO_MODES: GameMode[] = ["DUEL", "FRIENDLY_CHALLENGE", "BEST_BALL", "SCRAMBLE", "TEAM_DUEL"];
-const FREE_MODES: GameMode[] = ["SOLO", "STROKE_PLAY", "MATCH_PLAY", "EVERYONE_VS_EVERYONE", "POINTS", "TWO_VS_TWO"];
+// Fase 11C: Scramble pasa a FREE (ver src/lib/games/modes.ts) — movido de
+// PRO_MODES a FREE_MODES para que estas mismas pruebas A-J seguían
+// cubriendo el estado real sin duplicar la matriz en dos sitios.
+const PRO_MODES: GameMode[] = ["DUEL", "FRIENDLY_CHALLENGE", "BEST_BALL", "TEAM_DUEL"];
+const FREE_MODES: GameMode[] = ["SOLO", "STROKE_PLAY", "MATCH_PLAY", "EVERYONE_VS_EVERYONE", "POINTS", "TWO_VS_TWO", "SCRAMBLE"];
 
 function gameFormData(mode: GameMode, course = "Campo de pruebas") {
   const fd = new FormData();
@@ -133,9 +136,9 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
   });
 
   it("C. un usuario FREE puede seguir creando cualquier modo FREE con normalidad", async () => {
-    // Un usuario nuevo por modo: FREE_MODES tiene 6 entradas y el límite de
-    // createGame es 5/10min — esto prueba cada modo de forma aislada, no el
-    // rate limit (que ya tiene su propio test, H).
+    // Un usuario nuevo por modo (uno por cada entrada de FREE_MODES, ahora
+    // 7 con Scramble) — esto prueba cada modo de forma aislada, no el rate
+    // limit (que ya tiene su propio test, H).
     for (const mode of FREE_MODES) {
       const free = await makeUser(`c-free-${mode}`);
       userId = free.id;
@@ -151,7 +154,7 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
 
   it("D. createRematch de una partida en modo Pro pedida por un usuario FREE es rechazado", async () => {
     const free = await makeUser("d-free");
-    const source = await seedInProgressGame(free.id, "SCRAMBLE");
+    const source = await seedInProgressGame(free.id, "BEST_BALL");
     userId = free.id;
 
     await expect(createRematch(source.id)).rejects.toThrow(/pro/i);
@@ -248,11 +251,11 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
     process.env.OWNER_EMAILS = owner.email;
     userId = owner.id;
 
-    await runIgnoringRedirect(() => createGame(undefined, gameFormData("SCRAMBLE")));
+    await runIgnoringRedirect(() => createGame(undefined, gameFormData("BEST_BALL")));
 
     const game = await prisma.game.findFirstOrThrow({ where: { players: { some: { userId: owner.id } } } });
     gameIds.push(game.id);
-    expect(game.mode).toBe("SCRAMBLE");
+    expect(game.mode).toBe("BEST_BALL");
   });
 
   it("J. una partida normal (modo FREE, flujo completo crear → finalizar) sigue funcionando sin fricción", async () => {
@@ -267,5 +270,25 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
     await finishGame(game.id);
     const finished = await prisma.game.findUniqueOrThrow({ where: { id: game.id } });
     expect(finished.status).toBe("COMPLETED");
+  });
+
+  it("K. [Fase 11C] FREE puede unirse (join) a una partida en cada modo Pro creada por otro jugador PRO — creator permission != participant permission", async () => {
+    for (const mode of PRO_MODES) {
+      const pro = await makeUser(`k-pro-${mode}`, "PRO");
+      userId = pro.id;
+      await runIgnoringRedirect(() => createGame(undefined, gameFormData(mode)));
+      const game = await prisma.game.findFirstOrThrow({
+        where: { players: { some: { userId: pro.id } }, mode },
+        orderBy: { createdAt: "desc" },
+      });
+      gameIds.push(game.id);
+
+      const free = await makeUser(`k-free-${mode}`);
+      userId = free.id;
+      await runIgnoringRedirect(() => joinGame(game.inviteCode));
+
+      const joined = await prisma.gamePlayer.findFirst({ where: { gameId: game.id, userId: free.id } });
+      expect(joined).toBeTruthy();
+    }
   });
 });

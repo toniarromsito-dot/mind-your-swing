@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { hasProAccess } from "@/lib/plan";
+import { canUseFeature } from "@/lib/entitlements";
 import { computeRoundBreakdown, formatRelativeToPar, holesPlayed, relativeToPar } from "@/lib/golf";
 import { strokesReceivedOnHole } from "@/lib/games/handicap";
 import { getPlayerStats } from "@/lib/data/player-stats";
@@ -125,7 +125,7 @@ export async function getCoachContext(params: {
 
   const historySummary = await buildHistorySummary(userId, gameId ?? undefined);
 
-  const mindMemory = hasProAccess(user) ? (user.mindMemory ?? null) : null;
+  const mindMemory = canUseFeature(user, "COACH_MEMORY") ? (user.mindMemory ?? null) : null;
 
   const swingVideos = await prisma.swingVideo.findMany({
     where: { userId },

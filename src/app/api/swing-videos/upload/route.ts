@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { hasProAccess } from "@/lib/plan";
+import { canUseFeature } from "@/lib/entitlements";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getCurrentLocale } from "@/lib/i18n/current-locale";
 import { dictionaries } from "@/lib/i18n/dictionaries";
@@ -21,7 +21,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
-  if (!hasProAccess(user)) {
+  if (!canUseFeature(user, "SWING_AI")) {
     const locale = await getCurrentLocale();
     return NextResponse.json({ error: dictionaries[locale].swingVideos.proRequiredError }, { status: 403 });
   }

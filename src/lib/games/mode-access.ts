@@ -1,6 +1,6 @@
 import type { GameMode, Plan } from "@prisma/client";
 import { GAME_MODE_META } from "./modes";
-import { hasProAccess } from "@/lib/plan";
+import { canUseFeature } from "@/lib/entitlements";
 
 /**
  * Única fuente de verdad para si un usuario puede crear (o heredar vía
@@ -13,7 +13,7 @@ import { hasProAccess } from "@/lib/plan";
  * la convención ya establecida en cada función).
  */
 export function assertModeAllowed(user: { plan: Plan; email: string | null }, mode: GameMode): void {
-  if (GAME_MODE_META[mode].pro && !hasProAccess(user)) {
+  if (GAME_MODE_META[mode].pro && !canUseFeature(user, "ADVANCED_GAME_CREATION")) {
     throw new Error("Este modo de juego requiere Mind Your Swing Pro.");
   }
 }

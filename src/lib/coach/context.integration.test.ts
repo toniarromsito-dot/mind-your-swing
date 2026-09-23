@@ -272,4 +272,64 @@ describe("getCoachContext — estadísticas históricas, handicap y hoyo actual 
       expect(serialized).not.toContain(gid);
     }
   });
+
+  /**
+   * Fase 11C — entitlements. Coach básico (contexto estructurado, sin
+   * mindMemory) sigue disponible para FREE — nunca se elimina el acceso a
+   * Coach. Solo la memoria evolutiva (Pro) se filtra en el propio
+   * getCoachContext, antes de que el objeto salga hacia el prompt/cliente
+   * — nunca "se manda y el front la oculta".
+   */
+  async function makeUserWithPlan(name: string, plan: "FREE" | "PRO", mindMemory: string | null = null) {
+    const user = await prisma.user.create({
+      data: {
+        email: `coach-context-plan-${Date.now()}-${Math.random()}@example.com`,
+        name,
+        plan,
+        mindMemory,
+      },
+    });
+    userIds.push(user.id);
+    return user;
+  }
+
+  it("3. FREE → Coach básico OK: sigue recibiendo datos estructurados reales (playerStats)", async () => {
+    const free = await makeUserWithPlan("Free Coach Basico", "FREE");
+    await makeCompletedGame(free.id, { holeCount: 9, strokesPerHole: 4 });
+
+    const ctx = await getCoachContext({ userId: free.id });
+    expect(ctx.playerStats.completedRounds).toBe(1);
+  });
+
+  it("4. FREE → Coach Memory DENIED: mindMemory nunca sale del backend aunque exista en BD", async () => {
+    const free = await makeUserWithPlan(
+      "Free Sin Memoria",
+      "FREE",
+      "Memoria real guardada en BD que un FREE no debería poder leer"
+    );
+
+    const ctx = await getCoachContext({ userId: free.id });
+    expect(ctx.mindMemory).toBeNull();
+    expect(JSON.stringify(ctx)).not.toContain("Memoria real guardada");
+  });
+
+  it("5. PRO → Coach Memory OK: mindMemory se incluye tal cual", async () => {
+    const pro = await makeUserWithPlan("Pro Con Memoria", "PRO", "Trabajamos la reacción tras un doble bogey.");
+
+    const ctx = await getCoachContext({ userId: pro.id });
+    expect(ctx.mindMemory).toBe("Trabajamos la reacción tras un doble bogey.");
+  });
+
+  it("31/33. OWNERSHIP + entitlement combinados: el contexto de un FREE nunca incluye ni su propia memoria (denegada) ni la de un PRO distinto", async () => {
+    const free = await makeUserWithPlan("Free Combinado", "FREE", "Memoria de FREE, no debería salir nunca");
+    const pro = await makeUserWithPlan("Pro Combinado", "PRO", "Memoria real de PRO, dato premium de otro usuario");
+
+    const ctxFree = await getCoachContext({ userId: free.id });
+    const ctxPro = await getCoachContext({ userId: pro.id });
+
+    expect(ctxFree.mindMemory).toBeNull();
+    expect(ctxPro.mindMemory).toBe("Memoria real de PRO, dato premium de otro usuario");
+    // El contexto de FREE, pedido con SU propio userId, jamás contiene el dato premium de otro usuario.
+    expect(JSON.stringify(ctxFree)).not.toContain("dato premium de otro usuario");
+  });
 });
