@@ -157,4 +157,62 @@ describe("createCheckoutSession / createPortalSession (integración, DB real)", 
     await expect(createPortalSession()).rejects.toMatchObject({ digest: "NEXT_REDIRECT", url: "/" });
     expect(portalSessionsCreate).not.toHaveBeenCalled();
   });
+
+  it("[fix de audit] un usuario que ya tiene Pro activo (ACTIVE) no puede abrir un segundo checkout", async () => {
+    const user = await makeUser("already-active");
+    await prisma.subscription.create({
+      data: { userId: user.id, providerCustomerId: "cus_already_active", status: "ACTIVE" },
+    });
+    sessionUserId = user.id;
+
+    await expect(createCheckoutSession("MONTHLY")).rejects.toThrow(/ya tienes/i);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  it("[fix de audit] un usuario en trial (TRIALING) tampoco puede abrir un segundo checkout", async () => {
+    const user = await makeUser("already-trialing");
+    await prisma.subscription.create({
+      data: { userId: user.id, providerCustomerId: "cus_already_trialing", status: "TRIALING" },
+    });
+    sessionUserId = user.id;
+
+    await expect(createCheckoutSession("ANNUAL")).rejects.toThrow(/ya tienes/i);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  it("un usuario CANCELED (sin acceso Pro actual) sí puede volver a suscribirse", async () => {
+    const user = await makeUser("re-subscribe-after-cancel");
+    await prisma.subscription.create({
+      data: { userId: user.id, providerCustomerId: "cus_resub", status: "CANCELED", hasUsedTrial: true },
+    });
+    sessionUserId = user.id;
+
+    await runIgnoringRedirect(() => createCheckoutSession("MONTHLY"));
+    expect(checkoutSessionsCreate).toHaveBeenCalled();
+    // Ya usó el trial antes — no se le vuelve a conceder.
+    const lastCall = checkoutSessionsCreate.mock.calls.at(-1)![0] as { subscription_data?: unknown };
+    expect(lastCall.subscription_data).toBeUndefined();
+  });
+
+  it("[fix de audit] un intervalo inválido (fuera de MONTHLY/ANNUAL) se rechaza en vez de caer en un precio por defecto", async () => {
+    const user = await makeUser("invalid-interval");
+    sessionUserId = user.id;
+
+    // @ts-expect-error — se fuerza un valor fuera del tipo BillingInterval a propósito, simulando una petición manipulada.
+    await expect(createCheckoutSession("YEARLY")).rejects.toThrow(/intervalo/i);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  it("[fix de audit] dos checkouts concurrentes del mismo usuario nuevo (doble tap) no rompen — solo se crea una Subscription", async () => {
+    const user = await makeUser("double-tap");
+    sessionUserId = user.id;
+
+    await Promise.all([
+      runIgnoringRedirect(() => createCheckoutSession("MONTHLY")),
+      runIgnoringRedirect(() => createCheckoutSession("MONTHLY")),
+    ]);
+
+    const subs = await prisma.subscription.findMany({ where: { userId: user.id } });
+    expect(subs).toHaveLength(1); // nunca dos filas para el mismo usuario, ninguna petición murió con un 500
+  });
 });

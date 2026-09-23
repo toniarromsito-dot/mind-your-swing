@@ -13,9 +13,24 @@ export const runtime = "nodejs";
  * procesar el mismo evento dos veces (o dos eventos distintos que acaben
  * describiendo el mismo estado) es intrínsecamente inofensivo.
  *
- * Guarda de orden: si ya aplicamos un evento más reciente que este
- * (`eventCreatedAt <= lastEventAt`), no se sobrescribe — evita que una
- * entrega tardía de un evento antiguo revierta un estado más nuevo.
+ * Guarda de orden ATÓMICA: el chequeo "¿hay algo más nuevo ya aplicado?" y
+ * la escritura son la MISMA sentencia SQL (updateMany con `lastEventAt` en
+ * el WHERE), no un read-then-write separado — así dos webhooks para el
+ * mismo customer entregados de verdad en paralelo (Stripe no garantiza
+ * orden de entrega) no pueden pisarse: solo puede "ganar" quien tenga el
+ * `eventCreatedAt` más reciente, sin importar en qué orden llegaron las
+ * peticiones HTTP.
+ *
+ * Se rechaza SOLO si lo ya aplicado es estrictamente más nuevo
+ * (`lastEventAt > eventCreatedAt`) — un empate se APLICA, no se descarta.
+ * `event.created` tiene resolución de 1 segundo, así que dos eventos reales
+ * y consecutivos (p.ej. creada→activada al confirmarse el pago en el mismo
+ * segundo) son indistinguibles por timestamp; descartar los empates dejaría
+ * al usuario atascado en el estado del primero para siempre. La
+ * contrapartida asumida: si dos eventos con el MISMO segundo se contradicen
+ * de verdad (carrera genuina, no una secuencia causal normal), gana quien
+ * termine de escribir en la base de datos en último lugar — no hay forma de
+ * resolverlo mejor con solo resolución de segundo.
  */
 async function upsertSubscriptionFromStripe(subscription: Stripe.Subscription, eventCreatedAt: Date) {
   const customerId =
@@ -35,41 +50,58 @@ async function upsertSubscriptionFromStripe(subscription: Stripe.Subscription, e
     return;
   }
 
-  if (existing.lastEventAt && eventCreatedAt.getTime() <= existing.lastEventAt.getTime()) {
-    console.warn(
-      `Webhook de Stripe: evento descartado por llegar fuera de orden (customer ${customerId}).`
-    );
-    return;
-  }
-
   const item = subscription.items.data[0];
   const status = normalizeStripeStatus(subscription.status);
   const priceId = item?.price.id ?? null;
   const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
+  const billingInterval = billingIntervalFromPriceId(priceId);
 
-  await prisma.$transaction([
-    prisma.subscription.update({
-      where: { id: existing.id },
+  await prisma.$transaction(async (tx) => {
+    // hasUsedTrial es monótono (false→true, nunca al revés) y se marca
+    // independientemente de si ESTE evento gana la carrera de orden de más
+    // abajo: si cualquier evento, llegue en el orden que llegue, demuestra
+    // que la suscripción pasó por trial, debe quedar marcado para siempre
+    // — incluso si un evento más nuevo sin datos de trial "gana" después la
+    // actualización de status/currentPeriodEnd.
+    if (status === "TRIALING" || trialEnd) {
+      await tx.subscription.updateMany({
+        where: { id: existing.id, hasUsedTrial: false },
+        data: { hasUsedTrial: true },
+      });
+    }
+
+    const applied = await tx.subscription.updateMany({
+      where: {
+        id: existing.id,
+        OR: [{ lastEventAt: null }, { lastEventAt: { lte: eventCreatedAt } }],
+      },
       data: {
         providerSubscriptionId: subscription.id,
         status,
-        billingInterval: billingIntervalFromPriceId(priceId) ?? existing.billingInterval,
-        priceId: priceId ?? existing.priceId,
+        billingInterval: billingInterval ?? undefined,
+        priceId: priceId ?? undefined,
         currentPeriodEnd: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         trialEnd,
-        // Monotono: una vez true, nunca vuelve a false. Empieza el trial en
-        // cuanto vemos TRIALING o un trial_end, sin importar en qué estado
-        // esté la suscripción ahora (p.ej. ya haya pasado a ACTIVE).
-        hasUsedTrial: existing.hasUsedTrial || status === "TRIALING" || Boolean(trialEnd),
         lastEventAt: eventCreatedAt,
       },
-    }),
-    prisma.user.update({
+    });
+
+    if (applied.count === 0) {
+      // O bien fuera de orden, o perdió la carrera contra una escritura
+      // concurrente más nueva para el mismo customer — en ambos casos no se
+      // toca User.plan: lo que sea que haya ganado ya lo habrá sincronizado.
+      console.warn(
+        `Webhook de Stripe: evento descartado por llegar fuera de orden (customer ${customerId}).`
+      );
+      return;
+    }
+
+    await tx.user.update({
       where: { id: existing.userId },
       data: { plan: isProStatus(status) ? "PRO" : "FREE" },
-    }),
-  ]);
+    });
+  });
 }
 
 export async function POST(req: Request) {
