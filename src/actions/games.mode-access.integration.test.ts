@@ -199,7 +199,11 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
   it("G. submitSwingVideo mantiene su protección PRO y además aplica un rate limit propio", async () => {
     const free = await makeUser("g-free");
     userId = free.id;
-    const freeResult = await submitSwingVideo({ videoUrl: "https://example.com/swing.mp4", poseFrames: [] });
+    const freeResult = await submitSwingVideo({
+      videoUrl: "https://example.com/swing.mp4",
+      poseFrames: [],
+      analysisRequestId: "g-free-attempt",
+    });
     expect(freeResult).toEqual({ error: dictionaries.es.swingVideos.proRequiredError });
 
     const pro = await makeUser("g-pro", "PRO");
@@ -208,14 +212,24 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
     // Las primeras 5 (límite configurado) pasan el gate Pro y el rate
     // limit, y fallan más adelante por falta de datos de pose reales
     // (poseFrames vacío a propósito — no hace falta un vídeo real para
-    // probar la protección de plan/límite).
+    // probar la protección de plan/límite). Al fallar por pose inválida
+    // nunca llegan a tocar crédito, así que no interfieren con el límite
+    // de 8 análisis/mes (probado aparte en swing-ai-credits.integration.test.ts).
     for (let i = 0; i < 5; i++) {
-      const result = await submitSwingVideo({ videoUrl: "https://example.com/swing.mp4", poseFrames: [] });
+      const result = await submitSwingVideo({
+        videoUrl: "https://example.com/swing.mp4",
+        poseFrames: [],
+        analysisRequestId: `g-pro-attempt-${i}`,
+      });
       expect("error" in result ? result.error : "").toMatch(/fotogramas/i);
     }
 
     // El 6º intento, dentro de la misma ventana, se rechaza por rate limit.
-    const sixth = await submitSwingVideo({ videoUrl: "https://example.com/swing.mp4", poseFrames: [] });
+    const sixth = await submitSwingVideo({
+      videoUrl: "https://example.com/swing.mp4",
+      poseFrames: [],
+      analysisRequestId: "g-pro-attempt-5",
+    });
     expect(sixth).toEqual({ error: dictionaries.es.swingVideos.rateLimitError });
 
     const videosStored = await prisma.swingVideo.count({ where: { userId: pro.id } });

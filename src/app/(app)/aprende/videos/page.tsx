@@ -11,6 +11,8 @@ import { SwingRecordFlow } from "@/components/swing-record-flow";
 import { ProUpsell } from "@/components/pro-upsell";
 import { MindMark } from "@/components/mind-mark";
 import { canUseFeature } from "@/lib/entitlements";
+import { getSwingAiCreditStatus } from "@/lib/swing/credits";
+import { fmt } from "@/lib/i18n/format";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 
 // Inmersiva como Coach/Aprende/Home (ver isImmersivePage en app-shell.tsx):
@@ -83,6 +85,7 @@ export default async function SwingVideosPage() {
   }
 
   const videos = await listMySwingVideos(userId);
+  const credits = await getSwingAiCreditStatus(userId);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
@@ -130,6 +133,14 @@ export default async function SwingVideosPage() {
         />
         <BenefitRow mind title={t.swingVideos.benefitMindTitle} body={t.swingVideos.benefitMindBody} />
       </div>
+
+      <p className="rounded-xl border border-border bg-secondary/30 px-4 py-2.5 text-center text-sm font-medium text-foreground">
+        {credits.remaining === credits.limit
+          ? fmt(t.swingVideos.creditsAvailable, { limit: credits.limit })
+          : credits.remaining > 0
+            ? fmt(t.swingVideos.creditsRemaining, { remaining: credits.remaining })
+            : fmt(t.swingVideos.creditsExhausted, { limit: credits.limit })}
+      </p>
 
       <div id="record" className="scroll-mt-6">
         <SwingRecordFlow t={t.swingVideos} />

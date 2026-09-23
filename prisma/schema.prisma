@@ -238,6 +238,7 @@ model User {
   stories       Story[]
   voiceCallLogs VoiceCallLog[]
   swingVideos   SwingVideo[]
+  swingAiCreditPeriods SwingAiCreditPeriod[]
   playerProfile PlayerProfile?
   likes         Like[]
   comments      Comment[]
@@ -559,6 +560,15 @@ model SwingVideo {
   metrics    Json?
   aiFeedback String? @db.Text
 
+  /// Fase 11D — idempotencia de créditos Swing AI. Lo genera el cliente una
+  /// vez por intento de análisis (mismo vídeo + mismo clic en "Analizar" =
+  /// mismo id; un archivo distinto o un nuevo intento deliberado = id
+  /// nuevo). Único a nivel de BD: un segundo insert con el mismo id
+  /// (reintento técnico, o dos requests concurrentes del mismo intento)
+  /// nunca crea una segunda fila ni consume un segundo crédito — ver
+  /// src/lib/swing/credits.ts.
+  analysisRequestId String @unique
+
   createdAt  DateTime  @default(now())
   reviewedAt DateTime?
 
@@ -566,6 +576,24 @@ model SwingVideo {
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+/// Fase 11D — contador atómico de créditos de Swing AI por usuario y
+/// periodo natural ("YYYY-MM", igual que CommunityChallenge.month — no el
+/// ciclo de facturación exacto de Stripe, misma simplificación ya usada
+/// para los minutos de Voice en billing.ts). Una fila por (userId, period);
+/// `consumed` solo se incrementa mediante una escritura condicional
+/// atómica (`consumed < límite`), nunca con un read-then-write — ver
+/// tryConsumeSwingAiCredit en src/lib/swing/credits.ts.
+model SwingAiCreditPeriod {
+  id       String @id @default(cuid())
+  userId   String
+  period   String
+  consumed Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
 }
 
 // Registro de duración de cada llamada de voz con el coach, para aplicar

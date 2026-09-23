@@ -28,6 +28,13 @@ export function SwingVideoUploader({
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
+  // Fase 11D — idempotencia de créditos: un id por intento de análisis, no
+  // por request HTTP. Se genera al elegir un archivo y se REUTILIZA si el
+  // usuario reintenta el mismo envío tras un error (mismo intento lógico);
+  // solo se genera uno nuevo al elegir un archivo distinto — así un
+  // reintento técnico nunca consume un segundo crédito, pero analizar un
+  // vídeo diferente sí cuenta como un análisis nuevo.
+  const analysisRequestIdRef = useRef<string | null>(null);
 
   const busy = step === "uploading" || step === "analyzing" || step === "feedback";
 
@@ -52,10 +59,16 @@ export function SwingVideoUploader({
       });
 
       setStep("feedback");
+      // Mismo id en cada reintento de ESTE archivo — solo se genera uno
+      // nuevo cuando el usuario elige un archivo distinto (ver onChange).
+      if (!analysisRequestIdRef.current) {
+        analysisRequestIdRef.current = crypto.randomUUID();
+      }
       const result = await submitSwingVideo({
         videoUrl: blob.url,
         note: noteRef.current?.value,
         poseFrames,
+        analysisRequestId: analysisRequestIdRef.current,
       });
 
       if ("error" in result) {
@@ -66,6 +79,7 @@ export function SwingVideoUploader({
 
       setStep("idle");
       setFileName(null);
+      analysisRequestIdRef.current = null;
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (noteRef.current) noteRef.current.value = "";
       onSaved();
@@ -84,7 +98,10 @@ export function SwingVideoUploader({
           type="file"
           accept="video/*"
           disabled={busy}
-          onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+          onChange={(e) => {
+            setFileName(e.target.files?.[0]?.name ?? null);
+            analysisRequestIdRef.current = null; // archivo nuevo => análisis nuevo, nunca un reintento del anterior
+          }}
           className="sr-only"
         />
         <button
