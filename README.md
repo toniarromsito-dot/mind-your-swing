@@ -220,7 +220,23 @@ Un jugador Pro puede subir un vídeo de su swing y recibir, al instante, una pun
 
 **Cuenta propietaria (`OWNER_EMAILS`)**: los emails listados ahí (separados por comas, mismo formato que `ADMIN_EMAILS`) obtienen acceso Pro completo en toda la app —Analizador de Swing, Mind, multijugador, todas las modalidades— sin pasar por Stripe ni depender de `plan` en base de datos (ver `src/lib/plan.ts` → `hasProAccess`). Pensada para desarrollar y enseñar el producto. Un owner es también admin automáticamente (no hace falta repetir el email en `ADMIN_EMAILS`). Los usuarios normales (Free/Pro vía Stripe) no cambian.
 
-### 4.8. Resumen de variables (`.env.example`)
+### 4.8. Publicidad (AdMob) — opcional, solo app nativa
+
+Fase 11F: banner de anuncios para usuarios Free en la app nativa (iOS/Android) — la web nunca muestra anuncios, y Pro/owner nunca los ve en ninguna plataforma (`canUseFeature(user, "AD_FREE")`, ver `src/lib/entitlements.ts`). Sin las variables de abajo, el sistema queda completamente inerte: nunca se llama al SDK de AdMob (ver `isAdMobConfigured()` en `src/lib/ads/config.ts`) — el resto de la app funciona exactamente igual.
+
+Ubicaciones permitidas (allowlist explícita en `src/lib/ads/policy.ts`): `/dashboard`, `/community`, `/aprende`, `/insights`. Jugar (`/play/*`, incluido Focus Mode) y Coach quedan sin anuncios por diseño — no están en la lista.
+
+Para activar anuncios reales necesitas, fuera de este repo:
+
+1. Una cuenta de [AdMob](https://admob.google.com/) con la app dada de alta para iOS y Android (cada plataforma tiene su propio **App ID**, formato `ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY`).
+2. Un **Ad Unit** de tipo banner por plataforma (formato `ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ`, distinto del App ID) — cópialos a `.env`/Vercel como `NEXT_PUBLIC_ADMOB_BANNER_AD_UNIT_ID_ANDROID=` y `NEXT_PUBLIC_ADMOB_BANNER_AD_UNIT_ID_IOS=`.
+3. Dar de alta el **App ID** en los proyectos nativos (este repo no lo incluye, cada dev/CI debe configurarlo con su propio AdMob App ID):
+   - Android: en `android/app/src/main/AndroidManifest.xml`, meta-data `com.google.android.gms.ads.APPLICATION_ID`.
+   - iOS: en `ios/App/App/Info.plist`, clave `GADApplicationIdentifier`.
+4. **Consentimiento (obligatorio antes de servir anuncios personalizados de verdad)**: GDPR/RGPD en la UE (Google UMP — el plugin ya expone `AdMob.requestConsentInfo()`/`AdMob.showConsentForm()`) y ATT en iOS 14+ (`AdMob.trackingAuthorizationStatus()`/`requestTrackingAuthorization()`). Esta fase deja la integración preparada para llamarlos, pero **no implementa el flujo de consentimiento en la UI** — bloqueante antes de servir tráfico publicitario real, no solo una mejora.
+5. `npx cap sync` tras configurar lo anterior para que los proyectos nativos recojan el plugin `@capacitor-community/admob`.
+
+### 4.9. Resumen de variables (`.env.example`)
 
 ```
 DATABASE_URL=
@@ -241,6 +257,8 @@ STRIPE_PRO_PRICE_ID_ANNUAL=
 STRIPE_WEBHOOK_SECRET=
 ADMIN_EMAILS=
 OWNER_EMAILS=
+NEXT_PUBLIC_ADMOB_BANNER_AD_UNIT_ID_ANDROID=
+NEXT_PUBLIC_ADMOB_BANNER_AD_UNIT_ID_IOS=
 ```
 
 (`BLOB_READ_WRITE_TOKEN` no va en `.env.example`: lo provisiona automáticamente Vercel al enlazar un store de Vercel Blob — ver 6.2.)

@@ -7,6 +7,8 @@ import { Home, Flag, Users, BookOpen, LineChart } from "lucide-react";
 import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { MindMark } from "@/components/mind-mark";
+import { AdBanner } from "@/components/ad-banner";
+import { isAdEligible, AD_BANNER_RESERVED_HEIGHT_PX } from "@/lib/ads/policy";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
@@ -20,10 +22,13 @@ export function AppShell({
   children,
   user,
   t,
+  adFree,
 }: {
   children: React.ReactNode;
   user: { name?: string | null; image?: string | null };
   t: Dictionary["nav"];
+  /** Fase 11F — true si el usuario no debe ver anuncios (PRO/owner), calculado server-side en (app)/layout.tsx. */
+  adFree: boolean;
 }) {
   const pathname = usePathname();
 
@@ -86,6 +91,12 @@ export function AppShell({
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
+  // Fase 11F — misma función pura que decide si AdBanner puede mostrar un
+  // anuncio de verdad; aquí solo se usa para reservar el espacio visual
+  // correspondiente y evitar que el contenido salte al cargar el banner.
+  const adEligible = isAdEligible(pathname, adFree);
+  const adReservedPadding = adEligible ? AD_BANNER_RESERVED_HEIGHT_PX : 0;
+
   function MobileTab({ link }: { link: NavLink }) {
     const active = isActive(link.href);
     return (
@@ -118,7 +129,12 @@ export function AppShell({
   }
 
   if (isImmersivePage) {
-    return <div className="min-h-svh bg-background">{children}</div>;
+    return (
+      <div className="min-h-svh bg-background" style={{ paddingBottom: adReservedPadding }}>
+        {children}
+        <AdBanner adFree={adFree} hasBottomNav={false} />
+      </div>
+    );
   }
 
   return (
@@ -190,7 +206,10 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-10">
+      <main
+        className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom)+var(--ad-pad))] sm:px-6 sm:pb-[calc(2.5rem+var(--ad-pad))]"
+        style={{ "--ad-pad": `${adReservedPadding}px` } as React.CSSProperties}
+      >
         {children}
       </main>
 
@@ -201,6 +220,8 @@ export function AppShell({
           ))}
         </div>
       </nav>
+
+      <AdBanner adFree={adFree} hasBottomNav={true} />
     </div>
   );
 }
