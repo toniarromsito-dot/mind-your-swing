@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { Phone, PhoneOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -57,16 +57,43 @@ function CallCoachInner({
 }) {
   const [connecting, setConnecting] = useState(false);
   const callStartRef = useRef<number | null>(null);
+  // "AGOTAMIENTO DE VOICE DURANTE LA LLAMADA": foto del saldo disponible al
+  // empezar la llamada (segundos), null = ilimitado (owner) o desconocido.
+  // Medida de UX best-effort, NUNCA la autoridad de seguridad — el servidor
+  // no puede forzar el corte de una conversación de ElevenLabs ya en curso
+  // (el audio va directo navegador↔ElevenLabs), así que esto solo cuelga
+  // proactivamente desde el propio cliente cuando SU cuenta de segundos
+  // transcurridos alcanza el saldo que el servidor le reportó al empezar.
+  // El saldo real y definitivo lo decide siempre el servidor en
+  // /api/voice/log contra la DB (ver tryConsumeVoiceCredit).
+  const availableSecondsRef = useRef<number | null>(null);
 
   const conversation = useConversation({
     onError: () => toast.error(t.callError),
     onDisconnect: () => {
       logCallDuration(callStartRef.current, () => conversation.getId());
       callStartRef.current = null;
+      availableSecondsRef.current = null;
     },
   });
 
   const inCall = conversation.status === "connected";
+
+  useEffect(() => {
+    if (!inCall) return;
+    const interval = setInterval(() => {
+      const startedAt = callStartRef.current;
+      const budget = availableSecondsRef.current;
+      if (startedAt == null || budget == null) return;
+      const elapsedSeconds = (Date.now() - startedAt) / 1000;
+      if (elapsedSeconds >= budget) {
+        toast.message(t.voiceCreditsExhausted);
+        conversation.endSession();
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- conversation es estable entre renders (SDK), re-suscribirse en cada uno reiniciaría el intervalo sin motivo
+  }, [inCall]);
 
   async function startCall() {
     setConnecting(true);
@@ -91,7 +118,8 @@ function CallCoachInner({
         }
         throw new Error(data?.error ?? t.callUnavailable);
       }
-      const { signedUrl, dynamicVariables } = await res.json();
+      const { signedUrl, dynamicVariables, availableSeconds } = await res.json();
+      availableSecondsRef.current = typeof availableSeconds === "number" ? availableSeconds : null;
       await conversation.startSession({ signedUrl, dynamicVariables });
       callStartRef.current = Date.now();
     } catch (err) {

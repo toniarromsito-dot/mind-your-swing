@@ -6,6 +6,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isProStatus, isStripeConfigured, isVoicePackConfigured, proPriceId, stripe, voicePackPriceId } from "@/lib/stripe";
 import { canUseFeature } from "@/lib/entitlements";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+// Hardening sección 42/43 — createVoicePackCheckoutSession no tenía ningún
+// límite: sin esto, un cliente hostil (o un doble-tap/doble-envío
+// automatizado) podía crear Checkout Sessions sin fin. No bloquea comprar
+// dos packs legítimos (la ventana/cuota es generosa a propósito, mismo
+// criterio que CREATE_GAME_RATE_LIMIT/FINISH_GAME_RATE_LIMIT).
+const VOICE_PACK_CHECKOUT_RATE_LIMIT = { windowMs: 10 * 60_000, maxRequests: 5 };
 
 async function getOrCreateStripeCustomerId(userId: string, email: string, name: string | null) {
   const user = await prisma.user.findUniqueOrThrow({
@@ -112,6 +120,11 @@ export async function createVoicePackCheckoutSession() {
   const session = await auth();
   if (!session?.user?.id) redirect("/");
   if (!isVoicePackConfigured()) throw new Error("Los packs de Voice no están configurados todavía.");
+
+  const rl = checkRateLimit(`voice-pack-checkout:${session.user.id}`, VOICE_PACK_CHECKOUT_RATE_LIMIT);
+  if (!rl.allowed) {
+    throw new Error("Estás creando compras demasiado rápido. Espera unos minutos e inténtalo de nuevo.");
+  }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
   if (!canUseFeature(user, "VOICE_PRO")) {

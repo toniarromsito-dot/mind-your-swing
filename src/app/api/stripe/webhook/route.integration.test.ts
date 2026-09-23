@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { getVoiceCreditStatus } from "@/lib/voice/credits";
 import type Stripe from "stripe";
@@ -22,6 +22,13 @@ import type Stripe from "stripe";
 let constructEventImpl: (body: string, sig: string, secret: string) => Stripe.Event = (body) =>
   JSON.parse(body) as Stripe.Event;
 let subscriptionsRetrieveImpl: (id: string) => Promise<Stripe.Subscription>;
+// Hardening sección 34 — el webhook ahora contrasta el line item REAL de la
+// sesión contra STRIPE_VOICE_PACK_PRICE_ID en vez de fiarse solo de
+// metadata.product. Por defecto simula el caso legítimo (price correcto,
+// quantity 1); los tests de integridad lo sobrescriben para simular un
+// mismatch real.
+let listLineItemsImpl: (sessionId: string) => Promise<{ data: { price?: { id: string }; quantity?: number }[] }> =
+  async () => ({ data: [{ price: { id: "price_voice_pack_test" }, quantity: 1 }] });
 
 vi.mock("@/lib/stripe", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/stripe")>();
@@ -30,6 +37,7 @@ vi.mock("@/lib/stripe", async (importOriginal) => {
     stripe: {
       webhooks: { constructEvent: (...args: [string, string, string]) => constructEventImpl(...args) },
       subscriptions: { retrieve: (id: string) => subscriptionsRetrieveImpl(id) },
+      checkout: { sessions: { listLineItems: (id: string) => listLineItemsImpl(id) } },
     },
   };
 });
@@ -96,10 +104,12 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
   const ORIGINAL_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
   const ORIGINAL_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
   const ORIGINAL_PRICE_MONTHLY = process.env.STRIPE_PRO_PRICE_ID_MONTHLY;
+  const ORIGINAL_VOICE_PACK_PRICE = process.env.STRIPE_VOICE_PACK_PRICE_ID;
 
   process.env.STRIPE_SECRET_KEY = "sk_test_fake";
   process.env.STRIPE_WEBHOOK_SECRET = "whsec_fake";
   process.env.STRIPE_PRO_PRICE_ID_MONTHLY = "price_monthly_test";
+  process.env.STRIPE_VOICE_PACK_PRICE_ID = "price_voice_pack_test";
 
   async function makeUserWithSubscription(label: string, customerId: string) {
     const user = await prisma.user.create({
@@ -114,10 +124,15 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
     return user;
   }
 
+  afterEach(() => {
+    listLineItemsImpl = async () => ({ data: [{ price: { id: "price_voice_pack_test" }, quantity: 1 }] });
+  });
+
   afterAll(async () => {
     process.env.STRIPE_SECRET_KEY = ORIGINAL_SECRET_KEY;
     process.env.STRIPE_WEBHOOK_SECRET = ORIGINAL_WEBHOOK_SECRET;
     process.env.STRIPE_PRO_PRICE_ID_MONTHLY = ORIGINAL_PRICE_MONTHLY;
+    process.env.STRIPE_VOICE_PACK_PRICE_ID = ORIGINAL_VOICE_PACK_PRICE;
     await prisma.subscriptionEvent.deleteMany({});
     await prisma.subscription.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
@@ -423,5 +438,40 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
     const event = makeVoicePackCheckoutEvent("evt_voice_pack_no_metadata", { metadata: null });
     const res = await POST(req(event));
     expect(res.status).toBe(200);
+  });
+
+  it("hardening 34: el line item real de la sesión NO coincide con STRIPE_VOICE_PACK_PRICE_ID → NO se acredita, aunque metadata.product diga voice_pack_60min", async () => {
+    const user = await makeUserWithSubscription("voice-pack-price-mismatch", "cus_voice_pack_mismatch");
+    await prisma.user.update({ where: { id: user.id }, data: { plan: "PRO" } });
+
+    // Un atacante (o un bug) podría montar metadata.product correcta sobre
+    // una sesión que en realidad cobró un Price distinto — el line item real
+    // es la única fuente de verdad, no la metadata que nosotros escribimos.
+    listLineItemsImpl = async () => ({ data: [{ price: { id: "price_totally_different" }, quantity: 1 }] });
+
+    const event = makeVoicePackCheckoutEvent("evt_voice_pack_mismatch", {
+      customer: "cus_voice_pack_mismatch",
+      metadata: { userId: user.id },
+    });
+    const res = await POST(req(event));
+    expect(res.status).toBe(200); // no revienta, solo se descarta
+
+    expect((await getVoiceCreditStatus(user.id, "PRO")).purchasedRemainingSeconds).toBe(0);
+  });
+
+  it("hardening 34: quantity>1 en el line item real acredita VOICE_PACK_SECONDS * quantity, no un valor fijo", async () => {
+    const user = await makeUserWithSubscription("voice-pack-quantity", "cus_voice_pack_quantity");
+    await prisma.user.update({ where: { id: user.id }, data: { plan: "PRO" } });
+
+    listLineItemsImpl = async () => ({ data: [{ price: { id: "price_voice_pack_test" }, quantity: 2 }] });
+
+    const event = makeVoicePackCheckoutEvent("evt_voice_pack_quantity", {
+      customer: "cus_voice_pack_quantity",
+      metadata: { userId: user.id },
+    });
+    const res = await POST(req(event));
+    expect(res.status).toBe(200);
+
+    expect((await getVoiceCreditStatus(user.id, "PRO")).purchasedRemainingSeconds).toBe(7200); // 2 × 3600
   });
 });

@@ -616,6 +616,14 @@ model VoiceCallLog {
   /// concurrentes de la misma llamada) nunca vuelve a descontar saldo.
   conversationId String? @unique
 
+  /// Fase 11E hardening (sección 49) — segundos de ESTA llamada que
+  /// excedieron el saldo disponible (included+purchased) y se absorbieron
+  /// sin descontarse de nada. Hecho descriptivo de una llamada puntual, NO
+  /// un saldo acumulado: VoiceCallLog sigue sin ser un ledger — no se lee
+  /// para decidir nada, solo queda como rastro observable/auditable (ver
+  /// tryConsumeVoiceCredit en src/lib/voice/credits.ts).
+  excessSeconds Int @default(0)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])

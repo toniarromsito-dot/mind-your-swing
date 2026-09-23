@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { billingIntervalFromPriceId, isProStatus, normalizeStripeStatus, stripe } from "@/lib/stripe";
+import { billingIntervalFromPriceId, isProStatus, normalizeStripeStatus, stripe, voicePackPriceId } from "@/lib/stripe";
 import { canUseFeature } from "@/lib/entitlements";
 import { creditVoicePurchasedSeconds, VOICE_PACK_SECONDS } from "@/lib/voice/credits";
 
@@ -22,6 +22,16 @@ const VOICE_PACK_PRODUCT = "voice_pack_60min";
  * de Stripe debe resolver a la MISMA Subscription cuyo userId coincide con
  * metadata.userId. Si no coinciden, no se acredita a nadie — nunca un
  * fallback inseguro a "acreditar de todos modos".
+ *
+ * Hardening sección 34: `metadata.product` NO es prueba suficiente de qué
+ * se pagó — es un campo que nosotros mismos escribimos al crear el
+ * Checkout Session (ver createVoicePackCheckoutSession), así que confirma
+ * intención, no lo que Stripe realmente cobró. Se contrasta contra el
+ * line item REAL de la sesión (stripe.checkout.sessions.listLineItems) y
+ * su Price ID exacto (STRIPE_VOICE_PACK_PRICE_ID) antes de acreditar nada
+ * — y los segundos acreditados se derivan de esa cantidad real
+ * (VOICE_PACK_SECONDS × quantity), no de una constante ciega, por si en el
+ * futuro se admite quantity > 1.
  */
 async function creditVoicePackFromCheckout(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId;
@@ -52,7 +62,24 @@ async function creditVoicePackFromCheckout(session: Stripe.Checkout.Session) {
     return;
   }
 
-  await creditVoicePurchasedSeconds(userId, VOICE_PACK_SECONDS);
+  const expectedPriceId = voicePackPriceId();
+  if (!expectedPriceId) {
+    console.error("Webhook de Stripe: STRIPE_VOICE_PACK_PRICE_ID no configurado. Pack NO acreditado.");
+    return;
+  }
+
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+  const lineItem = lineItems.data[0];
+  const actualPriceId = lineItem?.price?.id;
+  if (!lineItem || actualPriceId !== expectedPriceId) {
+    console.error(
+      `Webhook de Stripe: line item real de la sesión ${session.id} (price ${actualPriceId ?? "ninguno"}) no coincide con STRIPE_VOICE_PACK_PRICE_ID — posible integridad rota. Pack NO acreditado.`
+    );
+    return;
+  }
+
+  const quantity = lineItem.quantity ?? 1;
+  await creditVoicePurchasedSeconds(userId, VOICE_PACK_SECONDS * quantity);
 }
 
 /**

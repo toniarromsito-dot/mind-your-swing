@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getCoachContext } from "@/lib/coach/context";
 import { buildDynamicVariables } from "@/lib/coach/voice-variables";
 import { canStartVoiceCall } from "@/lib/billing";
+import { getVoiceCreditStatus } from "@/lib/voice/credits";
 import { isOwnerEmail } from "@/lib/admin";
 
 export const runtime = "nodejs";
@@ -49,7 +50,8 @@ export async function POST(req: Request) {
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
-  if (!isOwnerEmail(user.email)) {
+  const owner = isOwnerEmail(user.email);
+  if (!owner) {
     const usage = await canStartVoiceCall(session.user.id, user.plan);
     if (!usage.allowed) {
       return NextResponse.json(
@@ -62,6 +64,24 @@ export async function POST(req: Request) {
         { status: 402 }
       );
     }
+  }
+
+  // Hardening — sección "AGOTAMIENTO DE VOICE DURANTE LA LLAMADA": el saldo
+  // disponible EN ESTE INSTANTE (foto de inicio de llamada), para que el
+  // cliente pueda hacer un countdown y colgar proactivamente si se agota a
+  // mitad de conversación. Esto es UX, no una reserva ni un límite de
+  // seguridad: el consumo real sigue decidiéndose en /api/voice/log contra
+  // el saldo real de la DB en ese momento (ver tryConsumeVoiceCredit), que
+  // puede haber cambiado (p.ej. otra llamada concurrente, un pack comprado
+  // a mitad de llamada). El servidor NO puede forzar el corte de una
+  // conversación de ElevenLabs ya en curso — el audio va directo
+  // navegador↔ElevenLabs, nunca a través de este servidor — así que la
+  // autoridad real sigue siendo el saldo en DB, no este número.
+  // owner = sin límite: null indica "ilimitado" al cliente.
+  let availableSeconds: number | null = null;
+  if (!owner) {
+    const status = await getVoiceCreditStatus(user.id, user.plan);
+    availableSeconds = status.includedRemainingSeconds + status.purchasedRemainingSeconds;
   }
 
   let dynamicVariables: Record<string, string>;
@@ -85,7 +105,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No se ha podido iniciar la llamada." }, { status: 502 });
     }
     const data = (await upstream.json()) as { signed_url: string };
-    return NextResponse.json({ signedUrl: data.signed_url, dynamicVariables });
+    return NextResponse.json({ signedUrl: data.signed_url, dynamicVariables, availableSeconds });
   } catch (err) {
     console.error("Error obteniendo signed URL de ElevenLabs:", err);
     return NextResponse.json({ error: "No se ha podido iniciar la llamada." }, { status: 502 });

@@ -20,6 +20,19 @@ import { prisma } from "@/lib/prisma";
  *
  * Todo el módulo trabaja internamente en SEGUNDOS, sin redondear nunca el
  * consumo — la conversión a minutos es responsabilidad exclusiva de la UI.
+ *
+ * Límite de confianza (hardening, sección 37): `conversationId` es UNSTRUSTED
+ * en cuanto a contenido — lo genera el cliente (conversation.getId() del SDK
+ * de ElevenLabs) y viaja en el body de una request normal, así que nada
+ * impide a un cliente hostil enviar un id inventado o repetir uno ajeno.
+ * NO es prueba criptográfica de que la llamada ocurrió ni de su duración —
+ * es únicamente la CLAVE DE IDEMPOTENCIA que decide "¿ya procesé este
+ * conversationId antes?". La autoridad real sigue siendo el servidor: quién
+ * puede llamar a tryConsumeVoiceCredit (siempre `userId` de la sesión,
+ * nunca del body) y cuánto se descuenta (siempre acotado al saldo real en
+ * DB, nunca lo que diga el cliente). Ver también la limitación conocida y
+ * ya aceptada de que la DURACIÓN reportada es autoreportada por el cliente
+ * — el webhook autoritativo de ElevenLabs es una fase posterior.
  */
 
 export const VOICE_INCLUDED_SECONDS: Record<Plan, number> = {
@@ -64,6 +77,8 @@ export type ConsumeVoiceCreditResult = {
   idempotent: boolean;
   fromIncludedSeconds: number;
   fromPurchasedSeconds: number;
+  /** Segundos de esta llamada que excedieron el saldo disponible y se absorbieron (ver sección 49). */
+  excessSeconds: number;
   status: VoiceCreditStatus;
 };
 
@@ -112,6 +127,7 @@ export async function tryConsumeVoiceCredit(
       idempotent: true,
       fromIncludedSeconds: 0,
       fromPurchasedSeconds: 0,
+      excessSeconds: 0,
       status: await getVoiceCreditStatus(userId, plan),
     };
   }
@@ -149,8 +165,12 @@ export async function tryConsumeVoiceCredit(
       const remainderAfterIncluded = durationSeconds - fromIncluded;
       const fromPurchased = Math.min(remainderAfterIncluded, purchasedRow.remainingSeconds);
       // El resto (remainderAfterIncluded - fromPurchased), si lo hay, es el
-      // exceso — se absorbe aquí mismo, deliberadamente: nunca se escribe
-      // en ningún sitio, nunca genera deuda ni saldo negativo.
+      // exceso — se absorbe: nunca genera deuda, nunca deja saldo negativo,
+      // nunca se convierte en un cobro automático. Sección 49 (hardening):
+      // se hace OBSERVABLE (excessSeconds en VoiceCallLog + warn), pero
+      // deliberadamente no se usa para reconstruir ningún saldo — es un
+      // hecho descriptivo de esta llamada, no un ledger.
+      const excess = remainderAfterIncluded - fromPurchased;
 
       if (fromIncluded > 0) {
         await tx.voiceCreditPeriod.update({
@@ -166,16 +186,23 @@ export async function tryConsumeVoiceCredit(
       }
 
       await tx.voiceCallLog.create({
-        data: { userId, durationSeconds, conversationId },
+        data: { userId, durationSeconds, conversationId, excessSeconds: excess },
       });
 
-      return { fromIncluded, fromPurchased };
+      return { fromIncluded, fromPurchased, excess };
     });
+
+    if (result.excess > 0) {
+      console.warn(
+        `Voice: llamada ${conversationId} del usuario ${userId} superó el saldo disponible en ${result.excess}s — absorbido, sin deuda ni saldo negativo.`
+      );
+    }
 
     return {
       idempotent: false,
       fromIncludedSeconds: result.fromIncluded,
       fromPurchasedSeconds: result.fromPurchased,
+      excessSeconds: result.excess,
       status: await getVoiceCreditStatus(userId, plan),
     };
   } catch (err) {
@@ -192,6 +219,7 @@ export async function tryConsumeVoiceCredit(
         idempotent: true,
         fromIncludedSeconds: 0,
         fromPurchasedSeconds: 0,
+        excessSeconds: 0,
         status: await getVoiceCreditStatus(userId, plan),
       };
     }

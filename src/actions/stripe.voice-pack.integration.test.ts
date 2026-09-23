@@ -134,4 +134,19 @@ describe("createVoicePackCheckoutSession (integración, DB real)", () => {
     await expect(createVoicePackCheckoutSession()).rejects.toMatchObject({ digest: "NEXT_REDIRECT", url: "/" });
     expect(checkoutSessionsCreate).not.toHaveBeenCalled();
   });
+
+  it("hardening 42/43: una ráfaga de checkouts del mismo usuario se corta por rate limit — no puede crear Sessions sin fin", async () => {
+    const pro = await makeSubscribedUser("pro-spam", "cus_voice_pack_spam");
+    sessionUserId = pro.id;
+
+    // El límite es generoso (5 en 10 min) para no bloquear compras legítimas
+    // repetidas — pero SÍ debe cortar una ráfaga que lo supere.
+    for (let i = 0; i < 5; i++) {
+      await runIgnoringRedirect(() => createVoicePackCheckoutSession());
+    }
+    expect(checkoutSessionsCreate).toHaveBeenCalledTimes(5);
+
+    await expect(createVoicePackCheckoutSession()).rejects.toThrow(/rápido/i);
+    expect(checkoutSessionsCreate).toHaveBeenCalledTimes(5); // el 6º no llegó a crear nada
+  });
 });

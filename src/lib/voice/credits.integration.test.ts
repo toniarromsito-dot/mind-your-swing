@@ -215,4 +215,51 @@ describe("Voice Credits — consumo atómico (integración, DB real)", () => {
     const statusB = await getVoiceCreditStatus(userB.id, "PRO");
     expect(statusB.includedRemainingSeconds).toBe(VOICE_INCLUDED_SECONDS.PRO);
   });
+
+  // ---- Hardening sección 46/49 ----
+
+  it("hardening 49: el exceso sobre el saldo total queda registrado en excessSeconds — observable, sin convertirse en deuda", async () => {
+    const user = await makeUser("excess-observable", "FREE");
+    await tryConsumeVoiceCredit(user.id, "FREE", VOICE_INCLUDED_SECONDS.FREE - 30, nextConvId());
+    await creditVoicePurchasedSeconds(user.id, 20);
+    const convId = nextConvId();
+
+    const result = await tryConsumeVoiceCredit(user.id, "FREE", 90, convId); // 30 included + 20 purchased + 40 exceso
+    expect(result.excessSeconds).toBe(40);
+
+    const row = await prisma.voiceCallLog.findUniqueOrThrow({ where: { conversationId: convId } });
+    expect(row.excessSeconds).toBe(40);
+
+    // El exceso es un hecho de ESTA llamada, no un saldo — sigue en 0, nunca negativo.
+    const status = await getVoiceCreditStatus(user.id, "FREE");
+    expect(status.includedRemainingSeconds + status.purchasedRemainingSeconds).toBe(0);
+  });
+
+  it("hardening 49: una llamada sin exceso queda con excessSeconds = 0", async () => {
+    const user = await makeUser("no-excess", "PRO");
+    const convId = nextConvId();
+    await tryConsumeVoiceCredit(user.id, "PRO", 60, convId);
+    const row = await prisma.voiceCallLog.findUniqueOrThrow({ where: { conversationId: convId } });
+    expect(row.excessSeconds).toBe(0);
+  });
+
+  it("hardening 46: la DB rechaza un remainingSeconds negativo a nivel de CHECK constraint, aunque se intente escribir por fuera de la lógica de aplicación", async () => {
+    const user = await makeUser("check-constraint-purchased");
+    await creditVoicePurchasedSeconds(user.id, 10);
+    await expect(
+      prisma.$executeRaw`UPDATE "VoicePurchasedBalance" SET "remainingSeconds" = -1 WHERE "userId" = ${user.id}`
+    ).rejects.toThrow();
+    // El valor previo (válido) no se tocó — el UPDATE entero se rechazó.
+    const status = await getVoiceCreditStatus(user.id, "PRO");
+    expect(status.purchasedRemainingSeconds).toBe(10);
+  });
+
+  it("hardening 46: la DB rechaza un consumedSeconds negativo en VoiceCreditPeriod a nivel de CHECK constraint", async () => {
+    const user = await makeUser("check-constraint-period");
+    await tryConsumeVoiceCredit(user.id, "PRO", 60, nextConvId());
+    const period = (await getVoiceCreditStatus(user.id, "PRO")).period;
+    await expect(
+      prisma.$executeRaw`UPDATE "VoiceCreditPeriod" SET "consumedSeconds" = -1 WHERE "userId" = ${user.id} AND "period" = ${period}`
+    ).rejects.toThrow();
+  });
 });

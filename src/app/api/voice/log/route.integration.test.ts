@@ -77,6 +77,38 @@ describe("POST /api/voice/log (integración, DB real)", () => {
     expect(res.status).toBe(400);
   });
 
+  it("hardening 51: durationSeconds negativo → 400, nada consumido", async () => {
+    const user = await makeUser("negative-duration");
+    userId = user.id;
+    const res = await POST(req({ durationSeconds: -5, conversationId: nextConvId() }));
+    expect(res.status).toBe(400);
+    const status = await getVoiceCreditStatus(user.id, "PRO");
+    expect(status.includedRemainingSeconds).toBe(VOICE_INCLUDED_SECONDS.PRO);
+  });
+
+  it("hardening 51: durationSeconds decimal → 400 (solo enteros)", async () => {
+    const user = await makeUser("decimal-duration");
+    userId = user.id;
+    const res = await POST(req({ durationSeconds: 12.5, conversationId: nextConvId() }));
+    expect(res.status).toBe(400);
+  });
+
+  it("hardening 51: durationSeconds como string no numérico → 400, no revienta con un 500", async () => {
+    const user = await makeUser("string-duration");
+    userId = user.id;
+    const res = await POST(req({ durationSeconds: "no-soy-un-numero", conversationId: nextConvId() }));
+    expect(res.status).toBe(400);
+  });
+
+  it("hardening 51: conversationId vacío/solo espacios → 400 (obligatorio y no vacío cuando durationSeconds > 0)", async () => {
+    const user = await makeUser("blank-conv-id");
+    userId = user.id;
+    const res = await POST(req({ durationSeconds: 60, conversationId: "   " }));
+    expect(res.status).toBe(400);
+    const status = await getVoiceCreditStatus(user.id, "PRO");
+    expect(status.includedRemainingSeconds).toBe(VOICE_INCLUDED_SECONDS.PRO);
+  });
+
   it("una llamada real consume el ledger vía el endpoint completo", async () => {
     const user = await makeUser("real-call");
     userId = user.id;
