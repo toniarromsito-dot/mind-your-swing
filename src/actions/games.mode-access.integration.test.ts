@@ -209,13 +209,14 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
     const pro = await makeUser("g-pro", "PRO");
     userId = pro.id;
 
-    // Las primeras 5 (límite configurado) pasan el gate Pro y el rate
-    // limit, y fallan más adelante por falta de datos de pose reales
-    // (poseFrames vacío a propósito — no hace falta un vídeo real para
-    // probar la protección de plan/límite). Al fallar por pose inválida
-    // nunca llegan a tocar crédito, así que no interfieren con el límite
-    // de 8 análisis/mes (probado aparte en swing-ai-credits.integration.test.ts).
-    for (let i = 0; i < 5; i++) {
+    // Las primeras 10 (rate limit de seguridad, Fase 11D) pasan el gate Pro
+    // y el rate limit, y fallan más adelante por falta de datos de pose
+    // reales (poseFrames vacío a propósito — no hace falta un vídeo real
+    // para probar la protección de plan/límite). Al fallar por pose
+    // inválida nunca llegan a tocar crédito — el límite de producto de 8
+    // análisis/mes es independiente y se prueba a fondo en
+    // swing-videos.credits.integration.test.ts.
+    for (let i = 0; i < 10; i++) {
       const result = await submitSwingVideo({
         videoUrl: "https://example.com/swing.mp4",
         poseFrames: [],
@@ -224,13 +225,13 @@ describe("Fase 11A — bypass de modos Pro cerrado + rate limiting (integración
       expect("error" in result ? result.error : "").toMatch(/fotogramas/i);
     }
 
-    // El 6º intento, dentro de la misma ventana, se rechaza por rate limit.
-    const sixth = await submitSwingVideo({
+    // El 11º intento, dentro de la misma ventana, se rechaza por rate limit.
+    const eleventh = await submitSwingVideo({
       videoUrl: "https://example.com/swing.mp4",
       poseFrames: [],
-      analysisRequestId: "g-pro-attempt-5",
+      analysisRequestId: "g-pro-attempt-10",
     });
-    expect(sixth).toEqual({ error: dictionaries.es.swingVideos.rateLimitError });
+    expect(eleventh).toEqual({ error: dictionaries.es.swingVideos.rateLimitError });
 
     const videosStored = await prisma.swingVideo.count({ where: { userId: pro.id } });
     expect(videosStored).toBe(0); // ninguno de los intentos (fallidos) creó una fila

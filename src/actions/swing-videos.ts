@@ -24,9 +24,18 @@ export type SubmitSwingVideoResult =
   | { error: string }
   | { id: string; score: number; aiFeedback: string; creditsRemaining: number };
 
-// Fase 11A: cada envío dispara una llamada real a Claude — sin límite,
-// un usuario Pro podría generar coste ilimitado solo reenviando vídeos.
-const SUBMIT_SWING_VIDEO_RATE_LIMIT = { windowMs: 10 * 60_000, maxRequests: 5 };
+// Fase 11D: dos límites distintos, a propósito nunca mezclados.
+//
+//   LÍMITE DE PRODUCTO (créditos, ver credits.ts) — 8 análisis VÁLIDOS al
+//   mes. Controla cuánto puede "gastar" un Pro; vive en SwingAiCreditPeriod.
+//
+//   RATE LIMIT DE SEGURIDAD (este) — 10 intentos de envío cada 10 minutos,
+//   válidos o no. Protege el endpoint de abuso/ráfagas (cada intento, si
+//   pasa de pose inválida, dispara una llamada real a Claude); no
+//   representa ni resta créditos de producto. Un usuario con crédito
+//   sobrado sigue limitado a 10 intentos/10min; agotar los 8 créditos
+//   nunca "libera" más cupo de rate limit, y viceversa.
+const SUBMIT_SWING_VIDEO_RATE_LIMIT = { windowMs: 10 * 60_000, maxRequests: 10 };
 
 /**
  * Recibe el vídeo ya subido (URL de Vercel Blob), los keypoints de pose
@@ -39,14 +48,19 @@ const SUBMIT_SWING_VIDEO_RATE_LIMIT = { windowMs: 10 * 60_000, maxRequests: 5 };
  * lenguaje natural con Claude.
  *
  * Orden deliberado — nunca se ejecuta trabajo costoso antes de comprobar
- * entitlement/crédito:
+ * entitlement/crédito, y un reintento idempotente nunca gasta cupo de
+ * rate limit (Fase 11D):
  *  1. autenticación + Pro (gratis)
- *  2. idempotencia: ¿este analysisRequestId ya se completó? (gratis)
- *  3. pose válida (cálculo local, sin coste externo)
- *  4. crédito disponible — consumo ATÓMICO (ver credits.ts)
- *  5. feedback de Claude (el único paso realmente costoso) — ya ocurre
+ *  2. idempotencia: ¿este analysisRequestId ya se completó? (gratis,
+ *     ANTES del rate limit — un reintento del mismo análisis no cuenta
+ *     como un intento nuevo para la protección de abuso)
+ *  3. rate limit de seguridad (10/10min) — solo para intentos que de
+ *     verdad son nuevos/incompletos
+ *  4. pose válida (cálculo local, sin coste externo)
+ *  5. crédito disponible — consumo ATÓMICO (ver credits.ts)
+ *  6. feedback de Claude (el único paso realmente costoso) — ya ocurre
  *     DESPUÉS de haber consumido el crédito
- *  6. persistir el resultado
+ *  7. persistir el resultado
  */
 export async function submitSwingVideo(input: {
   videoUrl: string;
@@ -69,15 +83,12 @@ export async function submitSwingVideo(input: {
     return { error: t.proRequiredError };
   }
 
-  const rl = checkRateLimit(`swing-video-submit:${session.user.id}`, SUBMIT_SWING_VIDEO_RATE_LIMIT);
-  if (!rl.allowed) {
-    return { error: t.rateLimitError };
-  }
-
-  // Idempotencia — camino rápido: un reintento técnico secuencial del
-  // mismo analysisRequestId (la respuesta del primer intento se perdió
-  // antes de llegar al cliente, pero el servidor ya lo había completado)
-  // devuelve el resultado ya guardado, sin tocar créditos otra vez.
+  // Idempotencia — camino rápido, ANTES del rate limit: un reintento
+  // técnico secuencial del mismo analysisRequestId (la respuesta del
+  // primer intento se perdió antes de llegar al cliente, pero el servidor
+  // ya lo había completado) devuelve el resultado ya guardado sin tocar
+  // créditos NI gastar cupo de rate limit — no es un "intento" nuevo para
+  // la protección de abuso, es la misma request de siempre.
   const alreadyCompleted = await findCompletedAnalysisByRequestId(user.id, input.analysisRequestId);
   if (alreadyCompleted) {
     const status = await getSwingAiCreditStatus(user.id);
@@ -87,6 +98,16 @@ export async function submitSwingVideo(input: {
       aiFeedback: alreadyCompleted.aiFeedback ?? "",
       creditsRemaining: status.remaining,
     };
+  }
+
+  // A partir de aquí es un intento genuinamente nuevo o incompleto (pose
+  // inválida en un intento anterior con este mismo id, por ejemplo) — sí
+  // cuenta contra el rate limit de seguridad, precisamente porque cada uno
+  // de estos intentos puede disparar trabajo real (Claude) si la pose
+  // resulta válida.
+  const rl = checkRateLimit(`swing-video-submit:${session.user.id}`, SUBMIT_SWING_VIDEO_RATE_LIMIT);
+  if (!rl.allowed) {
+    return { error: t.rateLimitError };
   }
 
   let metrics;
