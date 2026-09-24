@@ -65,9 +65,24 @@ describe("mapRevenueCatEvent", () => {
     expect(mapRevenueCatEvent("EXPIRATION", null)).toMatchObject({ status: "CANCELED", relevant: true });
   });
 
-  it("CANCELLATION → NO cambia status (política conservadora), solo marca cancelAtPeriodEnd", () => {
+  it("CANCELLATION sin cancel_reason (o no-refund) → NO cambia status, solo marca cancelAtPeriodEnd (conserva acceso hasta EXPIRATION)", () => {
     const effect = mapRevenueCatEvent("CANCELLATION", null);
     expect(effect.status).toBeUndefined();
+    expect(effect.cancelAtPeriodEnd).toBe(true);
+    expect(effect.relevant).toBe(true);
+  });
+
+  it("[Fase 12D.1] CANCELLATION con cancel_reason=UNSUBSCRIBE/BILLING_ERROR/DEVELOPER_INITIATED/PRICE_INCREASE/UNKNOWN → conserva acceso, NUNCA FREE inmediato", () => {
+    for (const reason of ["UNSUBSCRIBE", "BILLING_ERROR", "DEVELOPER_INITIATED", "PRICE_INCREASE", "UNKNOWN"]) {
+      const effect = mapRevenueCatEvent("CANCELLATION", null, reason);
+      expect(effect.status).toBeUndefined();
+      expect(effect.cancelAtPeriodEnd).toBe(true);
+    }
+  });
+
+  it("[Fase 12D.1] CANCELLATION con cancel_reason=CUSTOMER_SUPPORT (refund real) → CANCELED de inmediato", () => {
+    const effect = mapRevenueCatEvent("CANCELLATION", null, "CUSTOMER_SUPPORT");
+    expect(effect.status).toBe("CANCELED");
     expect(effect.cancelAtPeriodEnd).toBe(true);
     expect(effect.relevant).toBe(true);
   });

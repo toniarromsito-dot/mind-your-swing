@@ -64,26 +64,33 @@ export type RevenueCatStatusEffect = {
 /**
  * Mapea un evento de RevenueCat a un efecto sobre nuestra Subscription.
  *
- * LIMITACIÓN CONOCIDA, sin resolver a propósito (Fase 12C, sección 12: "si
- * detectas una diferencia entre el modelo Stripe y RevenueCat, detente y
- * explícalo antes de inventar una equivalencia"):
+ * Fase 12D.1 — política de CANCELLATION resuelta (ya no es una limitación
+ * conocida): RevenueCat expone `cancel_reason` en el evento CANCELLATION,
+ * verificado contra la documentación oficial actual
+ * (docs.revenuecat.com/docs/integrations/webhooks/event-types-and-fields),
+ * con estos valores reales: UNSUBSCRIBE, BILLING_ERROR, DEVELOPER_INITIATED,
+ * PRICE_INCREASE, CUSTOMER_SUPPORT, UNKNOWN. Un reembolso genera SIEMPRE un
+ * CANCELLATION con cancel_reason=CUSTOMER_SUPPORT — es la única señal
+ * fiable para distinguir "dejó de renovar" (conserva acceso hasta
+ * EXPIRATION) de "reembolso/revoke" (pierde acceso YA). Decisión de
+ * producto confirmada:
  *
- * CANCELLATION en RevenueCat cubre DOS casos distintos con el mismo tipo de
- * evento — "el usuario desactivó la renovación automática" (debe conservar
- * acceso hasta `expiration_at_ms`) y "reembolso" (debería perder acceso
- * YA) — y el payload documentado no da un campo inequívoco para
- * distinguirlos de forma fiable sin investigación adicional. Se trata aquí
- * de la forma CONSERVADORA: igual que ya hace Stripe hoy con
- * `cancel_at_period_end`, CANCELLATION solo marca `cancelAtPeriodEnd=true`
- * y NO cambia `status` — el EXPIRATION posterior (inequívoco, siempre
- * corta acceso) es quien de verdad revoca el PRO. Si un reembolso real
- * debe cortar el acceso de inmediato en vez de esperar a EXPIRATION, este
- * mapeo debe revisarse ANTES de procesar tráfico de producción — no se ha
- * decidido ni implementado esa distinción todavía.
+ *   - CANCELLATION con cancel_reason=CUSTOMER_SUPPORT → status=CANCELED
+ *     de inmediato (refund real).
+ *   - CANCELLATION con cualquier otro cancel_reason (o ausente) →
+ *     cancelAtPeriodEnd=true, status SIN CAMBIAR — el EXPIRATION posterior
+ *     es quien corta el acceso de verdad, igual que ya hace Stripe con
+ *     cancel_at_period_end. Nunca "CANCELLATION = FREE inmediato" como
+ *     regla genérica — eso rompería la cancelación normal de renovación.
+ *
+ * BILLING_ISSUE es un evento DISTINTO (no un cancel_reason de
+ * CANCELLATION) — nunca se mezcla con la lógica de refund de arriba, sigue
+ * su propia rama con la política ya existente de MYS.
  */
 export function mapRevenueCatEvent(
   eventType: string,
-  periodType: string | null | undefined
+  periodType: string | null | undefined,
+  cancelReason?: string | null
 ): RevenueCatStatusEffect {
   const activeOrTrialing: SubscriptionStatus = periodType === "TRIAL" ? "TRIALING" : "ACTIVE";
 
@@ -104,6 +111,13 @@ export function mapRevenueCatEvent(
       return { status: activeOrTrialing, cancelAtPeriodEnd: false, relevant: true };
 
     case "CANCELLATION":
+      if (cancelReason === "CUSTOMER_SUPPORT") {
+        // Reembolso/revoke real — corta el acceso ya, no espera a EXPIRATION.
+        return { status: "CANCELED", cancelAtPeriodEnd: true, relevant: true };
+      }
+      // Cancelación normal de renovación (UNSUBSCRIBE/BILLING_ERROR/
+      // DEVELOPER_INITIATED/PRICE_INCREASE/UNKNOWN/ausente) — conserva
+      // acceso hasta que llegue el EXPIRATION real.
       return { cancelAtPeriodEnd: true, relevant: true };
 
     case "EXPIRATION":

@@ -25,7 +25,13 @@ function makeEvent(
   id: string,
   type: string,
   appUserId: string,
-  overrides: Partial<{ period_type: string; store: string; event_timestamp_ms: number; original_transaction_id: string }> = {}
+  overrides: Partial<{
+    period_type: string;
+    store: string;
+    event_timestamp_ms: number;
+    original_transaction_id: string;
+    cancel_reason: string;
+  }> = {}
 ) {
   return {
     id,
@@ -35,6 +41,7 @@ function makeEvent(
     original_transaction_id: overrides.original_transaction_id ?? `txn_${id}`,
     store: overrides.store ?? "APP_STORE",
     period_type: overrides.period_type ?? "NORMAL",
+    cancel_reason: overrides.cancel_reason,
     event_timestamp_ms: overrides.event_timestamp_ms ?? Date.now(),
   };
 }
@@ -206,5 +213,131 @@ describe("POST /api/revenuecat/webhook (integración, DB real)", () => {
     } finally {
       process.env.REVENUECAT_WEBHOOK_SECRET = original;
     }
+  });
+
+  // ---- Fase 12D.1 — política de refund (cancel_reason=CUSTOMER_SUPPORT) ----
+
+  it("A. RevenueCat ACTIVE → CANCELLATION con cancel_reason=CUSTOMER_SUPPORT (refund real) → FREE de inmediato", async () => {
+    const user = await makeUser("refund-a");
+    await POST(req(makeEvent("evt_rc_refund_a_purchase", "INITIAL_PURCHASE", user.id)));
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO");
+
+    await POST(
+      req(
+        makeEvent("evt_rc_refund_a_cancel", "CANCELLATION", user.id, {
+          cancel_reason: "CUSTOMER_SUPPORT",
+          event_timestamp_ms: Date.now() + 1000,
+        })
+      )
+    );
+
+    const sub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: user.id, provider: "REVENUECAT" } },
+    });
+    expect(sub.status).toBe("CANCELED");
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("FREE");
+  });
+
+  it("B. Stripe ACTIVE + RevenueCat ACTIVE → refund de RevenueCat → sigue PRO (Stripe lo sostiene)", async () => {
+    const user = await makeUser("refund-b");
+    await prisma.subscription.create({
+      data: { userId: user.id, provider: "STRIPE", providerCustomerId: `cus_${user.id}`, status: "ACTIVE" },
+    });
+    await POST(req(makeEvent("evt_rc_refund_b_purchase", "INITIAL_PURCHASE", user.id)));
+    await POST(
+      req(
+        makeEvent("evt_rc_refund_b_cancel", "CANCELLATION", user.id, {
+          cancel_reason: "CUSTOMER_SUPPORT",
+          event_timestamp_ms: Date.now() + 1000,
+        })
+      )
+    );
+
+    const rcSub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: user.id, provider: "REVENUECAT" } },
+    });
+    expect(rcSub.status).toBe("CANCELED"); // el refund sí se refleja en SU fila...
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO"); // ...pero Stripe lo sostiene
+  });
+
+  it("C. RevenueCat ACTIVE → CANCELLATION con cancel_reason=UNSUBSCRIBE → mantiene PRO hasta EXPIRATION", async () => {
+    const user = await makeUser("refund-c");
+    await POST(req(makeEvent("evt_rc_refund_c_purchase", "INITIAL_PURCHASE", user.id)));
+    await POST(
+      req(
+        makeEvent("evt_rc_refund_c_cancel", "CANCELLATION", user.id, {
+          cancel_reason: "UNSUBSCRIBE",
+          event_timestamp_ms: Date.now() + 1000,
+        })
+      )
+    );
+
+    const sub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: user.id, provider: "REVENUECAT" } },
+    });
+    expect(sub.status).toBe("ACTIVE"); // NO cambia a CANCELED todavía
+    expect(sub.cancelAtPeriodEnd).toBe(true);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO");
+  });
+
+  it("D. RevenueCat ACTIVE → EXPIRATION → FREE", async () => {
+    const user = await makeUser("refund-d");
+    await POST(req(makeEvent("evt_rc_refund_d_purchase", "INITIAL_PURCHASE", user.id)));
+    await POST(req(makeEvent("evt_rc_refund_d_expire", "EXPIRATION", user.id, { event_timestamp_ms: Date.now() + 1000 })));
+
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("FREE");
+  });
+
+  it("E. RevenueCat BILLING_ISSUE (evento distinto de CANCELLATION) → PAST_DUE → FREE, sin mezclarse con la lógica de refund", async () => {
+    const user = await makeUser("refund-e");
+    await POST(req(makeEvent("evt_rc_refund_e_purchase", "INITIAL_PURCHASE", user.id)));
+    await POST(req(makeEvent("evt_rc_refund_e_billing", "BILLING_ISSUE", user.id, { event_timestamp_ms: Date.now() + 1000 })));
+
+    const sub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: user.id, provider: "REVENUECAT" } },
+    });
+    expect(sub.status).toBe("PAST_DUE");
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("FREE");
+  });
+
+  it("F. out-of-order: un refund ANTIGUO no debe pisar un estado posterior más reciente", async () => {
+    const user = await makeUser("refund-f");
+    const now = Date.now();
+    await POST(req(makeEvent("evt_rc_refund_f_purchase", "INITIAL_PURCHASE", user.id, { event_timestamp_ms: now })));
+    // Renueva DESPUÉS (más reciente) — vuelve a estar ACTIVE.
+    await POST(req(makeEvent("evt_rc_refund_f_renewal", "RENEWAL", user.id, { event_timestamp_ms: now + 5000 })));
+
+    // Refund que llega tarde pero describe un instante ANTERIOR a la renovación.
+    await POST(
+      req(
+        makeEvent("evt_rc_refund_f_late_refund", "CANCELLATION", user.id, {
+          cancel_reason: "CUSTOMER_SUPPORT",
+          event_timestamp_ms: now + 1000, // anterior a la renovación (now + 5000)
+        })
+      )
+    );
+
+    const sub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: user.id, provider: "REVENUECAT" } },
+    });
+    expect(sub.status).toBe("ACTIVE"); // el refund antiguo no revirtió la renovación posterior
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO");
+  });
+
+  it("G. webhook duplicado de refund (mismo event.id) no se procesa dos veces", async () => {
+    const user = await makeUser("refund-g");
+    await POST(req(makeEvent("evt_rc_refund_g_purchase", "INITIAL_PURCHASE", user.id)));
+
+    const refundEvent = makeEvent("evt_rc_refund_g_dup", "CANCELLATION", user.id, {
+      cancel_reason: "CUSTOMER_SUPPORT",
+      event_timestamp_ms: Date.now() + 1000,
+    });
+    const first = await POST(req(refundEvent));
+    expect(first.status).toBe(200);
+    const second = await POST(req(refundEvent));
+    expect(await second.json()).toMatchObject({ duplicate: true });
+
+    const eventsStored = await prisma.subscriptionEvent.count({ where: { providerEventId: "evt_rc_refund_g_dup" } });
+    expect(eventsStored).toBe(1);
   });
 });

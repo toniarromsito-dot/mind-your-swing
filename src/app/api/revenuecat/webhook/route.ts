@@ -23,11 +23,13 @@ type RevenueCatWebhookEvent = {
   original_transaction_id?: string;
   store?: string;
   period_type?: string;
+  /** Solo presente en eventos CANCELLATION — ver mapRevenueCatEvent() para la política de refund (Fase 12D.1). */
+  cancel_reason?: string;
   event_timestamp_ms: number;
 };
 
 async function applyRevenueCatEvent(userId: string, event: RevenueCatWebhookEvent): Promise<void> {
-  const effect = mapRevenueCatEvent(event.type, event.period_type ?? null);
+  const effect = mapRevenueCatEvent(event.type, event.period_type ?? null, event.cancel_reason ?? null);
   if (!effect.relevant) return;
 
   const eventCreatedAt = new Date(event.event_timestamp_ms);

@@ -42,4 +42,16 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Fase 12D.1 — Coach de voz (call-coach.tsx) llama a
+         getUserMedia({ audio: true }) dentro del WebView. Sin este permiso
+         declarado, WebChromeClient.onPermissionRequest no puede conceder
+         PermissionRequest.RESOURCE_AUDIO_CAPTURE y la llamada de voz nunca
+         consigue micrófono en Android nativo. Deliberadamente NO se añade
+         CAMERA ni READ_MEDIA_IMAGES/VIDEO — la app no abre cámara en vivo
+         en ningún sitio (grep de getUserMedia/capture= en todo src/
+         confirma un único uso, solo audio) y la subida de vídeo de Swing AI
+         usa un <input accept="video/*"> sin capture, que abre el selector
+         del sistema (Photo Picker) sin necesitar permisos declarados. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 </manifest>
