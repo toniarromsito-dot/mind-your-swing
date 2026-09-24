@@ -99,7 +99,9 @@ describe("createCheckoutSession / createPortalSession (integración, DB real)", 
 
     await runIgnoringRedirect(() => createCheckoutSession("MONTHLY"));
 
-    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    const sub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: user.id, provider: "STRIPE" } },
+    });
     expect(sub.providerCustomerId).toMatch(/^cus_/);
     expect(sub.status).toBe("INCOMPLETE");
   });
@@ -113,8 +115,9 @@ describe("createCheckoutSession / createPortalSession (integración, DB real)", 
       expect.objectContaining({ subscription_data: { trial_period_days: 3 } })
     );
 
-    // Simula que el webhook ya marcó el trial como usado (p.ej. tras pasar por TRIALING).
-    await prisma.subscription.update({ where: { userId: user.id }, data: { hasUsedTrial: true } });
+    // Simula que el webhook ya marcó el trial como usado (p.ej. tras pasar por
+    // TRIALING) — Fase 12C: hasUsedTrial vive en User, no en Subscription.
+    await prisma.user.update({ where: { id: user.id }, data: { hasUsedTrial: true } });
 
     await runIgnoringRedirect(() => createCheckoutSession("ANNUAL"));
     const lastCall = checkoutSessionsCreate.mock.calls.at(-1)![0] as { subscription_data?: unknown };
@@ -140,8 +143,12 @@ describe("createCheckoutSession / createPortalSession (integración, DB real)", 
     sessionUserId = userB.id;
     await runIgnoringRedirect(() => createCheckoutSession("MONTHLY"));
 
-    const subA = await prisma.subscription.findUniqueOrThrow({ where: { userId: userA.id } });
-    const subB = await prisma.subscription.findUniqueOrThrow({ where: { userId: userB.id } });
+    const subA = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: userA.id, provider: "STRIPE" } },
+    });
+    const subB = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: userB.id, provider: "STRIPE" } },
+    });
     expect(subA.providerCustomerId).not.toBe(subB.providerCustomerId);
 
     // B intenta gestionar su portal — el customerId usado es el suyo, nunca el de A.
@@ -180,11 +187,24 @@ describe("createCheckoutSession / createPortalSession (integración, DB real)", 
     expect(checkoutSessionsCreate).not.toHaveBeenCalled();
   });
 
+  it("[Fase 12C] un usuario con PRO activo vía RevenueCat (móvil) tampoco puede abrir un checkout de Stripe — la protección anti-duplicado ahora mira CUALQUIER provider", async () => {
+    const user = await makeUser("already-pro-via-revenuecat");
+    await prisma.subscription.create({
+      data: { userId: user.id, provider: "REVENUECAT", providerCustomerId: user.id, status: "ACTIVE" },
+    });
+    sessionUserId = user.id;
+
+    await expect(createCheckoutSession("MONTHLY")).rejects.toThrow(/ya tienes/i);
+    expect(checkoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
   it("un usuario CANCELED (sin acceso Pro actual) sí puede volver a suscribirse", async () => {
     const user = await makeUser("re-subscribe-after-cancel");
     await prisma.subscription.create({
-      data: { userId: user.id, providerCustomerId: "cus_resub", status: "CANCELED", hasUsedTrial: true },
+      data: { userId: user.id, providerCustomerId: "cus_resub", status: "CANCELED" },
     });
+    // Fase 12C: hasUsedTrial vive en User, no en Subscription.
+    await prisma.user.update({ where: { id: user.id }, data: { hasUsedTrial: true } });
     sessionUserId = user.id;
 
     await runIgnoringRedirect(() => createCheckoutSession("MONTHLY"));

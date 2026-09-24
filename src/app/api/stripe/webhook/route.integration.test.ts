@@ -116,9 +116,11 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
       data: {
         email: `webhook-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`,
         name: label,
-        subscription: { create: { providerCustomerId: customerId } },
+        // Fase 12C: la relación pasó de 1:1 (subscription) a 1:N (subscriptions)
+        // para poder convivir con una futura fila REVENUECAT del mismo usuario.
+        subscriptions: { create: { providerCustomerId: customerId } },
       },
-      include: { subscription: true },
+      include: { subscriptions: true },
     });
     userIds.push(user.id);
     return user;
@@ -163,7 +165,7 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
     const updated = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(updated.plan).toBe("PRO");
 
-    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId_provider: { userId: user.id, provider: "STRIPE" } } });
     expect(sub.status).toBe("ACTIVE");
     expect(sub.providerSubscriptionId).toBe(stripeSubscription.id);
     expect(sub.billingInterval).toBe("MONTHLY");
@@ -183,9 +185,9 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
 
     const afterFirst = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(afterFirst.plan).toBe("PRO");
-    const subAfterFirst = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    expect(afterFirst.hasUsedTrial).toBe(true); // Fase 12C: hasUsedTrial vive en User, no en Subscription
+    const subAfterFirst = await prisma.subscription.findUniqueOrThrow({ where: { userId_provider: { userId: user.id, provider: "STRIPE" } } });
     expect(subAfterFirst.status).toBe("TRIALING");
-    expect(subAfterFirst.hasUsedTrial).toBe(true);
 
     // Mismo event.id reentregado (redelivery de Stripe) — debe tratarse como ya procesado.
     const second = await POST(req(event));
@@ -240,7 +242,7 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
 
     // El estado sigue siendo PRO/ACTIVE — el evento antiguo no lo revirtió.
     expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO");
-    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId_provider: { userId: user.id, provider: "STRIPE" } } });
     expect(sub.status).toBe("ACTIVE");
   });
 
@@ -279,7 +281,7 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
       sameSecond
     );
     await POST(req(created));
-    expect((await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } })).status).toBe(
+    expect((await prisma.subscription.findUniqueOrThrow({ where: { userId_provider: { userId: user.id, provider: "STRIPE" } } })).status).toBe(
       "INCOMPLETE"
     );
 
@@ -294,7 +296,7 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
     );
     await POST(req(updated));
 
-    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId_provider: { userId: user.id, provider: "STRIPE" } } });
     expect(sub.status).toBe("ACTIVE");
     expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO");
   });
@@ -322,7 +324,7 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
     // en último lugar gana sin importar cuál sea realmente la más nueva.
     await Promise.all([POST(req(older)), POST(req(newer))]);
 
-    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId_provider: { userId: user.id, provider: "STRIPE" } } });
     expect(sub.status).toBe("ACTIVE"); // el evento con created más reciente, gane quien gane la carrera HTTP
   });
 
@@ -337,9 +339,8 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
       now
     );
     await POST(req(trialing));
-    expect((await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } })).hasUsedTrial).toBe(
-      true
-    );
+    // Fase 12C: hasUsedTrial vive en User, no en Subscription.
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).hasUsedTrial).toBe(true);
 
     // Evento posterior sin trial_end (conversión a ACTIVE) — hasUsedTrial no debe volver a false.
     const active = makeEvent(
@@ -350,9 +351,11 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
     );
     await POST(req(active));
 
-    const sub = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    const sub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: user.id, provider: "STRIPE" } },
+    });
     expect(sub.status).toBe("ACTIVE");
-    expect(sub.hasUsedTrial).toBe(true);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).hasUsedTrial).toBe(true);
   });
 
   // ---- Fase 11E — pack de Voice (compra one-time, mode: "payment") ----

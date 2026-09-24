@@ -3,7 +3,7 @@ import { ChevronLeft, ShieldCheck } from "lucide-react";
 import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { ProfileForm } from "@/components/profile-form";
-import { signOutAction } from "@/actions/profile";
+import { SignOutForm } from "@/components/sign-out-form";
 import { createCheckoutSession, createPortalSession, createVoicePackCheckoutSession } from "@/actions/stripe";
 import { isStripeConfigured, isVoicePackConfigured } from "@/lib/stripe";
 import { isAdminEmail, isOwnerEmail } from "@/lib/admin";
@@ -25,7 +25,7 @@ export default async function SettingsPage({
   const userId = await requireUserId();
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    include: { subscription: true },
+    include: { subscriptions: true },
   });
   const { t } = await getDictionary();
   const { checkout, voicePack } = await searchParams;
@@ -35,7 +35,9 @@ export default async function SettingsPage({
   const minutesUsed = (voiceCredits.includedLimitSeconds - voiceCredits.includedRemainingSeconds) / 60;
   const minutesIncluded = voiceCredits.includedLimitSeconds / 60;
   const purchasedMinutesAvailable = Math.floor(voiceCredits.purchasedRemainingSeconds / 60);
-  const subscription = user.subscription;
+  // Fase 12C: un usuario puede tener también una Subscription(REVENUECAT) —
+  // esta pantalla solo gestiona la parte de Stripe (portal, upgrade web).
+  const subscription = user.subscriptions.find((s) => s.provider === "STRIPE");
   const isTrialing = subscription?.status === "TRIALING";
   const isPastDue = subscription?.status === "PAST_DUE";
 
@@ -159,7 +161,7 @@ export default async function SettingsPage({
                       </span>
                     </Button>
                   </form>
-                  {!subscription?.hasUsedTrial && (
+                  {!user.hasUsedTrial && (
                     <p className="text-center text-xs text-muted-foreground">{t.perfil.trialNote}</p>
                   )}
                 </div>
@@ -191,11 +193,11 @@ export default async function SettingsPage({
         </Link>
       )}
 
-      <form action={signOutAction}>
+      <SignOutForm>
         <Button type="submit" variant="outline" className="w-full">
           {t.perfil.signOut}
         </Button>
-      </form>
+      </SignOutForm>
     </div>
   );
 }

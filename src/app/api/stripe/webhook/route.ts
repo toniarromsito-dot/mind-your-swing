@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { billingIntervalFromPriceId, isProStatus, normalizeStripeStatus, stripe, voicePackPriceId } from "@/lib/stripe";
+import { billingIntervalFromPriceId, normalizeStripeStatus, stripe, voicePackPriceId } from "@/lib/stripe";
 import { canUseFeature } from "@/lib/entitlements";
 import { creditVoicePurchasedSeconds, VOICE_PACK_SECONDS } from "@/lib/voice/credits";
+import { recomputeUserPlan } from "@/lib/subscription";
 
 export const runtime = "nodejs";
 
@@ -139,9 +140,13 @@ async function upsertSubscriptionFromStripe(subscription: Stripe.Subscription, e
     // que la suscripción pasó por trial, debe quedar marcado para siempre
     // — incluso si un evento más nuevo sin datos de trial "gana" después la
     // actualización de status/currentPeriodEnd.
+    //
+    // Fase 12C: vive en User (no en Subscription) — el trial es del
+    // usuario, no de la fila de UN provider concreto; así comprar en
+    // RevenueCat después de haber usado el trial en Stripe no lo reabre.
     if (status === "TRIALING" || trialEnd) {
-      await tx.subscription.updateMany({
-        where: { id: existing.id, hasUsedTrial: false },
+      await tx.user.updateMany({
+        where: { id: existing.userId, hasUsedTrial: false },
         data: { hasUsedTrial: true },
       });
     }
@@ -173,10 +178,11 @@ async function upsertSubscriptionFromStripe(subscription: Stripe.Subscription, e
       return;
     }
 
-    await tx.user.update({
-      where: { id: existing.userId },
-      data: { plan: isProStatus(status) ? "PRO" : "FREE" },
-    });
+    // Fase 12C: User.plan ya no se deriva SOLO de esta fila — un usuario
+    // puede tener también una Subscription(provider=REVENUECAT) activa a
+    // la vez. recomputeUserPlan() mira TODAS las filas del usuario (OR de
+    // cualquier provider en ACTIVE/TRIALING), nunca solo la de Stripe.
+    await recomputeUserPlan(tx, existing.userId);
   });
 }
 

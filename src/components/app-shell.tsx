@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, Flag, Users, BookOpen, LineChart } from "lucide-react";
-import { signOutAction } from "@/actions/profile";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { MindMark } from "@/components/mind-mark";
 import { AdBanner } from "@/components/ad-banner";
+import { SignOutForm } from "@/components/sign-out-form";
 import { isAdEligible, AD_BANNER_RESERVED_HEIGHT_PX } from "@/lib/ads/policy";
 import { cn } from "@/lib/utils";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -197,11 +197,11 @@ export function AppShell({
                 </div>
               )}
             </Link>
-            <form action={signOutAction} className="hidden lg:block">
+            <SignOutForm className="hidden lg:block">
               <Button type="submit" variant="outline" size="sm">
                 {t.cerrarSesion}
               </Button>
-            </form>
+            </SignOutForm>
           </div>
         </div>
       </header>

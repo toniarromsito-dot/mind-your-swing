@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canUseFeature } from "@/lib/entitlements";
 import { AppShell } from "@/components/app-shell";
+import { RevenueCatSession } from "@/components/revenuecat-session";
 import { getDictionary } from "@/lib/i18n/current-locale";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -22,8 +23,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const adFree = canUseFeature(user, "AD_FREE");
 
   return (
-    <AppShell user={session.user} t={t.nav} adFree={adFree}>
-      {children}
-    </AppShell>
+    <>
+      <RevenueCatSession userId={session.user.id} />
+      <AppShell user={session.user} t={t.nav} adFree={adFree}>
+        {children}
+      </AppShell>
+    </>
   );
 }

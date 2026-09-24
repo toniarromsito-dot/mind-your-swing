@@ -121,11 +121,15 @@ enum Plan {
 }
 
 // ---------- Suscripción / entitlement (Fase 11B — Subscription Foundation) ----------
-// Stripe es el único proveedor implementado hoy. El enum deja sitio a
-// futuros proveedores (Apple/Google) sin forzar un rediseño: cuando lleguen,
-// se añaden como nuevos valores, nunca como una tabla paralela.
+// Fase 12C — REVENUECAT añadido: iOS/Android compran vía App Store/Google
+// Play a través de RevenueCat, nunca a través de Stripe (Stripe sigue
+// siendo exclusivo de la web). Un mismo usuario puede tener como mucho UNA
+// fila Subscription por cada provider (ver @@unique([userId, provider]) en
+// Subscription) — nunca dos del mismo, y las dos conviven de forma
+// independiente sin que una pise a la otra.
 enum SubscriptionProvider {
   STRIPE
+  REVENUECAT
 }
 
 // Normaliza los `status` de Stripe (incomplete/incomplete_expired/trialing/
@@ -223,13 +227,24 @@ model User {
   // plan es un resumen/caché derivado de Subscription (ver hasProAccess() en
   // src/lib/plan.ts) — nunca se escribe a mano fuera del sync de webhook.
   // Se mantiene aquí (en vez de solo en Subscription) para no obligar a un
-  // JOIN en cada comprobación de acceso Pro.
+  // JOIN en cada comprobación de acceso Pro. Fase 12C: recomputeUserPlan()
+  // en src/lib/subscription.ts es el ÚNICO sitio que lo recalcula — PRO si
+  // CUALQUIERA de las Subscription del usuario (Stripe o RevenueCat) está
+  // ACTIVE/TRIALING, sea cual sea el provider.
   plan Plan @default(FREE)
+
+  /// Fase 12C — movido desde Subscription.hasUsedTrial: el trial de 3 días
+  /// es una propiedad del USUARIO, no de una suscripción de un provider
+  /// concreto — si viviera en Subscription, un usuario podría "reabrir" el
+  /// trial simplemente comprando en una plataforma distinta a la que ya lo
+  /// usó. Una vez true, ningún checkout (Stripe o RevenueCat) posterior
+  /// vuelve a ofrecer trial.
+  hasUsedTrial Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  subscription  Subscription?
+  subscriptions Subscription[]
   accounts      Account[]
   sessions      Session[]
   gamePlayers   GamePlayer[]
@@ -256,30 +271,39 @@ model User {
 }
 
 /**
- * Una fila por usuario (relación 1:1 real, ver @unique en userId) con el
- * estado de su suscripción en el proveedor de pago. `User.plan` es el
- * resumen derivado que lee hasProAccess(); esta tabla es la fuente de
- * verdad de la que ese resumen se recalcula (ver syncSubscription() en
- * src/app/api/stripe/webhook/route.ts).
+ * Fase 12C — MULTI-PROVIDER: como mucho UNA fila por (userId, provider) —
+ * ver @@unique([userId, provider]) más abajo. Un usuario puede tener a la
+ * vez una fila STRIPE (web) y una fila REVENUECAT (iOS/Android, App
+ * Store/Google Play unificados bajo el mismo customer de RevenueCat) sin
+ * que una pise a la otra; nunca dos filas del MISMO provider (eso sigue
+ * siendo imposible, ahora por el índice compuesto en vez del @unique
+ * simple que había antes de esta fase). `User.plan` es el resumen
+ * derivado que lee hasProAccess() — recomputeUserPlan() en
+ * src/lib/subscription.ts es el único sitio que lo recalcula, mirando
+ * TODAS las filas del usuario (OR de cualquier provider en ACTIVE/TRIALING).
  *
- * hasUsedTrial vive aquí (no en User) porque es un hecho ligado al ciclo de
- * vida de ESTA suscripción, no a la cuenta en abstracto: una vez concedido
- * el trial de 3 días, queda marcado para siempre y ningún checkout
- * posterior (mismo usuario, mismo Stripe customer) puede volver a
- * concederlo — cerrar sesión, cambiar de dispositivo o crear otra sesión de
- * checkout no lo reinician porque nada de eso toca esta fila.
+ * hasUsedTrial YA NO vive aquí (ver User.hasUsedTrial) — el trial es del
+ * usuario, no de una fila de un provider concreto.
  *
- * lastEventAt guarda el `created` (timestamp) del último evento de webhook
- * aplicado — permite descartar un evento que llegue más tarde pero
- * represente un estado más antiguo (entrega fuera de orden), sin depender
- * de que Stripe garantice el orden de entrega.
+ * lastEventAt guarda el `created`/`event_timestamp_ms` del último evento de
+ * webhook aplicado A ESTA FILA — permite descartar un evento que llegue más
+ * tarde pero represente un estado más antiguo (entrega fuera de orden), sin
+ * depender de que el proveedor garantice el orden de entrega. Cada
+ * provider tiene su propia fila y por tanto su propio `lastEventAt`
+ * independiente — un evento fuera de orden de RevenueCat nunca compite con
+ * el `lastEventAt` de la fila de Stripe, ni al revés.
  */
 model Subscription {
   id     String @id @default(cuid())
-  userId String @unique
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   provider                SubscriptionProvider @default(STRIPE)
+  /// Fase 12C — solo relevante cuando provider=REVENUECAT: "APP_STORE" o
+  /// "PLAY_STORE", de qué tienda vino la compra que RevenueCat reporta
+  /// más recientemente. Puramente informativo (soporte/analítica) — NUNCA
+  /// se usa como clave de unicidad ni como fuente de hasProAccess().
+  store                   String?
   providerCustomerId      String               @unique
   providerSubscriptionId  String?              @unique
   status                  SubscriptionStatus   @default(INCOMPLETE)
@@ -288,21 +312,33 @@ model Subscription {
   currentPeriodEnd        DateTime?
   cancelAtPeriodEnd       Boolean              @default(false)
   trialEnd                DateTime?
-  hasUsedTrial            Boolean              @default(false)
   lastEventAt             DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   events SubscriptionEvent[]
+
+  @@unique([userId, provider])
+  @@index([userId])
 }
 
 /**
  * Histórico inmutable de eventos de webhook ya procesados. providerEventId
  * es único a propósito: es el mecanismo real de idempotencia — un evento
- * reentregado por Stripe (mismo event.id) choca contra esa restricción y el
- * webhook lo trata como ya procesado sin volver a aplicar cambios. Nunca se
- * actualiza ni se borra una fila existente, solo se insertan nuevas.
+ * reentregado (mismo event.id) choca contra esa restricción y el webhook lo
+ * trata como ya procesado sin volver a aplicar cambios. Nunca se actualiza
+ * ni se borra una fila existente, solo se insertan nuevas.
+ *
+ * Fase 12C — se evaluó explícitamente pasar a @@unique([provider,
+ * providerEventId]) ahora que hay dos providers, y se descartó a propósito
+ * (sección 7 de la fase, "no hagas un cambio innecesario"): tanto los
+ * event.id de Stripe (`evt_...`) como los de RevenueCat son identificadores
+ * opacos generados por cada proveedor — la probabilidad de colisión real
+ * entre ambos espacios de IDs es indistinguible de cero, y un @unique
+ * global ya es estrictamente más estricto que el compuesto (nunca rechaza
+ * menos). Cambiarlo no añadiría ninguna protección real, solo una
+ * migración sin beneficio.
  */
 model SubscriptionEvent {
   id              String   @id @default(cuid())
