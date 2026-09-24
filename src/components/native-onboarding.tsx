@@ -71,6 +71,14 @@ export function NativeOnboarding({ t, appleEnabled = false }: { t: Dictionary["o
   // Google Play Services, error de red...) cae a la Custom Tab de siempre;
   // si el usuario simplemente cancela el diálogo, no se hace nada.
   async function signInNative() {
+    // El SDK nativo de Google solo está inicializado en Android (ver
+    // NativeAppInit). En iOS, SocialLogin.login("google") sin GIDClientID
+    // lanza una NSException nativa que ningún try/catch de JS puede
+    // capturar: la app se cierra. Allí se usa siempre el navegador in-app.
+    if (Capacitor.getPlatform() !== "android") {
+      Browser.open({ url: "https://mind-your-swing.vercel.app/mobile-login" });
+      return;
+    }
     setIsSigningIn(true);
     try {
       const { result } = await SocialLogin.login({ provider: "google", options: { scopes: ["email", "profile"] } });
