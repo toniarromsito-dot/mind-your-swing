@@ -23,11 +23,27 @@ const config: CapacitorConfig = {
     // src/app/app-entry y src/components/native-login-screen.tsx.
     url: "https://mind-your-swing.vercel.app/app-entry",
     cleartext: false,
+    // Capacitor iOS solo trata como "de la app" las URLs que EMPIEZAN por
+    // server.url completo (con /app-entry incluido): cualquier otra carga
+    // completa de página del mismo dominio (/dashboard tras el redirect de
+    // /app-entry, /api/mobile/session al volver del login, /settings...) se
+    // abría en Safari. Android compara solo el host, por eso allí no pasaba.
+    allowNavigation: ["mind-your-swing.vercel.app"],
   },
   ios: {
     contentInset: "always",
   },
   plugins: {
+    // Solo se usa Google (Credential Manager en Android). Sin esto el plugin
+    // empaqueta también los SDK de Facebook y Twitter, que MYS no usa — y el
+    // de Facebook declara dominios de tracking en el informe de privacidad.
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        twitter: false,
+      },
+    },
     SplashScreen: {
       launchShowDuration: 600,
       backgroundColor: "#1F3D2B",
