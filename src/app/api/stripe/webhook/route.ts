@@ -207,8 +207,12 @@ export async function POST(req: Request) {
   // mismo evento (su propia política de reintentos, o una redelivery
   // manual), este insert falla con P2002 y el evento se trata como ya
   // procesado sin volver a tocar Subscription/User. Se hace ANTES de
-  // procesar nada, no después, para que un fallo a mitad de proceso no dé
-  // lugar a un reintento que sí duplique efectos.
+  // procesar, para que dos entregas simultáneas no lo apliquen dos veces.
+  // Si el procesado falla, el registro se libera (releaseEventForRetry)
+  // para que el reintento de Stripe lo procese de verdad: cada rama
+  // termina en una única escritura (upsert idempotente o el crédito del
+  // pack), así que un fallo nunca deja un efecto a medias que el
+  // reintento pudiera duplicar.
   try {
     await prisma.subscriptionEvent.create({
       data: {
@@ -263,8 +267,26 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error("Error procesando webhook de Stripe:", err);
+    await releaseEventForRetry(event.id);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
+}
+
+/**
+ * Deshace el registro de idempotencia de un evento cuyo procesado ha
+ * fallado. Sin esto, el reintento de Stripe chocaría con el
+ * providerEventId ya insertado, se contestaría "duplicate" y el evento se
+ * perdería para siempre.
+ */
+async function releaseEventForRetry(providerEventId: string): Promise<void> {
+  try {
+    await prisma.subscriptionEvent.delete({ where: { providerEventId } });
+  } catch (err) {
+    console.error(
+      `Webhook de Stripe: no se ha podido liberar el evento ${providerEventId} para reintento — revisar a mano.`,
+      err
+    );
+  }
 }

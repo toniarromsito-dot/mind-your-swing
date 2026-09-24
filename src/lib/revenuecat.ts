@@ -104,10 +104,11 @@ export function mapRevenueCatEvent(
       return { status: activeOrTrialing, cancelAtPeriodEnd: false, relevant: true };
 
     case "TRANSFER":
-      // Best-effort: tratamos al app_user_id destino como si acabara de
-      // comprar/renovar. No tenemos en este payload suficiente detalle
-      // para distinguir matices adicionales de una transferencia — ver
-      // informe de la fase.
+      // Efecto sobre la cuenta DESTINO (transferred_to). Best-effort: la
+      // tratamos como si acabara de comprar/renovar — el payload no trae
+      // el estado de la suscripción transferida. La cuenta ORIGEN
+      // (transferred_from) la cierra el webhook aparte (TRANSFERRED_AWAY
+      // en api/revenuecat/webhook/route.ts).
       return { status: activeOrTrialing, cancelAtPeriodEnd: false, relevant: true };
 
     case "CANCELLATION":

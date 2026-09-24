@@ -477,4 +477,26 @@ describe("POST /api/stripe/webhook (integración, DB real)", () => {
 
     expect((await getVoiceCreditStatus(user.id, "PRO")).purchasedRemainingSeconds).toBe(7200); // 2 × 3600
   });
+
+  it("[fix de audit] si el procesado falla, el evento se libera y el reintento de Stripe SÍ se procesa (no se toma por duplicado)", async () => {
+    const user = await makeUserWithSubscription("retry-after-failure", "cus_retry_after_failure");
+    const event = makeEvent("evt_retry_after_failure", "checkout.session.completed", {
+      id: "cs_retry_after_failure",
+      subscription: "sub_retry_after_failure",
+    });
+
+    subscriptionsRetrieveImpl = async () => {
+      throw new Error("Stripe API caída");
+    };
+    const failed = await POST(req(event));
+    expect(failed.status).toBe(500);
+    expect(await prisma.subscriptionEvent.count({ where: { providerEventId: "evt_retry_after_failure" } })).toBe(0);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("FREE");
+
+    subscriptionsRetrieveImpl = async () => makeSubscription({ customer: "cus_retry_after_failure", status: "active" });
+    const retried = await POST(req(event));
+    expect(retried.status).toBe(200);
+    expect(await retried.json()).not.toMatchObject({ duplicate: true });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO");
+  });
 });

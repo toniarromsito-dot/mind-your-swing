@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -46,7 +46,12 @@ function makeEvent(
   };
 }
 
-function req(event: ReturnType<typeof makeEvent>, options: { badSignature?: boolean; noSignature?: boolean } = {}) {
+function makeTransferEvent(id: string, from: string[], to: string[], eventTimestampMs = Date.now()) {
+  // TRANSFER real de RevenueCat: SIN app_user_id, solo transferred_from/to.
+  return { id, type: "TRANSFER", transferred_from: from, transferred_to: to, store: "APP_STORE", event_timestamp_ms: eventTimestampMs };
+}
+
+function req(event: object, options: { badSignature?: boolean; noSignature?: boolean } = {}) {
   const body = JSON.stringify({ api_version: "1.0", event });
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (!options.noSignature) {
@@ -339,5 +344,57 @@ describe("POST /api/revenuecat/webhook (integración, DB real)", () => {
 
     const eventsStored = await prisma.subscriptionEvent.count({ where: { providerEventId: "evt_rc_refund_g_dup" } });
     expect(eventsStored).toBe(1);
+  });
+
+  it("TRANSFER (sin app_user_id): la cuenta origen pierde PRO y la destino lo gana", async () => {
+    const from = await makeUser("transfer-from");
+    const to = await makeUser("transfer-to");
+    const now = Date.now();
+    await POST(req(makeEvent("evt_rc_transfer_purchase", "INITIAL_PURCHASE", from.id, { event_timestamp_ms: now })));
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: from.id } })).plan).toBe("PRO");
+
+    const res = await POST(req(makeTransferEvent("evt_rc_transfer", [from.id], [to.id], now + 1000)));
+    expect(res.status).toBe(200);
+
+    const fromSub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: from.id, provider: "REVENUECAT" } },
+    });
+    expect(fromSub.status).toBe("CANCELED");
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: from.id } })).plan).toBe("FREE");
+
+    const toSub = await prisma.subscription.findUniqueOrThrow({
+      where: { userId_provider: { userId: to.id, provider: "REVENUECAT" } },
+    });
+    expect(toSub.status).toBe("ACTIVE");
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: to.id } })).plan).toBe("PRO");
+  });
+
+  it("TRANSFER desde un id anónimo de RevenueCat: concede a la destino y no crea ninguna fila para el origen", async () => {
+    const to = await makeUser("transfer-anon-to");
+    const res = await POST(req(makeTransferEvent("evt_rc_transfer_anon", ["$RCAnonymousID:abc123"], [to.id])));
+    expect(res.status).toBe(200);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: to.id } })).plan).toBe("PRO");
+  });
+
+  it("TRANSFER sin transferred_to → 400", async () => {
+    const res = await POST(req({ id: "evt_rc_transfer_bad", type: "TRANSFER", event_timestamp_ms: Date.now() }));
+    expect(res.status).toBe(400);
+  });
+
+  it("si el procesado falla, el evento se libera y el reintento de RevenueCat SÍ se procesa (no se toma por duplicado)", async () => {
+    const user = await makeUser("retry-after-failure");
+    const event = makeEvent("evt_rc_retry_after_failure", "INITIAL_PURCHASE", user.id);
+
+    const spy = vi.spyOn(prisma, "$transaction").mockRejectedValueOnce(new Error("DB caída"));
+    const failed = await POST(req(event));
+    spy.mockRestore();
+    expect(failed.status).toBe(500);
+    expect(await prisma.subscriptionEvent.count({ where: { providerEventId: "evt_rc_retry_after_failure" } })).toBe(0);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("FREE");
+
+    const retried = await POST(req(event));
+    expect(retried.status).toBe(200);
+    expect(await retried.json()).not.toMatchObject({ duplicate: true });
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).plan).toBe("PRO");
   });
 });
