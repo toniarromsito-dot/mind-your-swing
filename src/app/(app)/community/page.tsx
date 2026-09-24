@@ -16,6 +16,7 @@ import { NewPostDrawer } from "@/components/new-post-drawer";
 import type { StoryForCard } from "@/components/story-card";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { PageTransition } from "@/components/page-transition";
+import { isNativeAppRequest } from "@/lib/native-app";
 
 function serialize(
   stories: Awaited<ReturnType<typeof listStoriesForFeed>>
@@ -113,6 +114,7 @@ export default async function CommunityPage() {
             viewerId={userId}
             followingIds={followingIds}
             isPro={isPro}
+            isNativeApp={await isNativeAppRequest()}
             stories={{
               all: serialize(all),
               friends: serialize(friends),

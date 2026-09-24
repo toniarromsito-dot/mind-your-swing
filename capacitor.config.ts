@@ -11,6 +11,11 @@ const config: CapacitorConfig = {
   appId: "com.mindyourswing.app",
   appName: "Mind Your Swing",
   webDir: "public",
+  // Marca en el User-Agent para que el servidor sepa que la página se pinta
+  // dentro de la app (ver src/lib/native-app.ts) — p. ej. para no mostrar
+  // nunca los pagos de Stripe dentro de la app (App Store 3.1.1 / Google
+  // Play Billing). Debe coincidir con NATIVE_APP_USER_AGENT_MARKER.
+  appendUserAgent: "MindYourSwingApp",
   server: {
     // /app-entry es la puerta de entrada exclusiva de la app nativa (no la
     // portada pública "/"): comprueba sesión y, si no hay, muestra su

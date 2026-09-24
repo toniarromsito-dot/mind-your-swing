@@ -24,6 +24,21 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Mind Your Swing usa el micrófono para que puedas hablar con tu coach en las llamadas de voz.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Mind Your Swing usa la cámara para grabar tu swing y analizarlo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Mind Your Swing accede a tus vídeos para que elijas el swing que quieres analizar.</string>
+	<!-- AdMob: el SDK de Google Mobile Ads cierra la app al arrancar si falta
+	     esta clave. Mientras los anuncios estén desactivados (sin
+	     NEXT_PUBLIC_ADMOB_BANNER_AD_UNIT_ID_IOS) basta el App ID de ejemplo
+	     de Google; al activarlos, sustitúyelo por el App ID REAL de iOS de la
+	     cuenta de AdMob (ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY). -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -49,13 +64,9 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>

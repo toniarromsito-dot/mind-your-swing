@@ -29,6 +29,17 @@ export async function mobileSignInWithGoogle() {
   await signIn("google", { redirectTo: "/mobile-bridge" });
 }
 
+// Igual que mobileSignInWithGoogle pero con Apple — obligatorio en la App
+// Store (norma 4.8) al ofrecer login con Google. Mismo circuito: todo el
+// intercambio ocurre dentro del navegador in-app y vuelve por /mobile-bridge.
+export async function mobileSignInWithApple() {
+  await signIn("apple", { redirectTo: "/mobile-bridge" });
+}
+
+export async function signInWithApple() {
+  await signIn("apple", { redirectTo: "/dashboard" });
+}
+
 // Llamado desde /mobile-bridge, ya autenticado dentro de esa misma Custom
 // Tab. Mintea un token de un solo uso para devolver el control a la app
 // nativa (deep link) sin exponer el sessionToken real. Server Action, no

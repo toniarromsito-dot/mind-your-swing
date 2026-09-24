@@ -44,6 +44,7 @@ export function StoryCard({
   viewerId,
   isFollowing,
   isPro,
+  isNativeApp = false,
   t,
   dateLocale,
 }: {
@@ -51,6 +52,8 @@ export function StoryCard({
   viewerId: string;
   isFollowing: boolean | null;
   isPro: boolean;
+  /** Dentro de la app nativa no se enlaza a la compra de Pro (App Store 3.1.1). */
+  isNativeApp?: boolean;
   t: Dictionary["community"];
   dateLocale: string;
 }) {
@@ -154,12 +157,14 @@ export function StoryCard({
                 ? fmt(t.commentsLocked, { count: story.comments.count })
                 : t.commentsLockedEmpty}
             </p>
-            <a
-              href="/settings"
-              className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground"
-            >
-              {t.commentsUnlockCta}
-            </a>
+            {!isNativeApp && (
+              <a
+                href="/settings"
+                className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground"
+              >
+                {t.commentsUnlockCta}
+              </a>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2 border-t border-border pt-3">

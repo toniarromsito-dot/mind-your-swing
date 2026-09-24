@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { NativeOnboarding } from "@/components/native-onboarding";
+import { isAppleSignInConfigured } from "@/lib/auth-providers";
 
 /**
  * Punto de entrada de "abrir la app" — de la app nativa (ver
@@ -18,5 +19,5 @@ export default async function AppEntryPage() {
   if (session?.user) redirect("/dashboard");
 
   const { t } = await getDictionary();
-  return <NativeOnboarding t={t.onboarding} />;
+  return <NativeOnboarding t={t.onboarding} appleEnabled={isAppleSignInConfigured()} />;
 }

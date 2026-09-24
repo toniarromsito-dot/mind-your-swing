@@ -4,14 +4,16 @@ import { requireUserId } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { ProfileForm } from "@/components/profile-form";
 import { SignOutForm } from "@/components/sign-out-form";
+import { DeleteAccountSection } from "@/components/delete-account-section";
 import { createCheckoutSession, createPortalSession, createVoicePackCheckoutSession } from "@/actions/stripe";
-import { isStripeConfigured, isVoicePackConfigured } from "@/lib/stripe";
+import { isProStatus, isStripeConfigured, isVoicePackConfigured } from "@/lib/stripe";
 import { isAdminEmail, isOwnerEmail } from "@/lib/admin";
 import { getVoiceCreditStatus } from "@/lib/voice/credits";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDictionary } from "@/lib/i18n/current-locale";
 import { fmt } from "@/lib/i18n/format";
+import { isNativeAppRequest } from "@/lib/native-app";
 
 /**
  * Ajustes = cuenta/preferencias, separado de /perfil (la ficha del
@@ -40,6 +42,13 @@ export default async function SettingsPage({
   const subscription = user.subscriptions.find((s) => s.provider === "STRIPE");
   const isTrialing = subscription?.status === "TRIALING";
   const isPastDue = subscription?.status === "PAST_DUE";
+  const hasStoreSubscription = user.subscriptions.some(
+    (s) => s.provider === "REVENUECAT" && isProStatus(s.status)
+  );
+  // Dentro de la app nativa nunca se muestra nada que lleve a pagar con
+  // Stripe (App Store 3.1.1 / Google Play Billing): ni checkout, ni portal,
+  // ni pack de Voice. Solo el estado del plan.
+  const isNativeApp = await isNativeAppRequest();
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -95,7 +104,7 @@ export default async function SettingsPage({
             </p>
           )}
 
-          {!owner && user.plan === "PRO" && isVoicePackConfigured() && (
+          {!isNativeApp && !owner && user.plan === "PRO" && isVoicePackConfigured() && (
             <form action={createVoicePackCheckoutSession}>
               <Button type="submit" variant="outline" size="sm" className="w-full justify-center">
                 {t.perfil.buyVoicePack}
@@ -134,7 +143,7 @@ export default async function SettingsPage({
             </p>
           )}
 
-          {owner ? null : isStripeConfigured() ? (
+          {owner || isNativeApp ? null : isStripeConfigured() ? (
             user.plan === "PRO" ? (
               <form action={createPortalSession}>
                 <Button type="submit" variant="outline" size="sm">
@@ -198,6 +207,8 @@ export default async function SettingsPage({
           {t.perfil.signOut}
         </Button>
       </SignOutForm>
+
+      <DeleteAccountSection t={t.perfil} hasStoreSubscription={hasStoreSubscription} />
     </div>
   );
 }

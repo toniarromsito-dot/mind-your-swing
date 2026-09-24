@@ -13,6 +13,7 @@ import { MindMark } from "@/components/mind-mark";
 import { canUseFeature } from "@/lib/entitlements";
 import { getSwingAiCreditStatus } from "@/lib/swing/credits";
 import { fmt } from "@/lib/i18n/format";
+import { isNativeAppRequest } from "@/lib/native-app";
 import { DASHBOARD_PHOTOS } from "@/lib/dashboard-photos";
 
 // Inmersiva como Coach/Aprende/Home (ver isImmersivePage en app-shell.tsx):
@@ -79,7 +80,7 @@ export default async function SwingVideosPage() {
     return (
       <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6">
         <VideosHeader backLabel={t.nav.learn} />
-        <ProUpsell t={t.landing} />
+        <ProUpsell t={t.landing} isNativeApp={await isNativeAppRequest()} />
       </div>
     );
   }

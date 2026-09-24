@@ -12,6 +12,7 @@ export function CommunityFeed({
   followingIds,
   stories,
   isPro,
+  isNativeApp,
   t,
   dateLocale,
 }: {
@@ -19,6 +20,7 @@ export function CommunityFeed({
   followingIds: string[];
   stories: Record<Tab, StoryForCard[]>;
   isPro: boolean;
+  isNativeApp: boolean;
   t: Dictionary["community"];
   dateLocale: string;
 }) {
@@ -67,6 +69,7 @@ export function CommunityFeed({
               viewerId={viewerId}
               isFollowing={story.userId === viewerId ? null : followingSet.has(story.userId)}
               isPro={isPro}
+              isNativeApp={isNativeApp}
               t={t}
               dateLocale={dateLocale}
             />
