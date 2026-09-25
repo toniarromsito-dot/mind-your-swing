@@ -29,6 +29,16 @@ const config: CapacitorConfig = {
     // /app-entry, /api/mobile/session al volver del login, /settings...) se
     // abría en Safari. Android compara solo el host, por eso allí no pasaba.
     allowNavigation: ["mind-your-swing.vercel.app"],
+    // Fase 12E — fallback local (public/offline.html, empaquetado en
+    // webDir) que el propio WebView nativo muestra cuando la carga de la
+    // URL remota de arriba falla (arranque en frío sin red, DNS caído,
+    // etc.) — verificado como mecanismo real y ya soportado por Capacitor
+    // (BridgeWebViewClient.onReceivedError/onReceivedHttpError llaman a
+    // bridge.getErrorUrl()), no un componente nativo nuevo. No interfiere
+    // con la protección de partida offline de NativeAppInit: esa lógica ya
+    // evita el reload en el caso que protege, así que la navegación que
+    // dispara este fallback nunca llega a intentarse en ese escenario.
+    errorPath: "offline.html",
   },
   ios: {
     contentInset: "always",

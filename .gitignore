@@ -67,3 +67,11 @@ next-env.d.ts
 
 # built app binaries (delivered ad hoc, not app assets — not served from public/)
 *.apk
+*.aab
+
+# Fase 12E — firma de release de Android: NUNCA se commitea una keystore
+# real ni sus credenciales. android/keystore.properties.example (sí
+# versionado) documenta el formato esperado.
+/android/keystore.properties
+/android/*.keystore
+/android/*.jks

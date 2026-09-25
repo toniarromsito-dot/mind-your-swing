@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Mind Your Swing</title>
+<style>
+  :root {
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #FAF8F2;
+    color: #1B2A20;
+    font-family: Georgia, "Times New Roman", ui-serif, serif;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    text-align: center;
+  }
+  main {
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .mark {
+    width: 56px;
+    height: 56px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  p {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #4B5A50;
+  }
+  #status {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    color: #7C8A80;
+    min-height: 16px;
+  }
+  button {
+    appearance: none;
+    border: none;
+    background: #1F3D2B;
+    color: #FAF8F2;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 28px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  button:active { opacity: 0.85; }
+  .lang-en { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <svg class="mark" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="28" cy="28" r="27" stroke="#1F3D2B" stroke-width="2" />
+    <circle cx="28" cy="28" r="3.2" fill="#1F3D2B" />
+    <circle cx="18" cy="20" r="1.4" fill="#1F3D2B" />
+    <circle cx="38" cy="20" r="1.4" fill="#1F3D2B" />
+    <circle cx="16" cy="30" r="1.4" fill="#1F3D2B" />
+    <circle cx="40" cy="30" r="1.4" fill="#1F3D2B" />
+    <circle cx="22" cy="38" r="1.4" fill="#1F3D2B" />
+    <circle cx="34" cy="38" r="1.4" fill="#1F3D2B" />
+  </svg>
+
+  <div class="lang-es">
+    <h1>Sin conexión</h1>
+    <p>Mind Your Swing necesita conexión a internet para cargar. Comprueba tu red e inténtalo de nuevo.</p>
+  </div>
+  <div class="lang-en">
+    <h1>You're offline</h1>
+    <p>Mind Your Swing needs an internet connection to load. Check your network and try again.</p>
+  </div>
+
+  <button id="retry" type="button">
+    <span class="lang-es">Reintentar</span>
+    <span class="lang-en">Retry</span>
+  </button>
+  <div id="status"></div>
+</main>
+
+<script>
+(function () {
+  var isSpanish = (navigator.language || "es").toLowerCase().indexOf("es") === 0;
+  var esEls = document.querySelectorAll(".lang-es");
+  var enEls = document.querySelectorAll(".lang-en");
+  for (var i = 0; i < esEls.length; i++) esEls[i].style.display = isSpanish ? "" : "none";
+  for (var j = 0; j < enEls.length; j++) enEls[j].style.display = isSpanish ? "none" : "";
+
+  var statusEl = document.getElementById("status");
+  var statusText = {
+    checking: isSpanish ? "Comprobando conexión…" : "Checking connection…",
+  };
+
+  // Este archivo lo sirve el propio WebView nativo (server.errorPath en
+  // capacitor.config.ts) cuando falla la carga de la app remota — nunca se
+  // sirve desde el servidor de Next.js, así que no puede depender de red
+  // para nada (fuentes, JS externo, i18n del framework): todo va inline.
+  function goHome() {
+    window.location.href = "https://mind-your-swing.vercel.app/app-entry";
+  }
+
+  document.getElementById("retry").addEventListener("click", goHome);
+
+  window.addEventListener("online", function () {
+    if (statusEl) statusEl.textContent = statusText.checking;
+    goHome();
+  });
+})();
+</script>
+</body>
+</html>

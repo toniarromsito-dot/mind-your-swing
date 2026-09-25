@@ -1,0 +1,13 @@
+[
+  {
+    "_comment": "Fase 12E — PLACEHOLDER, NO ES UNA FIRMA REAL. sha256_cert_fingerprints DEBE sustituirse por el SHA-256 real del certificado de firma de RELEASE (nunca el de debug) antes de que Android App Links (ver AndroidManifest.xml, intent-filter autoVerify=true para /play/join) pueda verificarse. Hasta entonces esta verificación falla silenciosamente y los enlaces siguen abriéndose en el navegador — no rompe nada, simplemente no activa el comportamiento nuevo. Generar el valor real con: keytool -list -v -keystore <release.keystore> | buscar la línea SHA256, o (recomendado si Google Play App Signing está activo) copiar el fingerprint que Play Console muestra en Configuración de la app > Integridad de la app > Firma de la app.",
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.mindyourswing.app",
+      "sha256_cert_fingerprints": [
+        "PENDIENTE_SUSTITUIR_POR_SHA256_REAL_DE_FIRMA_DE_RELEASE_NO_ES_UN_VALOR_HEX_VALIDO"
+      ]
+    }
+  }
+]
