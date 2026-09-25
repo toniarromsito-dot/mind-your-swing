@@ -9,6 +9,7 @@ import { SocialLogin } from "@capgo/capacitor-social-login";
 import { handleAndroidBackButton } from "@/lib/native/back-button";
 import { getActiveLocalGameId } from "@/lib/offline/store";
 import { getConnectivity } from "@/lib/offline/connectivity";
+import { shouldSkipReloadOnResume } from "@/lib/offline/resume-guard";
 
 const PROD_ORIGIN = "https://mind-your-swing.vercel.app";
 
@@ -38,12 +39,26 @@ export function NativeAppInit() {
     // login cae a una Custom Tab que redirige a
     // mindyourswing://auth-callback?token=... — este listener recoge ese
     // token y lo canjea por la sesión real dentro del propio WebView.
+    //
+    // Fase 12E — también recoge los Android App Links reales
+    // (https://mind-your-swing.vercel.app/play/join/..., ver
+    // AndroidManifest.xml) que Android puede entregar a la app ya
+    // instalada: Capacitor solo dispara este mismo evento appUrlOpen para
+    // ambos casos, nunca navega el WebView por sí solo, así que sin esta
+    // rama el enlace abriría la app y se quedaría en la pantalla que ya
+    // hubiera — se navega explícitamente a la URL recibida (mismo origen
+    // que server.url, nunca un origen distinto).
     const urlListener = App.addListener("appUrlOpen", ({ url }) => {
       try {
         const parsed = new URL(url);
-        if (parsed.hostname !== "auth-callback" && !parsed.pathname.includes("auth-callback")) return;
-        const token = parsed.searchParams.get("token");
-        if (token) window.location.href = `${PROD_ORIGIN}/api/mobile/session?token=${token}`;
+        if (parsed.hostname === "auth-callback" || parsed.pathname.includes("auth-callback")) {
+          const token = parsed.searchParams.get("token");
+          if (token) window.location.href = `${PROD_ORIGIN}/api/mobile/session?token=${token}`;
+          return;
+        }
+        if (parsed.origin === PROD_ORIGIN) {
+          window.location.href = url;
+        }
       } catch {
         // URL de deep link con formato inesperado: se ignora.
       }
@@ -79,7 +94,7 @@ export function NativeAppInit() {
         const activeGameId = await getActiveLocalGameId().catch(() => null);
         if (activeGameId) {
           const connectivity = await getConnectivity().catch(() => "offline" as const);
-          if (connectivity === "offline") return; // proteger la vuelta en curso: no recargar
+          if (shouldSkipReloadOnResume(activeGameId, connectivity)) return;
         }
         window.location.reload();
       })();

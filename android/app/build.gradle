@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// Fase 12E — firma de release: credenciales leídas de un archivo externo
+// NUNCA commiteado (ver .gitignore y keystore.properties.example en la
+// raíz de android/). Si el archivo no existe (caso normal hoy, y en
+// cualquier build de debug), signingConfigs.release queda sin credenciales
+// y buildTypes.release.signingConfig se deja sin asignar más abajo —
+// assembleDebug no se ve afectado en absoluto; bundleRelease/assembleRelease
+// simplemente producen un artefacto SIN FIRMAR hasta que exista una
+// keystore real.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasReleaseSigning = keystorePropertiesFile.exists()
+if (hasReleaseSigning) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.mindyourswing.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +31,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig hasReleaseSigning ? signingConfigs.release : null
+            // minifyEnabled se queda en false deliberadamente en esta fase
+            // (ver docs/mobile-release-checklist.md) — Capacitor core,
+            // RevenueCat y Social Login ya traen sus propias
+            // consumer-proguard-rules.pro empaquetadas en su AAR (aplicadas
+            // automáticamente por R8 en cuanto se active minifyEnabled), así
+            // que proguard-rules.pro no necesita reglas manuales añadidas a
+            // día de hoy.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

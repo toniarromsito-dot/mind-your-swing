@@ -44,6 +44,14 @@ export default async function LandingPage() {
     { href: "#comunidad", label: l.navCommunity },
   ];
 
+  // Fase 12E — solo en el pie, nunca en el nav principal de arriba: son
+  // páginas legales, no destinos de producto.
+  const footerLinks = [
+    ...navLinks,
+    { href: "/privacy", label: "Privacidad" },
+    { href: "/terms", label: "Términos" },
+  ];
+
   return (
     <main id="top" className="flex-1">
       {/* Hero */}
@@ -355,7 +363,7 @@ export default async function LandingPage() {
         </form>
       </section>
 
-      <LandingFooter tagline={l.footerTagline} rights={l.footerRights} links={navLinks} />
+      <LandingFooter tagline={l.footerTagline} rights={l.footerRights} links={footerLinks} />
     </main>
   );
 }

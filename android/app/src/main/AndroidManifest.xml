@@ -28,6 +28,30 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="mindyourswing" />
             </intent-filter>
+
+            <!-- Fase 12E — Android App Links: enlaces reales de invitación a
+                 partida (https://mind-your-swing.vercel.app/play/join/...,
+                 ver src/lib/games/invite.ts) abren la app instalada en vez
+                 del navegador. Deliberadamente en un intent-filter SEPARADO
+                 del custom-scheme de arriba (buena práctica: mezclar
+                 autoVerify con un esquema no-https en el mismo filtro puede
+                 romper la verificación de ambos). autoVerify requiere que
+                 public/.well-known/assetlinks.json publique el SHA-256 real
+                 del certificado de firma de producción — ese archivo existe
+                 ya en este repo con un valor placeholder explícito hasta
+                 que exista una keystore de release real (ver
+                 docs/mobile-release-checklist.md). Hasta entonces, Android
+                 no completará la verificación y estos enlaces se abrirán en
+                 el navegador como hasta ahora — no es una regresión. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="mind-your-swing.vercel.app"
+                    android:pathPrefix="/play/join" />
+            </intent-filter>
         </activity>
 
         <provider

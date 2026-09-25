@@ -183,6 +183,15 @@ export default async function SettingsPage({
 
       <p className="text-xs text-muted-foreground">{t.perfil.disclaimer}</p>
 
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <Link href="/privacy" className="hover:text-foreground">
+          Privacidad
+        </Link>
+        <Link href="/terms" className="hover:text-foreground">
+          Términos de uso
+        </Link>
+      </div>
+
       {isAdminEmail(user.email) && (
         <Link
           href="/admin/videos"
